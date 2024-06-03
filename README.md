@@ -6,34 +6,31 @@ To see more in details how the system works, see [the included documentation](./
 
 ## Build
 
-To build the operating system image, run `make` in the root folder.
+### Native build
 
-It will first compile binutils and gcc for crosscompilation, then compile the source code for the system, then create a disk image for emulation. All of this necessitates the following dependencies (depending on your system):
-
-- Windows: use WSL
-- Debian and derivativees: `sudo apt install build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo wget nasm mtools dosfstools libguestfs-tools qemu-system-x86`
+The native build necessitates the following dependencies:
+- Debian and derivatives: `sudo apt install build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo wget nasm mtools dosfstools libguestfs-tools qemu-system-x86`
 - Fedora and derivatives: `sudo dnf install gcc gcc-c++ make bison flex gmp-devel libmpc-devel mpfr-devel texinfo wget nasm mtools dosfstools guestfs-tools qemu-system-x86`
 - macOS: `brew install wget bison flex gmp libmpc mpfr texinfo mtools nasm qemu`
+- Windows: please use WSL 2
 
-There is a [Docker image](./Dockerfile) which contains the dependencies as well, and can be used to build the image directly.
+To build the operating system image, run `make` in the root folder.
+
+Note: The first compilation will take a long time, since it will compile binutils and gcc for crosscompilation. If you don't wish to install all the listed dependencies, or compile gcc, you can use the docker build.
+
+### Docker build
+
+The [Dockerfile](./Dockerfile) will build an image containing all the dependencies as well, and can be used to build the image without downloading the dependencies on your system. To do so, run the following commands:
+
+- Build the compiler-hosting image: `docker build -t mug-os:2.0 .`
+- Compile the OS: `docker run --rm -v .:/srv/mugOS mug-os:2.0 make && sudo chown -R $(whoami):$(whoami) build`
 
 ## Run
 
-To run the app, execute `qemu-system-i386 -fda build/floppy.img`
+Once the OS is compiled, run it (emulate it) by executing: `qemu-system-i386 -fda build/floppy.img`
 
-Note: you need to have Qemu installed. You can alternatively use docker (in CLI mode) to run it, but this option might not work properly in the future. Executing with a local qemu install is recommended.
+## Debugging
 
-## Docker
+To debug the OS, you can use bochs: `bochs-debugger -f Debuggers/Bochs.cfg`
 
-To compile using docker:
-
-- Extract the provided compilers in the [Compilers folder](./Compilers)
-- Build the compiler-hosting image: `docker build -t mug-os .`
-- Compile the OS: `docker compose up`
-
-To compile and run using docker (CLI mode only):
-- Go to the [Compose.yml file](./Compose.yml)
-- Comment the "compile" command, and uncomment the "compile and run"
-- Run `docker compose up`
-
-Note: to exit Qemu from nographic mode, hit `Ctrl-A`, then `X`.
+It is possible to attach gdb to qemu as well, but this is not well supported yet by the OS.

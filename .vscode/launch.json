@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch mugOS",
+			"name": "Launch",
 			"type": "cppdbg",
 			"preLaunchTask": "Native build",
 			"request": "launch",
@@ -16,38 +16,28 @@
 			"environment": [],
 			"externalConsole": false,
 			"linux": {
-				"preLaunchTask": "Native build",
 				"program": "/usr/bin/qemu-system-i386",
-				"targetArchitecture": "x64",
-				"MIMode": "gdb"
 			},
 			"osx": {
-				"preLaunchTask": "Docker build",
 				"program": "/opt/homebrew/bin/qemu-system-i386",
-				"targetArchitecture": "arm64",
-				"MIMode": "lldb"
 			},
 		},
 		{
-			"name": "Tools/FAT/Tests",
+			"name": "Debug",
 			"type": "cppdbg",
 			"preLaunchTask": "Native build",
 			"request": "launch",
-			"program": "${workspaceFolder}/build/tools/fat/tests",
-			"args": ["${workspaceFolder}/build/floppy.img", "TEST    TXT"],
+			"program": "bochs-debugger",
+			"args": ["-f", "${workspaceFolder}/Debuggers/Bochs.cfg"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
 			"externalConsole": false,
 			"linux": {
-				"preLaunchTask": "Native build",
-				"targetArchitecture": "x64",
-				"MIMode": "gdb"
+				"program": "/usr/bin/bochs-debugger",
 			},
 			"osx": {
-				"preLaunchTask": "Docker build",
-				"targetArchitecture": "arm64",
-				"MIMode": "lldb"
+				"program": "/opt/homebrew/bin/bochs-debugger",
 			},
 		},
 	]
