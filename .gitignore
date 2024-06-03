@@ -8,3 +8,6 @@ Compilers/**
 
 # Compiled libraries and (cross)-compilers
 toolchain*
+
+# macOS
+.DS_Store
