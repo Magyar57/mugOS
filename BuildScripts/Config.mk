@@ -15,11 +15,12 @@ export LIBS:=
 export TARGET:=i686-elf
 export TARGET_ASM:=nasm
 export TARGET_ASMFLAGS:=
-export TARGET_CFLAGS:=-std=c99 -g -Wall #-O2
 export TARGET_CC:=$(TARGET)-gcc
+export TARGET_CFLAGS:=-std=c99 -g -Wall #-O2
 export TARGET_CXX:=$(TARGET)-g++
+export TARGET_CXXFLAGS:=
 export TARGET_LD:=$(TARGET)-gcc
-export TARGET_LINKFLAGS:=
+export TARGET_LDFLAGS:=
 export TARGET_LIBS:=
 
 export MAKE_FLAGS:=--no-print-directory

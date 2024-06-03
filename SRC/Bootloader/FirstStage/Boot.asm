@@ -214,12 +214,12 @@ main:
 	mov ax, 0
 	mov ds, ax
 	mov es, ax
-	
+
 	; setup stack registers
 	mov ss, ax
 	mov sp, 0x7c00
 
-	; some BIOSes might start us at 07c0:000 instead of 0000:07c0
+	; some BIOSes might start us at 007c:000 instead of 0000:07c0
 	; so we make sure to be at the expected location
 	push es
 	push word .after ; push return adress to the stack
@@ -326,9 +326,9 @@ main:
 
 		mov cl, 1
 		mov dl, [ebr_drive_number]
-		call disk_read ; TODO plante
+		call disk_read
 
-		add bx, [bdb_bytes_per_sector] ; WARNING TODO ANOTHER ERROR: this add will overflow if the 2ndStage.bin file we're reading is larger than 64 Ko
+		add bx, [bdb_bytes_per_sector] ; WARNING TODO: this add will overflow if the 2ndStage.bin file we're reading is larger than 64 Ko
 
 		; compute location of next cluster
 		mov ax, [second_stage_cluster]
@@ -391,10 +391,10 @@ second_stage_cluster:		dw 0
 ; so we can look at memory map and pick a location from there, 
 ; without worrying about overriding something: 
 ; https://wiki.osdev.org/Memory_Map_(x86)#Overview
-; We chose 0x00007E00 to 0x0007FFFF (480.5 KiB) - Conventional memory
+; We chose 0x00000500 to 0x00007BFF (29.75 KiB) - Conventional memory
 ; Note: "equ" directive: no memory will be allocated for the constants
-SECOND_STAGE_LOAD_SEGMENT		equ 0x2000
-SECOND_STAGE_LOAD_OFFSET		equ 0
+SECOND_STAGE_LOAD_SEGMENT		equ 0
+SECOND_STAGE_LOAD_OFFSET		equ 0x0500
 
 ; 0xaa55 signature
 ; We're writing to a floppy disc, where 1 sector is 512B
@@ -403,7 +403,6 @@ SECOND_STAGE_LOAD_OFFSET		equ 0
 times 510-($-$$) db 0
 dw 0aa55h ; hexa 0xaa55
 
-; TODO comment, ou changer le nom de l'étiquette
 ; On ne peut pas écrire de code après le précédent "dw", car il s'agit de la fin du secteur du bootloader
 ; Ce secteur de bootloader est chargé en RAM, mais pas ce qui le suit sur le floppy (FAT puis root directory)
 ; En revanche on peut y placer des étiquettes, qui correspondront à de la mémoire de code non écrite
