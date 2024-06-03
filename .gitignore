@@ -1,0 +1,10 @@
+# Compilation results
+build/
+*.err
+
+# Extracted files
+Compilers/**
+!Compilers/watcom.zip
+
+# Compiled libraries and (cross)-compilers
+toolchain*

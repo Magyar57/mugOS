@@ -1,0 +1,17 @@
+# This file describes to the linker how to create the executable file
+# More precisely, it tells it what headers should be included, etc
+
+FORMAT RAW BIN
+OPTION QUIET,
+	NODEFAULTLIBS,
+	START=entry,
+	VERBOSE, # for the map file
+	OFFSET=0, # equivalent of nasm "org 0"
+	STACK=0x200 # size of stack, useless if the stack overflow protection is disabled
+
+# Tell the linker the segments order in the output executable file
+ORDER
+	CLNAME CODE
+		SEGMENT _ENTRY
+		SEGMENT _TEXT
+	CLNAME DATA
