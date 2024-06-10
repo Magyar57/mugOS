@@ -15,11 +15,13 @@
 			"cwd": "${workspaceFolder}",
 			"environment": [],
 			"externalConsole": false,
+			"MIMode": "gdb",
 			"linux": {
 				"program": "/usr/bin/qemu-system-i386",
 			},
 			"osx": {
 				"program": "/opt/homebrew/bin/qemu-system-i386",
+				"MIMode": "lldb",
 			},
 		},
 		{
@@ -27,7 +29,7 @@
 			"type": "cppdbg",
 			"preLaunchTask": "Native build",
 			"request": "launch",
-			"program": "bochs-debugger",
+			"program": "bochs",
 			"args": ["-f", "${workspaceFolder}/Debuggers/Bochs.cfg"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
@@ -37,7 +39,8 @@
 				"program": "/usr/bin/bochs-debugger",
 			},
 			"osx": {
-				"program": "/opt/homebrew/bin/bochs-debugger",
+				"program": "/opt/homebrew/bin/bochs",
+				"MIMode": "lldb",
 			},
 		},
 	]
