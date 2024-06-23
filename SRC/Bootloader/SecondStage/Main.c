@@ -14,7 +14,7 @@ void end(){
 
 // Entry point for the second-stage bootloader C code.
 // It is called by the Main.asm code (which is the entry point of the 2nd stage bootloader)
-void __attribute__((_cdecl)) start(uint32_t bootDrive){
+void __attribute__((cdecl)) start(uint32_t bootDrive){
 	clear_screen();
 	puts("Loading bootloader stage 2...\n");
 
@@ -74,13 +74,14 @@ void __attribute__((_cdecl)) start(uint32_t bootDrive){
 	printf("Reading '%s' file:\n", file);
 	fd = FAT_open(&d, file);
 	if (fd != NULL){
-		while(read = FAT_read(&d, fd, sizeof(buffer), buffer)){
+		do {
+			read = FAT_read(&d, fd, sizeof(buffer), buffer);
 			for(uint32_t i=0 ; i<read ; i++) putc(buffer[i]);
-		}
+		} while(read);
 	}
 	FAT_close(fd);
 	puts("");
 
 	// test_printf();
-	// end();
+	end();
 }
