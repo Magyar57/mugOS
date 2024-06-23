@@ -13,4 +13,10 @@ void printf(const char* formatted_string, ...);
 // Clear the screen
 void clear_screen();
 
+// Set the cursor position in the screen
+void set_cursor_position(int x, int y);
+
+// Scroll down n lines on the screen
+void scroll_down(int n);
+
 #endif

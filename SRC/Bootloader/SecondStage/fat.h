@@ -1,7 +1,8 @@
 #ifndef __FAT_H__
 #define __FAT_H__
 
-#include "stdint.h"
+#include <stdint.h>
+
 #include "disk.h"
 
 enum FAT_Attributes {
@@ -43,9 +44,9 @@ typedef struct s_FAT_File {
 #pragma pack(pop) // end of __attribute__((packed))
 
 bool FAT_initalize(DISK* disk);
-FAT_File far* FAT_open(DISK* disk, const char* filepath);
-uint32_t FAT_read(DISK* disk, FAT_File far* file, uint32_t byteCount, void* dataOut);
-bool FAT_readEntry(DISK* disk, FAT_File far* file, FAT_DirectoryEntry* dirOut);
-void FAT_close(FAT_File far* file);
+FAT_File* FAT_open(DISK* disk, const char* filepath);
+uint32_t FAT_read(DISK* disk, FAT_File* file, uint32_t byteCount, void* dataOut);
+bool FAT_readEntry(DISK* disk, FAT_File* file, FAT_DirectoryEntry* dirOut);
+void FAT_close(FAT_File* file);
 
 #endif

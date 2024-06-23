@@ -3,6 +3,7 @@
 #include <stdarg.h>
 
 #include "stdio.h"
+#include "x86.h"
 
 #define PRINTF_NUMBER_BUFFER_SIZE 32
 
@@ -11,7 +12,7 @@
 uint8_t* g_ScreenBuffer = (uint8_t*) 0x000b8000;
 #define SCREEN_WIDTH  80 // Default text mode screen width
 #define SCREEN_HEIGHT 25 // Default text mode screen height
-#define DEFAULT_COLOR (0 << 4) | (7) // (background_color << 4) & (character_color)
+#define DEFAULT_COLOR (0 << 4) | (7) // (background_color << 4) | (character_color)
 int g_screenX = 0; // Cursor's X position
 int g_screenY = 12; // Cursor's Y position
 
@@ -49,6 +50,20 @@ static inline void put_color_xy(int x, int y, uint8_t color){
 	g_ScreenBuffer[2*(y*SCREEN_WIDTH + x) + 1] = color;
 }
 
+static inline char getc_xy(int x, int y){
+	x = x % SCREEN_WIDTH;
+	y = y % SCREEN_HEIGHT;
+
+	return g_ScreenBuffer[2*(y*SCREEN_WIDTH + x)];
+}
+
+static inline char get_color_xy(int x, int y){
+	x = x % SCREEN_WIDTH;
+	y = y % SCREEN_HEIGHT;
+
+	return g_ScreenBuffer[2*(y*SCREEN_WIDTH + x) + 1];
+}
+
 void putc(char c){
 	// Instead of using the BIOS interupt (x86_Video_WriteCharTeletype), in protected mode
 	// we need to interact with the screen IO, which is memory-mapped
@@ -57,24 +72,28 @@ void putc(char c){
 	if (c == '\n'){
 		g_screenX = 0;
 		g_screenY++;
-		return;
+		goto end_putc;
 	}
 	if (c == '\r'){
 		g_screenX = 0;
-		return;
+		goto end_putc;
 	}
 	if (c == '\t'){
 		do {
 			putc_xy(g_screenX, g_screenY, ' ');
 			g_screenX++;
 		} while(g_screenX % TAB_SIZE != 0 && g_screenX<SCREEN_WIDTH);
-		return;
+		goto end_putc;
 	}
 
 	putc_xy(g_screenX, g_screenY, c);
 	
 	g_screenX = g_screenX+1 % SCREEN_WIDTH;
 	if (g_screenX == 0) g_screenY++;
+
+	end_putc:
+	if (g_screenY >= SCREEN_HEIGHT) scroll_down(1);
+	set_cursor_position(g_screenX, g_screenY);
 }
 
 void puts_no_lf(const char* str){
@@ -266,4 +285,37 @@ void clear_screen(){
 
 	g_screenX = 0;
 	g_screenY = 0;
+	set_cursor_position(g_screenX, g_screenY);
+}
+
+void set_cursor_position(int x, int y){
+	int new_pos = y * SCREEN_WIDTH + x;
+
+	// Lower byte
+	x86_outb(0x3d4, 0x0f);
+	x86_outb(0x3d5, (uint8_t) 0x000000ff & new_pos);
+	// Upper byte
+	x86_outb(0x3d4, 0x0e);
+	x86_outb(0x3d5, (uint8_t) ((0x0000ff00 & new_pos) >> 8));
+}
+
+void scroll_down(int n){
+	for(int y=n ; y<SCREEN_HEIGHT ; y++){
+		for(int x=0 ; x<SCREEN_WIDTH ; x++){
+			char c = getc_xy(x, y);
+			char color = get_color_xy(x, y);
+			putc_xy(x, y-n, c);
+			put_color_xy(x, y-n, color);
+		}
+	}
+
+	for(int y=SCREEN_HEIGHT-n ; y<SCREEN_HEIGHT ; y++){
+		for (int x=0; x<SCREEN_WIDTH ; x++){
+			putc_xy(x, y, '\0');
+			put_color_xy(x, y, DEFAULT_COLOR);
+		}
+	}
+
+	g_screenY -= n;
+	set_cursor_position(g_screenX, g_screenY);
 }

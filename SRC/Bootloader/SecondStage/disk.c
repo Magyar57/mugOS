@@ -1,4 +1,5 @@
-#include "stdint.h"
+#include <stddef.h>
+#include <stdint.h>
 #include "stdio.h"
 #include "x86.h"
 
@@ -13,9 +14,9 @@ bool DISK_initalize(DISK* disk, uint8_t driveNumber){
 	if(!res) return false;
 
 	disk->id = driveNumber;
-	disk->cylinders = cylinders + 1;
+	disk->cylinders = cylinders;
 	disk->sectors = sectors;
-	disk->heads = heads + 1;
+	disk->heads = heads;
 	return true;
 }
 
@@ -32,7 +33,7 @@ static void DISK_LBAtoCHS(DISK* disk, uint32_t lba, uint16_t* cylinderOut, uint1
 	*headOut = (lba / disk->sectors) % disk->heads;
 }
 
-bool DISK_readSectors(DISK* disk, uint32_t lba, uint8_t n_sectors, uint8_t far* dataOut){
+bool DISK_readSectors(DISK* disk, uint32_t lba, uint8_t n_sectors, uint8_t* dataOut){
 	if (dataOut == NULL) return false;
 
 	uint16_t cylinder, sector, head;

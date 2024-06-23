@@ -1,10 +1,11 @@
-#include "memdefs.h"
-#include "memory.h"
-#include "stdint.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "ctype.h"
 #include "stdio.h"
 #include "string.h"
-#include "utility.h"
+
+#include "memdefs.h"
 
 #include "fat.h"
 
@@ -67,8 +68,8 @@ typedef struct __s_FAT_Data {
 } __FAT_Data;
 
 // Global variables. These are located in the bootloader memory, that we reserved in a special FAT Driver memory space (see memdefs.h)
-static __FAT_Data far* g_data;
-static uint8_t far* g_fat = NULL;
+static __FAT_Data* g_data;
+static uint8_t* g_fat = NULL;
 static uint32_t g_dataSectionLba;
 
 // Reads the boot sector of the disk into the global "__FAT_Data g_data" variable
@@ -90,11 +91,11 @@ uint32_t __FAT_clusterToLba(uint32_t cluster){
 // Returns the next cluster of the currentCluster (by a lookup in the FAT)
 uint32_t __FAT_nextCluster(uint32_t currentCluster){
 	uint32_t fatIndex = currentCluster * 3/2;
-	if (currentCluster % 2 == 0) return (*(uint16_t far*)(g_fat + fatIndex)) & 0x0fff; // todo tester de remplacer la somme de pointeurs par &g_fat[fatIndex]
-	else return (*(uint16_t far*)(g_fat + fatIndex)) >> 4;
+	if (currentCluster % 2 == 0) return (*(uint16_t*)(g_fat + fatIndex)) & 0x0fff; // todo tester de remplacer la somme de pointeurs par &g_fat[fatIndex]
+	else return (*(uint16_t*)(g_fat + fatIndex)) >> 4;
 }
 
-FAT_File far* __FAT_openEntry(DISK* disk, FAT_DirectoryEntry* entry){
+FAT_File* __FAT_openEntry(DISK* disk, FAT_DirectoryEntry* entry){
 	int handle = -1;
 
 	// Find free handle
@@ -111,7 +112,7 @@ FAT_File far* __FAT_openEntry(DISK* disk, FAT_DirectoryEntry* entry){
 	}
 
 	// Setup file data and metadatas
-	__FAT_FileData far* fd = &g_data->openedFiles[handle];
+	__FAT_FileData* fd = &g_data->openedFiles[handle];
 	fd->metadata.handle = handle;
 	fd->metadata.isDirectory = (bool) ((entry->attributes & FAT_ATTRIBUTE_DIRECTORY) != 0);
 	fd->metadata.position = 0;
@@ -130,7 +131,7 @@ FAT_File far* __FAT_openEntry(DISK* disk, FAT_DirectoryEntry* entry){
 	return &fd->metadata;
 }
 
-bool __FAT_findFile(DISK* disk, FAT_File far* file, const char* name, FAT_DirectoryEntry* entryOut){
+bool __FAT_findFile(DISK* disk, FAT_File* file, const char* name, FAT_DirectoryEntry* entryOut){
 
 	// convert from name to fat name
 
@@ -182,7 +183,7 @@ bool __FAT_findFile(DISK* disk, FAT_File far* file, const char* name, FAT_Direct
 
 // Initalizes a FAT formatted disk
 bool FAT_initalize(DISK* disk){
-	g_data = (__FAT_Data far*) MEMORY_FAT_ADDR;
+	g_data = (__FAT_Data*) MEMORY_FAT_ADDR;
 
 	// Read disk's boot sector
 	bool res = __FAT_readBootSector(disk);
@@ -193,7 +194,7 @@ bool FAT_initalize(DISK* disk){
 
 	// Verify that reading the FAT won't overflow the FAT Driver's reserved memory
 	// Note: in the future, we should cache the FAT instead of aborting
-	g_fat = (uint8_t far*) g_data + sizeof(__FAT_Data);
+	g_fat = (uint8_t*) g_data + sizeof(__FAT_Data);
 	uint32_t fatSize = g_data->bs.bootSector.sectorsPerFat * g_data->bs.bootSector.bytesPerSector;
 	if(sizeof(__FAT_Data) + fatSize >= MEMORY_FAT_SIZE){
 		printf("FAT error: FAT is too big to fit into this driver's memory (required: %d, available: %d)\r\n", sizeof(__FAT_Data)+fatSize, MEMORY_FAT_SIZE);
@@ -234,13 +235,13 @@ bool FAT_initalize(DISK* disk){
 	return true;
 }
 
-FAT_File far* FAT_open(DISK* disk, const char* filepath){
+FAT_File* FAT_open(DISK* disk, const char* filepath){
 	char name[MAX_PATH_SIZE];
 	
 	if (filepath[0] == '/') filepath++; // ignore leading slash
 
 	// We start searching from the root directory
-	FAT_File far* cur = &g_data->rootDir.metadata;
+	FAT_File* cur = &g_data->rootDir.metadata;
 
 	while(*filepath) {
 		bool isLast = false;
@@ -285,9 +286,9 @@ FAT_File far* FAT_open(DISK* disk, const char* filepath){
 }
 
 // Read byteCount bytes from a file on disk, into dataOut
-uint32_t FAT_read(DISK* disk, FAT_File far* file, uint32_t byteCount, void* dataOut){
+uint32_t FAT_read(DISK* disk, FAT_File* file, uint32_t byteCount, void* dataOut){
 	// get file data
-	__FAT_FileData far* fd = (file->handle == ROOT_DIR_HANDLE) ? &g_data->rootDir : &g_data->openedFiles[file->handle];
+	__FAT_FileData* fd = (file->handle == ROOT_DIR_HANDLE) ? &g_data->rootDir : &g_data->openedFiles[file->handle];
 	uint8_t* u8dataOut = (uint8_t*) dataOut;
 
 	// Don't read past the end of file
@@ -355,14 +356,14 @@ uint32_t FAT_read(DISK* disk, FAT_File far* file, uint32_t byteCount, void* data
 }
 
 // Read an entry from its file "file", into dirOut
-bool FAT_readEntry(DISK* disk, FAT_File far* file, FAT_DirectoryEntry* dirOut){
+bool FAT_readEntry(DISK* disk, FAT_File* file, FAT_DirectoryEntry* dirOut){
 	// Commentary: "*forgot to read first cluster here"
 	uint32_t sizeRead = FAT_read(disk, file, sizeof(FAT_DirectoryEntry), dirOut);
 	return sizeRead == sizeof(FAT_DirectoryEntry);
 }
 
 // Closes a file
-void FAT_close(FAT_File far* file){
+void FAT_close(FAT_File* file){
 	if (file == NULL) return;
 
 	// Root directory

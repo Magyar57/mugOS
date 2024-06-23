@@ -19,6 +19,8 @@ extern __end		; defined in the linker map
 extern start		; defined in main.c
 global entry
 
+%include "x86_SwitchMode.asm"
+
 ; Since we load the second stage at some adress, and immediately jump at this adress,
 ; if we don't want our maid to be here we should jump to it right at the beginning
 jmp entry
@@ -132,32 +134,12 @@ entry:
 	mov bp, sp
 
 	; Switch to protected mode (see https://wiki.osdev.org/Protected_Mode)
-	cli					; disable interupts
-	; call disable_NMI	; disble NMI (non-maskable interupts)
-	call enable_A20		; Enable the A20 Line.
-	call load_GDT		; load the Global Descriptor Table
-	; Set the protected mode bit in cr0
-	mov eax, cr0
-	or al, 0b0001
-	mov cr0, eax
-
-	; Perform far jump to selector 08h (offset into GDT, pointing at a 32bit PM code segment descriptor) 
-	; to load CS with proper PM32 descriptor)
-	jmp dword 0x08:.protected_mode_main
-
-.protected_mode_main:
-	; Here we are in protected mode ! :)
+	cli						; disable interupts
+	call disable_NMI		; disble NMI (non-maskable interupts)
+	call enable_A20			; Enable the A20 Line.
+	call load_GDT			; load the Global Descriptor Table
+	x86_EnterProtectedMode	; enter protected mode !
 	[bits 32]
-
-	; call enable_NMI
-
-	; Setup segment registers: DS, ES, FS, GS, SS, ESP
-	mov ax, 0x10 ; Offset (in the GDT). We're using the 32-bit pmode data segment (3rd entry), its offset is 0x10 = 16
-	mov ds, ax
-	; mov ds, ax
-	; mov fs, ax
-	; mov gs, ax
-	mov ss, ax
 
 	; Clear bss (uninitalized data)
 	mov edi, __bss_start
@@ -167,9 +149,9 @@ entry:
 	cld
 	rep stosb ; stosb: store string byte
 
-	; We don't need to re-nable interupts, we'll just load the kernel in C
-	; sti
-	; call enable_NMI
+	; Re-nable interupts
+	; sti ; => we need more preparation before enabling interupts in pmode
+	call enable_NMI
 
 	; The signature of our C entry point is 'cstart_(uint16_t bootDrive)'
 	; => We push the bootDrive argument on the stack
