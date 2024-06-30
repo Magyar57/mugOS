@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch",
+			"name": "QEMU",
 			"type": "cppdbg",
 			"preLaunchTask": "Native build",
 			"request": "launch",
@@ -25,7 +25,7 @@
 			},
 		},
 		{
-			"name": "Debug",
+			"name": "Bochs",
 			"type": "cppdbg",
 			"preLaunchTask": "Native build",
 			"request": "launch",
