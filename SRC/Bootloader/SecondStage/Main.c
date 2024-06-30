@@ -18,70 +18,25 @@ void __attribute__((cdecl)) start(uint32_t bootDrive){
 	clear_screen();
 	puts("Loading bootloader stage 2...\n");
 
-	DISK d;
-	bool res = DISK_initalize(&d, bootDrive);
+	DISK disk;
+	bool res = DISK_initalize(&disk, bootDrive);
 	if(!res){
 		puts("Error initalizing disk ; aborting.");
 		end();
 	}
 	printf("bootDrive: %d\n", bootDrive);
-	printf("Disk: id=%d cylinders=%d heads=%d sectors=%d\n\n", d.id, d.cylinders, d.heads, d.sectors);
+	printf("Disk: id=%d cylinders=%d heads=%d sectors=%d\n\n", disk.id, disk.cylinders, disk.heads, disk.sectors);
 
-	res = FAT_initalize(&d);
+	res = FAT_initalize(&disk);
 	if (!res){
-		printf("Error initalizing FAT driver from disk (id=%i)\n", d.id);
+		printf("Error initalizing FAT driver from disk (id=%i)\n", disk.id);
 		end();
 	}
 
-	// // Print all the files in the root directory
-	FAT_File* fd = FAT_open(&d, "/");
-	FAT_DirectoryEntry entry;
-	int i = 0; // hard limit on number of entries to print
-	while(FAT_readEntry(&d, fd, &entry) && i<6){
-		bool isLFN = ((entry.attributes & FAT_ATTRIBUTE_LFN) != 0);
-		if (isLFN) continue;
-		
-		bool isDir = ((entry.attributes & FAT_ATTRIBUTE_DIRECTORY) != 0);
-		const char* type_prefix = (isDir) ? "d - " : "f - "; // defaults to file
-		printf("%s", type_prefix);
-		for(int j=0 ; j<8 ; j++) putc(entry.name[j]);
-		putc(' ');
-		for(int j=8 ; j<11 ; j++) putc(entry.name[j]);
-		putc('\n');
-		i++;
-	}
-	FAT_close(fd);
-	puts("");
-
-	// Read some files (note: rn reading two files in a row loops indefinitely, but subdirectory reading works)
-
-	char buffer[256];
-	uint32_t read;
-	char* file;
-
-	// file = "test.txt";
-	// printf("Reading '%s' file:\n", file);
-	// fd = FAT_open(&d, file);
-	// if (fd != NULL){
-	// 	while(read = FAT_read(&d, fd, sizeof(buffer), buffer)){
-	// 		for(uint32_t i=0 ; i<read ; i++) putc(buffer[i]);
-	// 	}
-	// }
-	// FAT_close(fd);
-	// puts("");
-
-	file = "dir/test_sub.txt";
-	printf("Reading '%s' file:\n", file);
-	fd = FAT_open(&d, file);
-	if (fd != NULL){
-		do {
-			read = FAT_read(&d, fd, sizeof(buffer), buffer);
-			for(uint32_t i=0 ; i<read ; i++) putc(buffer[i]);
-		} while(read);
-	}
-	FAT_close(fd);
-	puts("");
-
 	// test_printf();
+	test_printDirectory(disk, "/", 5);
+	test_printDirectory(disk, "/dir", 4);
+	test_FAT_Open_and_Read(disk, "test.txt");
+	test_FAT_Open_and_Read(disk, "dir/test_sub.txt");
 	end();
 }

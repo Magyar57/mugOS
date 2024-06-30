@@ -88,7 +88,7 @@ void putc(char c){
 
 	putc_xy(g_screenX, g_screenY, c);
 	
-	g_screenX = g_screenX+1 % SCREEN_WIDTH;
+	g_screenX = (g_screenX+1) % SCREEN_WIDTH;
 	if (g_screenX == 0) g_screenY++;
 
 	end_putc:

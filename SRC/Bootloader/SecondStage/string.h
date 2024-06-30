@@ -4,7 +4,7 @@
 #include "stdio.h"
 
 // Find a char "chr" in the string
-// @return <z> pointer to the chr. NULL if not found
+// @return A pointer to the first occurrence of chr in the C string str. NULL if not found
 const char* strchr(const char* str, char chr);
 
 // Copies the string src into a destination dst. The memory regions must NOT overlap

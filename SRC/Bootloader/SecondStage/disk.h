@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-typedef struct {
+typedef struct s_DISK {
 	uint8_t id;
 	uint16_t cylinders;
 	uint16_t sectors;
