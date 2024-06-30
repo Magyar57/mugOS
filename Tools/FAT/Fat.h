@@ -1,3 +1,6 @@
+#ifndef __FAT_H__
+#define __FAT_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -6,8 +9,6 @@
 #include <ctype.h>
 
 // FAT12 BootSector informations
-// Note: __attribute__((packed)) is a gcc compiler instruction to tell it not to pad the structure with empty spaces
-// (it does so to improve some operation performances, but in our case it would read too much bytes of our FAT image file)
 typedef struct {
 	uint8_t BootJumpInstruction[3];
 	uint8_t OemIdentifier[8];
@@ -99,3 +100,5 @@ DirectoryEntry* findFile(BootSector bs, DirectoryEntry* dir, const char* name);
 
 // Reads a file from an entry fileEntry, into the bytes buffer ouput_file. Does so from a disk disk described by a BootSector bs and with the FAT fat
 bool readFile(FILE* disk, BootSector bs, uint8_t *fat, DirectoryEntry* fileEntry, uint8_t* output_file);
+
+#endif

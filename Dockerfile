@@ -1,16 +1,20 @@
-FROM fedora:38
+FROM fedora:39
+
+ENV DEPENDENCIES="make nasm gcc gcc-c++ dosfstools mtools bison flex gmp-devel libmpc-devel mpfr-devel texinfo wget guestfs-tools"
+ENV TEMPFILES_BINUTILS="toolchain/binutils.tar.xz toolchain/binutils-src toolchain/binutils-build" 
+ENV TEMPFILES_GCC="toolchain/gcc.tar.xz toolchain/gcc-src toolchain/gcc-build"
 
 # Install dependencies
 RUN dnf update -y
-RUN dnf install make -y && dnf install nasm -y && dnf install dosfstools -y  && dnf install mtools -y && dnf install gcc -y
-RUN dnf install qemu-system-x86 -y
+RUN dnf install -y ${DEPENDENCIES}
 
 # mugOS files (shall be volume-binded)
 WORKDIR /srv/mugOS
 
-# Watcom compiler
-COPY Compilers/watcom /usr/bin/watcom/
-ENV PATH="$PATH:/usr/bin/watcom/binl64/"
+# Build cross-compilers: binutils & gcc
+COPY BuildScripts /srv/mugOS/BuildScripts
+COPY Makefile /srv/mugOS
+RUN make toolchain && rm -rf ${TEMPFILES_BINUTILS} ${TEMPFILES_GCC}
 
 # Compile
 CMD ["make"]

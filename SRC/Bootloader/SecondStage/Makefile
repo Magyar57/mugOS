@@ -1,11 +1,14 @@
-ASMFLAGS+=-f obj
+TARGET_ASMFLAGS+=-f elf
+TARGET_CFLAGS+=-ffreestanding -nostdlib
+TARGET_LIBS+=-lgcc
+TARGET_LDFLAGS+=-T Linker.map -nostdlib
 
 BUILD_SUBDIR:=$(BUILD_DIR)/second-stage
 
 SOURCES_C=$(wildcard *.c)
-OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/C/%.obj, $(SOURCES_C))
+OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
 SOURCES_ASM=$(wildcard *.asm)
-OBJECTS_ASM=$(patsubst %.asm, $(BUILD_SUBDIR)/Asm/%.obj, $(SOURCES_ASM))
+OBJECTS_ASM=$(patsubst %.asm, $(BUILD_SUBDIR)/%.obj, $(SOURCES_ASM))
 
 all: second-stage
 
@@ -14,25 +17,19 @@ all: second-stage
 second-stage: $(BUILD_DIR)/bootloader-second-stage.bin
 
 $(BUILD_DIR)/bootloader-second-stage.bin: $(OBJECTS_C) $(OBJECTS_ASM)
-	$(LD16) NAME $@ FILE \{ $^ } OPTION MAP=$(BUILD_DIR)/bootloader-second-stage.map @Linker.lnk
+	$(TARGET_LD) $(TARGET_LDFLAGS) -Wl,-Map=$(BUILD_DIR)/bootloader-second-stage.map -o $@ $^ $(TARGET_LIBS)
 
 # Generic object rules
 
-$(BUILD_SUBDIR)/C/%.obj: %.c | $(BUILD_SUBDIR)/C
-	$(CC16) $(CFLAGS16) -fo=$@ $<
+$(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIR)
+	$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
 
-$(BUILD_SUBDIR)/Asm/%.obj: %.asm | $(BUILD_SUBDIR)/Asm
-	$(ASM) $(ASMFLAGS) -o $@ $<
+$(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIR)
+	$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 
 # Build dirs
 
 $(BUILD_SUBDIR):
-	mkdir -p $@
-
-$(BUILD_SUBDIR)/C: | $(BUILD_SUBDIR)
-	mkdir -p $@
-
-$(BUILD_SUBDIR)/Asm: | $(BUILD_SUBDIR)
 	mkdir -p $@
 
 clean:

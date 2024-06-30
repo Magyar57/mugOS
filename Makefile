@@ -1,11 +1,6 @@
 include BuildScripts/Config.mk
 include BuildScripts/Toolchain.mk
 
-# TODO remove when watcom will have been replaced with gcc
-export CC16:=/usr/bin/watcom/binl64/wcc
-export LD16:=/usr/bin/watcom/binl64/wlink
-export CFLAGS16:=-g -4 -d3 -s -wx -ms -zl -zq -za99
-
 all: floppy tools
 
 .PHONY: all clean
