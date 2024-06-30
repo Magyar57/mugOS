@@ -30,7 +30,7 @@ $(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIR)
 # Build dirs
 
 $(BUILD_SUBDIR):
-	mkdir -p $@
+	@mkdir -p $@
 
 clean:
 	rm -rf $(BUILD_SUBDIR) $(BUILD_DIR)/bootloader-second-stage.bin

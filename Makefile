@@ -28,10 +28,10 @@ $(BUILD_DIR)/floppy.img: $(FLOPPY_FILES) | $(BUILD_DIR)
 	mcopy -i $@ $(BUILD_DIR)/test_sub.txt "::dir/test_sub.txt"
 
 $(BUILD_DIR)/test.txt:
-	printf "This is a test file :D\n" > $@
+	printf "This is a test file :D\n" >$@
 
 $(BUILD_DIR)/test_sub.txt:
-	printf "This is a test file, in a subdirectory !\r\n" > $@
+	printf "This is a test file, in a subdirectory !\n" >$@
 
 #
 # Bootloader
@@ -39,10 +39,10 @@ $(BUILD_DIR)/test_sub.txt:
 bootloader: $(BUILD_DIR)/bootloader-first-stage.bin $(BUILD_DIR)/bootloader-second-stage.bin
 
 $(BUILD_DIR)/bootloader-first-stage.bin: $(shell find SRC/Bootloader/FirstStage/** -type f) | $(BUILD_DIR)
-	$(MAKE) -C SRC/Bootloader/FirstStage $(MAKE_FLAGS)
+	@$(MAKE) -C SRC/Bootloader/FirstStage $(MAKE_FLAGS)
 
 $(BUILD_DIR)/bootloader-second-stage.bin: $(shell find SRC/Bootloader/SecondStage/** -type f) | $(BUILD_DIR)
-	$(MAKE) -C SRC/Bootloader/SecondStage $(MAKE_FLAGS)
+	@$(MAKE) -C SRC/Bootloader/SecondStage $(MAKE_FLAGS)
 
 #
 # Kernel
@@ -50,7 +50,7 @@ $(BUILD_DIR)/bootloader-second-stage.bin: $(shell find SRC/Bootloader/SecondStag
 kernel: $(BUILD_DIR)/kernel.bin
 
 $(BUILD_DIR)/kernel.bin: $(shell find SRC/Kernel/** -type f) | $(BUILD_DIR)
-	$(MAKE) -C SRC/Kernel $(MAKE_FLAGS)
+	@$(MAKE) -C SRC/Kernel $(MAKE_FLAGS)
 
 #
 # Tools
@@ -72,13 +72,13 @@ $(BUILD_TOOLS_FAT_DIR)/%.o : Tools/FAT/%.c | $(BUILD_TOOLS_FAT_DIR)
 #
 
 $(BUILD_DIR):
-	mkdir -p $@
+	@mkdir -p $@
 
 $(BUILD_TOOLS_DIR): | $(BUILD_DIR)
-	mkdir -p $@
+	@mkdir -p $@
 
 $(BUILD_TOOLS_FAT_DIR): | $(BUILD_TOOLS_DIR)
-	mkdir -p $@
+	@mkdir -p $@
 
 #
 # Clean
