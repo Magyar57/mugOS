@@ -273,7 +273,7 @@ uint32_t FAT_read(DISK* disk, FAT_File* file, uint32_t byteCount, void* dataOut)
 
 	// Don't read past the end of file
 	// byteCount = min(byteCount, size-position)
-	if (!fd->metadata.isDirectory){
+	if (!fd->metadata.isDirectory || (fd->metadata.isDirectory && fd->metadata.size != 0)){
 		uint32_t temp = fd->metadata.size - fd->metadata.position;
 		byteCount = (byteCount < temp) ? byteCount : temp;
 	}
@@ -309,7 +309,7 @@ uint32_t FAT_read(DISK* disk, FAT_File* file, uint32_t byteCount, void* dataOut)
 		else {
 
 			// Compute next cluster and sector to read
-			if( ++fd->curCluster >= g_data->bs.bootSector.sectorsPerCluster){
+			if( ++fd->curSectorInCluster >= g_data->bs.bootSector.sectorsPerCluster){
 				fd->curSectorInCluster = 0;
 				fd->curCluster = __FAT_nextCluster(fd->curCluster);
 			}
