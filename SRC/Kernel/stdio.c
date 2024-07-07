@@ -87,7 +87,7 @@ void putc(char c){
 	}
 
 	putc_xy(g_screenX, g_screenY, c);
-	
+
 	g_screenX = (g_screenX+1) % SCREEN_WIDTH;
 	if (g_screenX == 0) g_screenY++;
 
@@ -112,7 +112,7 @@ static inline void printf_unsigned(unsigned long long number, int radix){
 
 	// All possible characters that we can encouter
 	const char hexChars[] = "0123456789abcdef";
-	
+
 	char buffer[PRINTF_NUMBER_BUFFER_SIZE];
 	int pos = 0; // position in the buffer
 
@@ -149,9 +149,9 @@ void printf(const char* formatted_string, ...){
 	int radix = 10;
 
 	while(*formatted_string){
-		
+
 		switch(state){
-			
+
 			case PRINTF_STATE_NORMAL:
 				switch(*formatted_string){
 					case '%':
@@ -162,7 +162,7 @@ void printf(const char* formatted_string, ...){
 						break;
 				}
 				break;
-			
+
 			case PRINTF_STATE_LENGTH:
 				switch(*formatted_string){
 					case 'h':
@@ -267,9 +267,10 @@ void printf(const char* formatted_string, ...){
 			length = PRINTF_LENGTH_DEFAULT;
 			radix = 10;
 			sign = false;
+			number = false;
 			break;
 		}
-		
+
 		formatted_string++;
 	}
 
