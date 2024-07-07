@@ -10,6 +10,7 @@ export LD:=gcc
 export ASM:=nasm
 export LINKFLAGS:=
 export LIBS:=
+export CLEAR_ENV:=CFLAGS= ASMFLAGS= CC= CXX= LD= ASM= LINKFLAGS= LIBS= 
 
 # Compilation for target system
 export TARGET:=i686-elf
