@@ -1,5 +1,5 @@
-#ifndef __X86_H__
-#define __X86_H__
+#ifndef __X86_IO_H__
+#define __X86_IO_H__
 
 #include <stdint.h>
 #include <stdbool.h>

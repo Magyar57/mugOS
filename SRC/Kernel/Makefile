@@ -1,5 +1,5 @@
 TARGET_ASMFLAGS+=-f elf
-TARGET_CFLAGS+=-ffreestanding -nostdlib
+TARGET_CFLAGS+=-ffreestanding -nostdlib -I. -D ARCH_$(ARCH)
 TARGET_LIBS+=-lgcc
 TARGET_LDFLAGS+=-T Linker.map -nostdlib
 
@@ -14,10 +14,11 @@ all: kernel
 
 .PHONY: all clean kernel
 
-kernel: $(BUILD_DIR)/kernel.bin
+kernel: $(BUILD_DIR)/kernel.bin 
 
-$(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM)
-	$(TARGET_LD) $(TARGET_LDFLAGS) -Wl,-Map=$(BUILD_DIR)/bootloader-kernel.map -o $@ $^ $(TARGET_LIBS)
+$(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM) $(shell find SRC/Kernel/Arch/$(ARCH)/** -type f)
+	@$(MAKE) -C Arch/$(ARCH) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
+	$(TARGET_LD) $(TARGET_LDFLAGS) -Wl,-Map=$(BUILD_DIR)/bootloader-kernel.map -o $@ $(BUILD_SUBDIR)/IO.obj $^ $(TARGET_LIBS)
 
 # Generic object rules
 

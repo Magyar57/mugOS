@@ -23,6 +23,8 @@ export TARGET_CXXFLAGS:=
 export TARGET_LD:=$(TARGET)-gcc
 export TARGET_LDFLAGS:=
 export TARGET_LIBS:=
+# Architecture to compile mugOS for
+export ARCH:=x86
 
 export MAKE_FLAGS:=--no-print-directory
 
