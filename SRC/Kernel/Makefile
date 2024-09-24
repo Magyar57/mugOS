@@ -14,11 +14,14 @@ all: kernel
 
 .PHONY: all clean kernel
 
-kernel: $(BUILD_DIR)/kernel.bin 
+kernel: $(BUILD_DIR)/kernel.bin
 
-$(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM) $(shell find SRC/Kernel/Arch/$(ARCH)/** -type f)
+$(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM) $(BUILD_SUBDIR)/Arch.o Arch/Arch.h $(shell find Arch/$(ARCH)/** -type f)
 	@$(MAKE) -C Arch/$(ARCH) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
-	$(TARGET_LD) $(TARGET_LDFLAGS) -Wl,-Map=$(BUILD_DIR)/bootloader-kernel.map -o $@ $(BUILD_SUBDIR)/IO.obj $^ $(TARGET_LIBS)
+	$(TARGET_LD) $(TARGET_LDFLAGS) -Wl,-Map=$(BUILD_DIR)/bootloader-kernel.map -o $@ $(BUILD_SUBDIR)/*.o $(BUILD_SUBDIR)/*.obj $(TARGET_LIBS)
+
+$(BUILD_SUBDIR)/Arch.o: Arch/Arch.c | $(BUILD_SUBDIR)
+	$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
 
 # Generic object rules
 

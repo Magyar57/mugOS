@@ -1,11 +1,15 @@
 #ifndef __ARCH_H__
 #define __ARCH_H__
 
-// Arch.h: header file that includes the right architecture header files
+// Arch.h:
+// Defines the Hardware Abstraction Layer (HAL),
+// and implements it depending on the requested architecture ARCH_*
 
-// x86 (32 bits)
-#ifdef ARCH_x86
-#include "Arch/x86/IO.h"
-#endif
+#include <stdint.h>
+
+void HAL_Initialize();
+
+void outb(uint16_t port, uint8_t value);
+uint8_t inb(uint16_t port);
 
 #endif

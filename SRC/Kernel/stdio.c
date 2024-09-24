@@ -295,11 +295,11 @@ void set_cursor_position(int x, int y){
 	int new_pos = y * SCREEN_WIDTH + x;
 
 	// Lower byte
-	x86_outb(0x3d4, 0x0f);
-	x86_outb(0x3d5, (uint8_t) 0x000000ff & new_pos);
+	outb(0x3d4, 0x0f);
+	outb(0x3d5, (uint8_t) 0x000000ff & new_pos);
 	// Upper byte
-	x86_outb(0x3d4, 0x0e);
-	x86_outb(0x3d5, (uint8_t) ((0x0000ff00 & new_pos) >> 8));
+	outb(0x3d4, 0x0e);
+	outb(0x3d5, (uint8_t) ((0x0000ff00 & new_pos) >> 8));
 }
 
 void scroll_down(int n){
