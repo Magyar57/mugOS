@@ -22,11 +22,11 @@ global entry
 %include "x86_SwitchMode.asm"
 
 ; Since we load the second stage at some adress, and immediately jump at this adress,
-; if we don't want our maid to be here we should jump to it right at the beginning
+; if we don't want our main to be here we should jump to it right at the beginning
 jmp entry
 
-; Function disable_NMI: Disables the Non-Maskable Interupts
-; >>> Interupts must be disabled (call cli before disable_NMI) !! <<<
+; Function disable_NMI: Disables the Non-Maskable interrupts
+; >>> interrupts must be disabled (call cli before disable_NMI) !! <<<
 disable_NMI:
 	[bits 16]
 	push ax
@@ -40,8 +40,8 @@ disable_NMI:
 	ret
 ; END disable_NMI
 
-; Function enable_NMI: Enables the Non-Maskable Interupts
-; >>> Interupts must be disabled (call cli before disable_NMI) !! <<<
+; Function enable_NMI: Enables the Non-Maskable interrupts
+; >>> interrupts must be disabled (call cli before disable_NMI) !! <<<
 enable_NMI:
 	[bits 32]
 	push eax
@@ -134,8 +134,8 @@ entry:
 	mov bp, sp
 
 	; Switch to protected mode (see https://wiki.osdev.org/Protected_Mode)
-	cli						; disable interupts
-	call disable_NMI		; disble NMI (non-maskable interupts)
+	cli						; disable interrupts
+	call disable_NMI		; disble NMI (non-maskable interrupts)
 	call enable_A20			; Enable the A20 Line.
 	call load_GDT			; load the Global Descriptor Table
 	x86_EnterProtectedMode	; enter protected mode !
@@ -149,9 +149,9 @@ entry:
 	cld
 	rep stosb ; stosb: store string byte
 
-	; Re-nable interupts
-	; sti ; => we need more preparation before enabling interupts in pmode
+	; Re-nable interrupts
 	call enable_NMI
+	; sti ; => we need more preparation before enabling interrupts in pmode
 
 	; The signature of our C entry point is 'cstart_(uint16_t bootDrive)'
 	; => We push the bootDrive argument on the stack
