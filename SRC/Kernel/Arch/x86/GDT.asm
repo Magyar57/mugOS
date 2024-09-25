@@ -6,16 +6,15 @@ x86_setGDT:
 	push ebp
 	mov ebp, esp
 
-	; load gdt ; address given by descriptor arg
+	; load gdt ; address given by 'descriptor' arg
 	mov eax, [ebp + 8]
 	lgdt [eax]
-	; lgdt [ebp + 8]
 
 	; setup segments registers
 	mov eax, [ebp+12]	; ax = kcodeSegment
-	; push eax
-	; push .reload_cs	; cs cannot be mv-ed directly, we have to jump
-	; retf				; would be equivalent to jmp eax : .reload_cs
+	push eax
+	push .reload_cs	; cs cannot be mv-ed directly, we have to jump
+	retf				; would be equivalent to jmp eax : .reload_cs
 	.reload_cs:
 	mov ax, [ebp+16]	; ax = kdataSegment
 	mov ds, ax
