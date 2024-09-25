@@ -6,9 +6,12 @@
 #ifdef ARCH_x86
 
 #include "Arch/x86/IO.h"
+#include "Arch/x86/Interrupts.h"
+#include "Arch/x86/GDT.h"
 
 void HAL_Initialize(){
-	puts("HAL initalizing...");
+	GDT_Initialize();
+	puts("[ OK ] HAL initalized");
 }
 
 void outb(uint16_t port, uint8_t value){

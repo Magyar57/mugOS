@@ -1,5 +1,5 @@
 TARGET_ASMFLAGS+=-f elf
-TARGET_CFLAGS+=-ffreestanding -nostdlib -I.
+TARGET_CFLAGS+=-ffreestanding -nostdlib -I. -I../..
 TARGET_LIBS+=-lgcc
 TARGET_LDFLAGS+=-T Linker.map -nostdlib
 
