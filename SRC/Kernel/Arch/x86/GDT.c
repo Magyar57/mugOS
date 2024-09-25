@@ -83,7 +83,7 @@ typedef struct {
 #define GDT_get_limit_0to15(limit)						(uint16_t) (limit & 0xffff)
 #define GDT_get_base_0to15(base)						(uint16_t) (base & 0xffff)
 #define GDT_get_base_16to23(base)						(uint8_t)  ((base >> 16) & 0xff)
-#define GDT_get_limit_16to19_and_flags(limit, flags)	(uint8_t)  (((limit >> 16) & 0x0f) | ((flags<<4) & 0xf0))
+#define GDT_get_limit_16to19_and_flags(limit, flags)	(uint8_t)  (((limit >> 16) & 0x0f) | (((flags)<<4) & 0xf0))
 #define GDT_get_base_24to31(base)						(uint8_t)  ((base >> 24) & 0xff)
 
 #define GDT_get_GDT_Entry(base, limit, access, flags) \
@@ -101,7 +101,7 @@ GDT_Entry g_GDT[] = {
 	// Null descriptor
 	GDT_get_GDT_Entry(0x0, 0x0, 0, 0),
 	// Kernel 32-bit code segment
-	GDT_get_GDT_Entry(0x0, 0xfffff, GDT_KERNEL_CODE_ACCESS, GDT_KERNEL_CODE_FLAGS),
+	GDT_get_GDT_Entry(0x0, 0xfffff, GDT_KERNEL_CODE_ACCESS, 0xc),
 	// Kernel 32-bit data segment
 	GDT_get_GDT_Entry(0x0, 0xfffff, GDT_KERNEL_DATA_ACCESS, GDT_KERNEL_DATA_FLAGS)
 };
