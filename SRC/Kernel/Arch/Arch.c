@@ -8,10 +8,12 @@
 #include "Arch/x86/IO.h"
 #include "Arch/x86/Interrupts.h"
 #include "Arch/x86/GDT.h"
+#include "Arch/x86/IDT.h"
 
 void HAL_Initialize(){
-	GDT_Initialize();
-	puts("[ OK ] HAL initalized");
+	x86_GDT_Initialize();
+	x86_IDT_Initialize();
+	puts("[ OK ] x86 HAL initalized");
 }
 
 void outb(uint16_t port, uint8_t value){
@@ -28,6 +30,6 @@ uint8_t inb(uint16_t port){
 #ifdef ARCH_arm64
 
 // Example, not yet implemented
-void HAL_Initialize(){}
+// void HAL_Initialize(){}
 
 #endif // ARCH_arm64
