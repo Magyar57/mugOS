@@ -6,7 +6,7 @@
 // =========== GDT Entries ===========
 
 // A GDT_Entry is a segment descriptor
-// Base  (32-bit value): linear adress where the segment begins
+// Base  (32-bit value): linear address where the segment begins
 // Limit (20-bit value): tells maximum addressable unit (controlled by the granularity)
 typedef struct {
 	uint16_t limit_0to15;				// Limit (bit 0-15)
@@ -69,13 +69,13 @@ enum GDT_Flags {
 // GDT Descriptor (32 bits mode)
 typedef struct {
 	uint16_t size;		// GDT size -1
-	uint32_t offset;	// GDT adress in memory
+	uint32_t offset;	// GDT address in memory
 } __attribute__((packed)) GDT_LocationDescriptor_32;
 
 // GDT Descriptor (64 bits mode)
 typedef struct {
 	uint16_t size;		// GDT size -1
-	uint64_t offset;	// GDT adress in memory
+	uint64_t offset;	// GDT address in memory
 } __attribute__((packed)) GDT_LocationDescriptor_64;
 
 // =========== GDT generation maccros ===========

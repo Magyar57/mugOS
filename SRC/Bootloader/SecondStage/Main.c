@@ -40,7 +40,7 @@ void __attribute__((cdecl)) start(uint32_t bootDrive){
 	FAT_File* kernel_file = FAT_open(&disk, "/kernel.bin");
 	uint32_t read;
 	uint8_t* positionInTargetMemory = (uint8_t*) MEMORY_KERNEL_ADDR;
-	printf("Loading kernel into buffer at %p and copying at adress %p\n", MEMORY_KERNEL_BUFFER_ADDR, positionInTargetMemory);
+	printf("Loading kernel into buffer at %p and copying at address %p\n", MEMORY_KERNEL_BUFFER_ADDR, positionInTargetMemory);
 	while( (read = FAT_read(&disk, kernel_file, MEMORY_KERNEL_BUFFER_SIZE, MEMORY_KERNEL_BUFFER_ADDR)) ){
 		memcpy(positionInTargetMemory, MEMORY_KERNEL_BUFFER_ADDR, read);
 		positionInTargetMemory += read;

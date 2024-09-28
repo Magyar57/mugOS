@@ -31,7 +31,7 @@ Describes how (old) disks (floppy, hard drives...) are organized
 
 LBA scheme: Logical Block Addressing
 Logical abstraction to make accessing a disk easier
-We adress the disk with an unique sector number, a sector often being 512 bytes
+We address the disk with an unique sector number, a sector often being 512 bytes
 
 LBA to CHS conversion:
 sector 	= (LBA % sectors per track) + 1

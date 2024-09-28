@@ -21,7 +21,7 @@ global entry
 
 %include "x86_SwitchMode.asm"
 
-; Since we load the second stage at some adress, and immediately jump at this adress,
+; Since we load the second stage at some address, and immediately jump at this address,
 ; if we don't want our main to be here we should jump to it right at the beginning
 jmp entry
 

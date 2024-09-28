@@ -222,7 +222,7 @@ main:
 	; some BIOSes might start us at 007c:000 instead of 0000:07c0
 	; so we make sure to be at the expected location
 	push es
-	push word .after ; push return adress to the stack
+	push word .after ; push return address to the stack
 	retf
 	.after:
 
