@@ -1,13 +1,13 @@
 # Compilation results
 build/
-*.err
-
-# Extracted files
-Compilers/**
-!Compilers/watcom.zip
+*.o
+*.obj
 
 # Compiled libraries and (cross)-compilers
 toolchain*
+
+# Runtime output
+bx_enh_dbg.ini
 
 # macOS
 .DS_Store
