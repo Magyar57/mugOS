@@ -38,19 +38,19 @@ $(BUILD_DIR)/test_sub.txt:
 #
 bootloader: $(BUILD_DIR)/bootloader-first-stage.bin $(BUILD_DIR)/bootloader-second-stage.bin
 
-$(BUILD_DIR)/bootloader-first-stage.bin: $(shell find SRC/Bootloader/FirstStage/** -type f) | $(BUILD_DIR)
-	@$(MAKE) -C SRC/Bootloader/FirstStage $(MAKE_FLAGS)
+$(BUILD_DIR)/bootloader-first-stage.bin: $(shell find Bootloader/FirstStage/** -type f) | $(BUILD_DIR)
+	@$(MAKE) -C Bootloader/FirstStage $(MAKE_FLAGS)
 
-$(BUILD_DIR)/bootloader-second-stage.bin: $(shell find SRC/Bootloader/SecondStage/** -type f) | $(BUILD_DIR)
-	@$(MAKE) -C SRC/Bootloader/SecondStage $(MAKE_FLAGS)
+$(BUILD_DIR)/bootloader-second-stage.bin: $(shell find Bootloader/SecondStage/** -type f) | $(BUILD_DIR)
+	@$(MAKE) -C Bootloader/SecondStage $(MAKE_FLAGS)
 
 #
 # Kernel
 #
 kernel: $(BUILD_DIR)/kernel.bin
 
-$(BUILD_DIR)/kernel.bin: $(shell find SRC/Kernel/** -type f) | $(BUILD_DIR)
-	@$(MAKE) -C SRC/Kernel $(MAKE_FLAGS)
+$(BUILD_DIR)/kernel.bin: $(shell find Kernel/** -type f) | $(BUILD_DIR)
+	@$(MAKE) -C Kernel $(MAKE_FLAGS)
 
 #
 # Tools
