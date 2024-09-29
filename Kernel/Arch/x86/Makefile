@@ -1,7 +1,5 @@
-TARGET_ASMFLAGS+=-f elf
-TARGET_CFLAGS+=-ffreestanding -nostdlib -I. -I../..
-TARGET_LIBS+=-lgcc
-TARGET_LDFLAGS+=-T Linker.map -nostdlib
+TARGET_ASMFLAGS+=
+TARGET_CFLAGS+=-I../..
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
