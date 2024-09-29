@@ -81,7 +81,13 @@ $(BUILD_TOOLS_FAT_DIR): | $(BUILD_TOOLS_DIR)
 	@mkdir -p $@
 
 #
-# Clean
+# Clean (bclean: bootloader clean, kclean: kernel clean)
 #
 clean:
 	rm -rf $(BUILD_DIR)
+
+bclean:
+	rm -rf $(BUILD_DIR)/second-stage $(BUILD_DIR)/bootloader*
+
+kclean:
+	rm -rf $(BUILD_DIR)/kernel $(BUILD_DIR)/kernel.bin
