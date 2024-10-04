@@ -22,6 +22,7 @@ pkgs.mkShell {
 		pkgs.dosfstools
 		pkgs.guestfs-tools
 		pkgs.qemu
+		pkgs.bochs
 	];
 
 	# Shell parameters
