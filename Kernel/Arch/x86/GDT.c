@@ -3,6 +3,8 @@
 
 #include "Arch/x86/Interrupts.h"
 
+#include "Arch/x86/GDT.h"
+
 // =========== GDT Entries ===========
 
 // A GDT_Entry is a segment descriptor
@@ -115,5 +117,5 @@ void __attribute__((cdecl)) x86_setGDT(GDT_LocationDescriptor_32* descriptor, ui
 
 void x86_GDT_Initialize(){
 	x86_disable_interrupts();
-	x86_setGDT(&g_GDTLocationDescriptor32, 0x08, 0x10);
+	x86_setGDT(&g_GDTLocationDescriptor32, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);
 }
