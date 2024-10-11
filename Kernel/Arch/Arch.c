@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include "stdio.h"
 
 #include "Arch.h"
@@ -9,10 +10,18 @@
 #include "Arch/x86/Interrupts.h"
 #include "Arch/x86/GDT.h"
 #include "Arch/x86/IDT.h"
+#include "Arch/x86/ISR.h"
 
 void HAL_Initialize(){
+	x86_DisableInterrupts();
+
 	x86_GDT_Initialize();
 	x86_IDT_Initialize();
+	x86_ISR_Initialize();
+
+	// x86_DoStuff();
+	// x86_EnableInterrupts();
+
 	puts("[ OK ] x86 HAL initalized");
 }
 

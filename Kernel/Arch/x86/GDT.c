@@ -116,6 +116,5 @@ GDT_LocationDescriptor_32 g_GDTLocationDescriptor32 = { sizeof(g_GDT)-1, (uint32
 void __attribute__((cdecl)) x86_setGDT(GDT_LocationDescriptor_32* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
 
 void x86_GDT_Initialize(){
-	x86_disable_interrupts();
 	x86_setGDT(&g_GDTLocationDescriptor32, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);
 }
