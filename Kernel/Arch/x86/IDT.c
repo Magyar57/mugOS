@@ -41,11 +41,11 @@ void x86_IDT_Initialize(){
 	x86_setIDT(&g_IDTLocationDescriptor32);
 }
 
-void x86_IDT_EnableInterrupt(uint8_t interrupt){
+void x86_IDT_EnableInterruptHandler(uint8_t interrupt){
 	g_IDT[interrupt].attributes |= IDT_ATTR_PRESENT;
 }
 
-void x86_IDT_DisableInterrupt(uint8_t interrupt){
+void x86_IDT_DisableInterruptHandler(uint8_t interrupt){
 	// attributes = attributes & 0b01111111
 	// 0b01111111 is 'not IDT_ATTR_PRESENT'
 	g_IDT[interrupt].attributes &= (~IDT_ATTR_PRESENT);
