@@ -1,6 +1,8 @@
 #ifndef __ISR_H__
 #define __ISR_H__
 
+#include <stdint.h>
+
 typedef struct {
 	uint32_t ds;
 	uint32_t edi, esi, ebp, ignored, ebx, edx, ecx, eax;
