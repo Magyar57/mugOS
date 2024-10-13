@@ -12,6 +12,7 @@
 #include "Arch/x86/GDT.h"
 #include "Arch/x86/IDT.h"
 #include "Arch/x86/ISR.h"
+#include "Arch/x86/IRQ.h"
 
 void HAL_Initialize(){
 	x86_DisableInterrupts();
@@ -19,7 +20,9 @@ void HAL_Initialize(){
 	x86_GDT_Initialize();
 	x86_IDT_Initialize();
 	x86_ISR_Initialize();
+	x86_IRQ_Initialize();
 
+	x86_EnableInterrupts();
 	puts("[  OK  ] x86 HAL initalized");
 }
 
