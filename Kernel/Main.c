@@ -20,5 +20,5 @@ void __attribute__((section(".entry"))) start(){
 
 	HAL_Initialize();
 
-	halt();
+	while(true); // infinite active wait
 }
