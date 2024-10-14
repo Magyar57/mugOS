@@ -23,10 +23,10 @@ enum IDT_ATTRIBUTES {
 void x86_IDT_Initialize();
 
 // Enable the 'interrupt' interrupt handler
-void x86_IDT_EnableInterrupt(uint8_t interrupt);
+void x86_IDT_EnableInterruptHandler(uint8_t interrupt);
 
 // Disable the 'interrupt' interrupt handler
-void x86_IDT_DisableInterrupt(uint8_t interrupt);
+void x86_IDT_DisableInterruptHandler(uint8_t interrupt);
 
 // Set an interrupt handler ; see IDT_ATTRIBUTES enum for the attributes
 void x86_IDT_SetInterruptHandler(uint8_t interrupt, void* base, uint16_t segmentDescriptor, uint8_t attributes);

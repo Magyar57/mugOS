@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include "stdio.h"
 
 #include "Arch.h"
@@ -5,15 +6,24 @@
 // ================ x86 ================
 #ifdef ARCH_x86
 
+#include "Arch/x86/CPU.h"
 #include "Arch/x86/IO.h"
 #include "Arch/x86/Interrupts.h"
 #include "Arch/x86/GDT.h"
 #include "Arch/x86/IDT.h"
+#include "Arch/x86/ISR.h"
+#include "Arch/x86/IRQ.h"
 
 void HAL_Initialize(){
+	x86_DisableInterrupts();
+
 	x86_GDT_Initialize();
 	x86_IDT_Initialize();
-	puts("[ OK ] x86 HAL initalized");
+	x86_ISR_Initialize();
+	x86_IRQ_Initialize();
+
+	x86_EnableInterrupts();
+	puts("[  OK  ] x86 HAL initalized");
 }
 
 void outb(uint16_t port, uint8_t value){
@@ -22,6 +32,10 @@ void outb(uint16_t port, uint8_t value){
 
 uint8_t inb(uint16_t port){
 	return x86_inb(port);
+}
+
+void halt(){
+	x86_halt();
 }
 
 #endif // ARCH_x86
