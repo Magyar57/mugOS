@@ -12,6 +12,9 @@
 // Global array of [un]registered IRQ handlers
 IRQHandler g_IRQHandlers[16];
 
+#define IRQ_Timer		0x00
+#define IRQ_Keyboard	0x01
+
 static const char* const g_IRQTypes[] = {
     "Programmable Interrupt Timer Interrupt",
     "Keyboard Interrupt",
@@ -41,7 +44,8 @@ void x86_IRQ_DeregisterIRQHandler(uint8_t irq){
 	g_IRQHandlers[irq] = NULL;
 }
 
-// All IRQ will lead to this common x86_IRQ_Prehandler
+// ================ IRQ Handlers ================
+
 void x86_IRQ_Prehandler(ISR_Params* params){
 	// If we have a handler to call, we call it, and 'alles gut'
 	
@@ -55,8 +59,8 @@ void x86_IRQ_Prehandler(ISR_Params* params){
 	}
 
 	// Otherwise we PANIC !
-	const char* interrupt_type = (params->vector < 32) ? g_IRQTypes[params->vector] : "Interrupt";
-	printf("Unhandled IRQ n°%d %s !\n", irq, interrupt_type);
+	const char* interrupt_type = g_IRQTypes[irq];
+	printf("Unhandled IRQ number %d - %s\n", irq, interrupt_type);
 	printf("\tvector=%p eflags=%p err=%p\n", params->vector, params->eflags, params->err);
 	printf("\teax=%p ebx=%p ecx=%p edx=%p esi=%p edi=%p\n",
 		params->eax, params->ebx, params->ecx, params->edx, params->esi, params->edi
@@ -66,10 +70,26 @@ void x86_IRQ_Prehandler(ISR_Params* params){
 	PANIC();
 }
 
+void x86_IRQ_Timer(ISR_Params* params){
+	// Nothing to do yet
+}
+
+void x86_IRQ_Keyboard(ISR_Params* params){
+	puts("Keyboard interrupt caught - Keyboard driver is not implemented yet");
+}
+
 void x86_IRQ_Initialize(){
+	// Remap the PIC
 	x86_PIC_Remap(IRQ_MASTER_PIC_REMAP_OFFSET, IRQ_MASTER_PIC_REMAP_OFFSET+8);
+
+	// Register our IRQ Pre-handler
 	for(int i=0 ; i<16 ; i++){
 		x86_ISR_RegisterHandler(IRQ_MASTER_PIC_REMAP_OFFSET+i, x86_IRQ_Prehandler);
-		x86_PIC_EnableIRQ(i);
 	}
+
+	// Register our IRQ handlers
+	x86_IRQ_RegisterIRQHandler(IRQ_Timer, x86_IRQ_Timer);
+	x86_IRQ_RegisterIRQHandler(IRQ_Keyboard, x86_IRQ_Keyboard);
+
+	x86_PIC_EnableAllIRQ();
 }
