@@ -41,10 +41,6 @@ void x86_PIC_Remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	// According to this forum: https://forum.osdev.org/viewtopic.php?t=30111
 	// We don't need to io_wait in between PIC coms if we interleave them
 
-	// Save masks
-	uint8_t pic_master_masks = x86_inb(PIC_MASTER_DATA);
-	uint8_t pic_slave_masks = x86_inb(PIC_SLAVE_DATA);
-
 	// ICW1
 	x86_outb(PIC_MASTER_CMD, PIC_ICW1_ICW4|PIC_ICW1_INIT);
 	x86_outb(PIC_SLAVE_CMD, PIC_ICW1_ICW4|PIC_ICW1_INIT);
@@ -58,13 +54,11 @@ void x86_PIC_Remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	x86_outb(PIC_MASTER_DATA, PIC_ICW4_8086); // Have the PICs use 8086 mode (and not 8080 mode)
 	x86_outb(PIC_SLAVE_DATA, PIC_ICW4_8086);
 
-	// Restore masks
-	x86_outb(PIC_MASTER_DATA, pic_master_masks);
-	x86_outb(PIC_SLAVE_DATA, pic_slave_masks);
+	x86_PIC_EnableAllIRQ();
 }
 
 void x86_PIC_DisableIRQ(uint8_t irq){
-	if (irq>16) return; // Ignore invalid IRQ number
+	if (irq>=16) return; // Ignore invalid IRQ number
 
 	uint8_t port;
 
@@ -84,7 +78,7 @@ void x86_PIC_DisableIRQ(uint8_t irq){
 }
 
 void x86_PIC_EnableIRQ(uint8_t irq){
-	if (irq>16) return; // Ignore invalid IRQ number
+	if (irq>=16) return; // Ignore invalid IRQ number
 	uint8_t port;
 
 	// Master PIC
@@ -93,7 +87,7 @@ void x86_PIC_EnableIRQ(uint8_t irq){
 	}
 	// Slave PIC
 	else {
-		port = PIC_SLAVE_CMD;
+		port = PIC_SLAVE_DATA;
 		irq -= 8;
 	}
 	uint8_t mask = x86_inb(port);
@@ -101,9 +95,20 @@ void x86_PIC_EnableIRQ(uint8_t irq){
 	x86_outb(port, mask);
 }
 
+void x86_PIC_EnableAllIRQ(){
+	// Unmask all interrupts
+	x86_outb(PIC_MASTER_DATA, 0x00);
+	x86_outb(PIC_SLAVE_DATA, 0x00);
+}
+
+void x86_PIC_DisableAllIRQ(){
+	// Unmask all interrupts
+	x86_outb(PIC_MASTER_DATA, 0x00);
+	x86_outb(PIC_SLAVE_DATA, 0x00);
+}
+
 void x86_PIC_Disable(){
-	x86_outb(PIC_MASTER_DATA, 0xff);
-	x86_outb(PIC_SLAVE_DATA, 0xff);
+	x86_PIC_DisableAllIRQ();
 }
 
 void x86_PIC_SendEIO(int irq){
