@@ -80,7 +80,10 @@ void x86_IRQ_Keyboard(ISR_Params* params){
 	#define KBD_PORT_STATUS_REG		0x64
 	#define KBD_PORT_CMD			0x64
 	static bool g_IsEscaped = false;
-	
+
+	// Scan codes: https://aeb.win.tue.nl/linux/kbd/scancodes-1.html
+	// ASCII table: https://www.asciitable.com/
+
 	uint8_t keycode = x86_inb(KBD_PORT_DATA);
 
 	// Keyboard error (error code depends on kb's mode, we don't know yet)
