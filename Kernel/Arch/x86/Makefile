@@ -8,7 +8,7 @@ OBJECTS_ASM=$(patsubst %.asm, $(BUILD_SUBDIR)/%.obj, $(SOURCES_ASM))
 
 all: arch
 
-.PHONY: all clean arch
+.PHONY: all arch
 
 arch: $(OBJECTS_C) $(OBJECTS_ASM)
 
@@ -19,8 +19,3 @@ $(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIR)
 
 $(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIR)
 	$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
-
-# Build dirs
-
-clean:
-	rm -rf $(BUILD_SUBDIR) $(BUILD_DIR)/$(OBJECTS_ASM) $(BUILD_DIR)/$(OBJECTS_ASM)

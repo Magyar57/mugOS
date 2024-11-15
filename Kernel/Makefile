@@ -7,12 +7,10 @@ BUILD_SUBDIR:=$(BUILD_DIR)/kernel
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
-SOURCES_ASM=$(wildcard *.asm)
-OBJECTS_ASM=$(patsubst %.asm, $(BUILD_SUBDIR)/%.obj, $(SOURCES_ASM))
 
 all: kernel
 
-.PHONY: all clean kernel
+.PHONY: all kernel
 
 kernel: $(BUILD_DIR)/kernel.bin
 
@@ -35,6 +33,3 @@ $(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIR)
 
 $(BUILD_SUBDIR):
 	@mkdir -p $@
-
-clean:
-	rm -rf $(BUILD_SUBDIR) $(BUILD_DIR)/kernel.bin

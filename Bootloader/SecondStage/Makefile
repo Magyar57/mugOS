@@ -12,7 +12,7 @@ OBJECTS_ASM=$(patsubst %.asm, $(BUILD_SUBDIR)/%.obj, $(SOURCES_ASM))
 
 all: second-stage
 
-.PHONY: all clean second-stage
+.PHONY: all second-stage
 
 second-stage: $(BUILD_DIR)/bootloader-second-stage.bin
 
@@ -31,6 +31,3 @@ $(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIR)
 
 $(BUILD_SUBDIR):
 	@mkdir -p $@
-
-clean:
-	rm -rf $(BUILD_SUBDIR) $(BUILD_DIR)/bootloader-second-stage.bin
