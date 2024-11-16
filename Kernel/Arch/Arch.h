@@ -15,6 +15,7 @@ void HAL_Initialize();
 
 void outb(uint16_t port, uint8_t value);
 uint8_t inb(uint16_t port);
+void io_wait();
 
 // Halt indefinitely the CPU
 void halt();

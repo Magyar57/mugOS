@@ -34,6 +34,10 @@ uint8_t inb(uint16_t port){
 	return x86_inb(port);
 }
 
+void io_wait(){
+	x86_io_wait();
+}
+
 void halt(){
 	x86_halt();
 }
