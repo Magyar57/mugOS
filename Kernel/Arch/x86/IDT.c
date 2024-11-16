@@ -34,24 +34,24 @@ IDT_LocationDescriptor_32 g_IDTLocationDescriptor32 = { sizeof(g_IDT)-1, (uint32
 
 // =========== IDT and ISR manipulations ===========
 
-// x86_setIDT (IDT.asm) - Sets the IDT located at 'descriptor'
-void __attribute__((cdecl)) x86_setIDT(IDT_LocationDescriptor_32* descriptor);
+// setIDT (IDT.asm) - Sets the IDT located at 'descriptor'
+void __attribute__((cdecl)) setIDT(IDT_LocationDescriptor_32* descriptor);
 
-void x86_IDT_Initialize(){
-	x86_setIDT(&g_IDTLocationDescriptor32);
+void IDT_initialize(){
+	setIDT(&g_IDTLocationDescriptor32);
 }
 
-void x86_IDT_EnableInterruptHandler(uint8_t interrupt){
+void IDT_enableInterruptHandler(uint8_t interrupt){
 	g_IDT[interrupt].attributes |= IDT_ATTR_PRESENT;
 }
 
-void x86_IDT_DisableInterruptHandler(uint8_t interrupt){
+void IDT_disableInterruptHandler(uint8_t interrupt){
 	// attributes = attributes & 0b01111111
 	// 0b01111111 is 'not IDT_ATTR_PRESENT'
 	g_IDT[interrupt].attributes &= (~IDT_ATTR_PRESENT);
 }
 
-void x86_IDT_SetInterruptHandler(uint8_t interrupt, void* base, uint16_t segmentDescriptor, uint8_t attributes){
+void IDT_setInterruptHandler(uint8_t interrupt, void* base, uint16_t segmentDescriptor, uint8_t attributes){
 	uint32_t offset = (uint32_t) base;
 	g_IDT[interrupt].offset_0to15 = (offset & 0xffff);
 	g_IDT[interrupt].segment_0to15 = segmentDescriptor;

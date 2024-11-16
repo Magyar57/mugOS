@@ -6,8 +6,8 @@
 
 typedef ISR IRQHandler;
 
-void x86_IRQ_Initialize();
-void x86_IRQ_RegisterIRQHandler(uint8_t irq, IRQHandler handler);
-void x86_IRQ_DeregisterIRQHandler(uint8_t irq);
+void IRQ_initialize();
+void IRQ_registerHandler(uint8_t irq, IRQHandler handler);
+void IRQ_deregisterHandler(uint8_t irq);
 
 #endif

@@ -1,8 +1,8 @@
 bits 32
 
-; void x86_setIDT(IDT_LocationDescriptor_32* descriptor);
-global x86_setIDT
-x86_setIDT:
+; void setIDT(IDT_LocationDescriptor_32* descriptor);
+global setIDT
+setIDT:
 	push ebp
 	mov ebp, esp
 
@@ -13,4 +13,4 @@ x86_setIDT:
 	mov esp, ebp
 	pop ebp
 	ret
-; END x86_setIDT
+; END setIDT

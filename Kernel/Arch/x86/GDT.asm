@@ -1,8 +1,8 @@
 bits 32
 
-; void x86_setGDT(GDT_LocationDescriptor_32* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
-global x86_setGDT
-x86_setGDT:
+; void setGDT(GDT_LocationDescriptor_32* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
+global setGDT
+setGDT:
 	push ebp
 	mov ebp, esp
 
@@ -26,4 +26,4 @@ x86_setGDT:
 	mov esp, ebp
 	pop ebp
 	ret
-; END x86_setGDT
+; END setGDT

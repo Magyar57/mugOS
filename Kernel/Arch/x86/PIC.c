@@ -34,7 +34,7 @@ static inline bool isDivisibleBy8(uint8_t num){
 	return ((num & 7) == 0);
 }
 
-void x86_PIC_Remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
+void PIC_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	if ( !isDivisibleBy8(offsetMasterPIC) || !isDivisibleBy8(offsetSlavePIC) ){
 		printf("PIC Configuration error: tried to remap with an incorrect offset\n");
 		printf("Both %p and %p must be divisible by 8\n", offsetMasterPIC, offsetSlavePIC);
@@ -57,10 +57,10 @@ void x86_PIC_Remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	outb(PIC_MASTER_DATA, PIC_ICW4_8086); // Have the PICs use 8086 mode (and not 8080 mode)
 	outb(PIC_SLAVE_DATA, PIC_ICW4_8086);
 
-	x86_PIC_EnableAllIRQ();
+	PIC_enableAllIRQ();
 }
 
-void x86_PIC_DisableIRQ(uint8_t irq){
+void PIC_disableIRQ(uint8_t irq){
 	if (irq>=16) return; // Ignore invalid IRQ number
 
 	uint8_t port;
@@ -80,7 +80,7 @@ void x86_PIC_DisableIRQ(uint8_t irq){
 	outb(port, mask);
 }
 
-void x86_PIC_EnableIRQ(uint8_t irq){
+void PIC_enableIRQ(uint8_t irq){
 	if (irq>=16) return; // Ignore invalid IRQ number
 	uint8_t port;
 
@@ -98,28 +98,28 @@ void x86_PIC_EnableIRQ(uint8_t irq){
 	outb(port, mask);
 }
 
-void x86_PIC_EnableAllIRQ(){
+void PIC_enableAllIRQ(){
 	// Unmask all interrupts
 	outb(PIC_MASTER_DATA, 0x00);
 	outb(PIC_SLAVE_DATA, 0x00);
 }
 
-void x86_PIC_DisableAllIRQ(){
+void PIC_disableAllIRQ(){
 	// Unmask all interrupts
 	outb(PIC_MASTER_DATA, 0x00);
 	outb(PIC_SLAVE_DATA, 0x00);
 }
 
-void x86_PIC_Disable(){
-	x86_PIC_DisableAllIRQ();
+void PIC_disable(){
+	PIC_disableAllIRQ();
 }
 
-void x86_PIC_SendEIO(int irq){
+void PIC_sendEIO(int irq){
 	if (irq >= 8) outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
 	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
 }
 
-static inline uint16_t x86_PIC_GetCombinedRegister(int ocw3){
+static inline uint16_t PIC_GetCombinedRegister(int ocw3){
 	// OCW3 to PIC CMD to get the register values. PIC_SLAVE is chained, and
 	// represents IRQs 8-15. PIC_MASTER is IRQs 0-7, with 2 being the chain
 	outb(PIC_MASTER_CMD, ocw3);
@@ -127,10 +127,10 @@ static inline uint16_t x86_PIC_GetCombinedRegister(int ocw3){
 	return (inb(PIC_SLAVE_CMD) << 8) | inb(PIC_MASTER_CMD);
 }
 
-uint16_t x86_PIC_GetCombinedIRR(){
-	return x86_PIC_GetCombinedRegister(PIC_CMD_READ_IRR);
+uint16_t PIC_getCombinedIRR(){
+	return PIC_GetCombinedRegister(PIC_CMD_READ_IRR);
 }
 
-uint16_t x86_PIC_GetCombinedISR(void){
-	return x86_PIC_GetCombinedRegister(PIC_CMD_READ_ISR);
+uint16_t PIC_getCombinedISR(void){
+	return PIC_GetCombinedRegister(PIC_CMD_READ_ISR);
 }

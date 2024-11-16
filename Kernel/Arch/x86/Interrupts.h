@@ -4,12 +4,12 @@
 #include <stdint.h>
 
 // Disable interrupts (cli)
-void __attribute__((cdecl)) x86_DisableInterrupts();
+void __attribute__((cdecl)) disableInterrupts();
 
 // Enable interrupts (sti)
-void __attribute__((cdecl)) x86_EnableInterrupts();
+void __attribute__((cdecl)) enableInterrupts();
 
 // Call a given interrupt (`int` instruction)
-void __attribute__((cdecl)) x86_CallInterrupt(uint8_t vector);
+void __attribute__((cdecl)) callInterrupt(uint8_t vector);
 
 #endif

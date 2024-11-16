@@ -13,12 +13,12 @@ typedef struct {
 typedef void (*ISR)(ISR_Params*);
 
 // Initialize the ISR (Interrupt Service Routines) in the IDT
-void x86_ISR_Initialize();
+void ISR_initialize();
 
 // Register a handler for a given interrupt vector
-void x86_ISR_RegisterHandler(uint8_t vector, ISR handler);
+void ISR_registerHandler(uint8_t vector, ISR handler);
 
 // Deregister a handler for a given interrupt vector
-void x86_ISR_DeregisterHandler(uint8_t vector);
+void ISR_deregisterHandler(uint8_t vector);
 
 #endif

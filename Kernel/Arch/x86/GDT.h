@@ -5,6 +5,6 @@
 #define GDT_SEGMENT_KDATA 0x10
 
 // Initalize the GDT
-void x86_GDT_Initialize();
+void GDT_initialize();
 
 #endif

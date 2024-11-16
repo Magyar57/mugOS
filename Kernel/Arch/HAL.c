@@ -13,14 +13,14 @@
 #include "Arch/x86/IRQ.h"
 
 void HAL_initialize(){
-	x86_DisableInterrupts();
+	disableInterrupts();
 
-	x86_GDT_Initialize();
-	x86_IDT_Initialize();
-	x86_ISR_Initialize();
-	x86_IRQ_Initialize();
+	GDT_initialize();
+	IDT_initialize();
+	ISR_initialize();
+	IRQ_initialize();
 
-	x86_EnableInterrupts();
+	enableInterrupts();
 	puts("[  OK  ] x86 HAL initalized");
 }
 

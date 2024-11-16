@@ -20,15 +20,15 @@ enum IDT_ATTRIBUTES {
 };
 
 // Initalize the IDT (after this call, all interrupt handlers are invalid!)
-void x86_IDT_Initialize();
+void IDT_initialize();
 
 // Enable the 'interrupt' interrupt handler
-void x86_IDT_EnableInterruptHandler(uint8_t interrupt);
+void IDT_enableInterruptHandler(uint8_t interrupt);
 
 // Disable the 'interrupt' interrupt handler
-void x86_IDT_DisableInterruptHandler(uint8_t interrupt);
+void IDT_disableInterruptHandler(uint8_t interrupt);
 
 // Set an interrupt handler ; see IDT_ATTRIBUTES enum for the attributes
-void x86_IDT_SetInterruptHandler(uint8_t interrupt, void* base, uint16_t segmentDescriptor, uint8_t attributes);
+void IDT_setInterruptHandler(uint8_t interrupt, void* base, uint16_t segmentDescriptor, uint8_t attributes);
 
 #endif

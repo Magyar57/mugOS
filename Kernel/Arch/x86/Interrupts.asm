@@ -2,1066 +2,1066 @@ bits 32
 
 section .text
 
-; void x86_DisableInterrupts();
-global x86_DisableInterrupts
-x86_DisableInterrupts:
+; void disableInterrupts();
+global disableInterrupts
+disableInterrupts:
 	cli
 	ret
-; END x86_DisableInterrupts
+; END disableInterrupts
 
-; void x86_EnableInterrupts();
-global x86_EnableInterrupts
-x86_EnableInterrupts:
+; void enableInterrupts();
+global enableInterrupts
+enableInterrupts:
 	sti
 	ret
-; END x86_EnableInterrupts
+; END enableInterrupts
 
-; void x86_CallInterrupt(uint8_t vector);
-global x86_CallInterrupt
-x86_CallInterrupt:
+; void callInterrupt(uint8_t vector);
+global callInterrupt
+callInterrupt:
 	enter 0, 0
 
 	; Call interrupt using the jump table
 	mov eax, [ebp+8]	; interrupt number
-	mov ebx, [x86_CallInterrupt_JumpTable + 4*eax]
+	mov ebx, [callInterrupt_JumpTable + 4*eax]
 	jmp ebx
 
 	after:
 
 	leave
 	ret
-; END x86_CallInterrupt
+; END callInterrupt
 
 section .data
 
-x86_CallInterrupt_JumpTable:
-	dd x86_CallInterrupt_Interrupt0
-	dd x86_CallInterrupt_Interrupt1
-	dd x86_CallInterrupt_Interrupt2
-	dd x86_CallInterrupt_Interrupt3
-	dd x86_CallInterrupt_Interrupt4
-	dd x86_CallInterrupt_Interrupt5
-	dd x86_CallInterrupt_Interrupt6
-	dd x86_CallInterrupt_Interrupt7
-	dd x86_CallInterrupt_Interrupt8
-	dd x86_CallInterrupt_Interrupt9
-	dd x86_CallInterrupt_Interrupt10
-	dd x86_CallInterrupt_Interrupt11
-	dd x86_CallInterrupt_Interrupt12
-	dd x86_CallInterrupt_Interrupt13
-	dd x86_CallInterrupt_Interrupt14
-	dd x86_CallInterrupt_Interrupt15
-	dd x86_CallInterrupt_Interrupt16
-	dd x86_CallInterrupt_Interrupt17
-	dd x86_CallInterrupt_Interrupt18
-	dd x86_CallInterrupt_Interrupt19
-	dd x86_CallInterrupt_Interrupt20
-	dd x86_CallInterrupt_Interrupt21
-	dd x86_CallInterrupt_Interrupt22
-	dd x86_CallInterrupt_Interrupt23
-	dd x86_CallInterrupt_Interrupt24
-	dd x86_CallInterrupt_Interrupt25
-	dd x86_CallInterrupt_Interrupt26
-	dd x86_CallInterrupt_Interrupt27
-	dd x86_CallInterrupt_Interrupt28
-	dd x86_CallInterrupt_Interrupt29
-	dd x86_CallInterrupt_Interrupt30
-	dd x86_CallInterrupt_Interrupt31
-	dd x86_CallInterrupt_Interrupt32
-	dd x86_CallInterrupt_Interrupt33
-	dd x86_CallInterrupt_Interrupt34
-	dd x86_CallInterrupt_Interrupt35
-	dd x86_CallInterrupt_Interrupt36
-	dd x86_CallInterrupt_Interrupt37
-	dd x86_CallInterrupt_Interrupt38
-	dd x86_CallInterrupt_Interrupt39
-	dd x86_CallInterrupt_Interrupt40
-	dd x86_CallInterrupt_Interrupt41
-	dd x86_CallInterrupt_Interrupt42
-	dd x86_CallInterrupt_Interrupt43
-	dd x86_CallInterrupt_Interrupt44
-	dd x86_CallInterrupt_Interrupt45
-	dd x86_CallInterrupt_Interrupt46
-	dd x86_CallInterrupt_Interrupt47
-	dd x86_CallInterrupt_Interrupt48
-	dd x86_CallInterrupt_Interrupt49
-	dd x86_CallInterrupt_Interrupt50
-	dd x86_CallInterrupt_Interrupt51
-	dd x86_CallInterrupt_Interrupt52
-	dd x86_CallInterrupt_Interrupt53
-	dd x86_CallInterrupt_Interrupt54
-	dd x86_CallInterrupt_Interrupt55
-	dd x86_CallInterrupt_Interrupt56
-	dd x86_CallInterrupt_Interrupt57
-	dd x86_CallInterrupt_Interrupt58
-	dd x86_CallInterrupt_Interrupt59
-	dd x86_CallInterrupt_Interrupt60
-	dd x86_CallInterrupt_Interrupt61
-	dd x86_CallInterrupt_Interrupt62
-	dd x86_CallInterrupt_Interrupt63
-	dd x86_CallInterrupt_Interrupt64
-	dd x86_CallInterrupt_Interrupt65
-	dd x86_CallInterrupt_Interrupt66
-	dd x86_CallInterrupt_Interrupt67
-	dd x86_CallInterrupt_Interrupt68
-	dd x86_CallInterrupt_Interrupt69
-	dd x86_CallInterrupt_Interrupt70
-	dd x86_CallInterrupt_Interrupt71
-	dd x86_CallInterrupt_Interrupt72
-	dd x86_CallInterrupt_Interrupt73
-	dd x86_CallInterrupt_Interrupt74
-	dd x86_CallInterrupt_Interrupt75
-	dd x86_CallInterrupt_Interrupt76
-	dd x86_CallInterrupt_Interrupt77
-	dd x86_CallInterrupt_Interrupt78
-	dd x86_CallInterrupt_Interrupt79
-	dd x86_CallInterrupt_Interrupt80
-	dd x86_CallInterrupt_Interrupt81
-	dd x86_CallInterrupt_Interrupt82
-	dd x86_CallInterrupt_Interrupt83
-	dd x86_CallInterrupt_Interrupt84
-	dd x86_CallInterrupt_Interrupt85
-	dd x86_CallInterrupt_Interrupt86
-	dd x86_CallInterrupt_Interrupt87
-	dd x86_CallInterrupt_Interrupt88
-	dd x86_CallInterrupt_Interrupt89
-	dd x86_CallInterrupt_Interrupt90
-	dd x86_CallInterrupt_Interrupt91
-	dd x86_CallInterrupt_Interrupt92
-	dd x86_CallInterrupt_Interrupt93
-	dd x86_CallInterrupt_Interrupt94
-	dd x86_CallInterrupt_Interrupt95
-	dd x86_CallInterrupt_Interrupt96
-	dd x86_CallInterrupt_Interrupt97
-	dd x86_CallInterrupt_Interrupt98
-	dd x86_CallInterrupt_Interrupt99
-	dd x86_CallInterrupt_Interrupt100
-	dd x86_CallInterrupt_Interrupt101
-	dd x86_CallInterrupt_Interrupt102
-	dd x86_CallInterrupt_Interrupt103
-	dd x86_CallInterrupt_Interrupt104
-	dd x86_CallInterrupt_Interrupt105
-	dd x86_CallInterrupt_Interrupt106
-	dd x86_CallInterrupt_Interrupt107
-	dd x86_CallInterrupt_Interrupt108
-	dd x86_CallInterrupt_Interrupt109
-	dd x86_CallInterrupt_Interrupt110
-	dd x86_CallInterrupt_Interrupt111
-	dd x86_CallInterrupt_Interrupt112
-	dd x86_CallInterrupt_Interrupt113
-	dd x86_CallInterrupt_Interrupt114
-	dd x86_CallInterrupt_Interrupt115
-	dd x86_CallInterrupt_Interrupt116
-	dd x86_CallInterrupt_Interrupt117
-	dd x86_CallInterrupt_Interrupt118
-	dd x86_CallInterrupt_Interrupt119
-	dd x86_CallInterrupt_Interrupt120
-	dd x86_CallInterrupt_Interrupt121
-	dd x86_CallInterrupt_Interrupt122
-	dd x86_CallInterrupt_Interrupt123
-	dd x86_CallInterrupt_Interrupt124
-	dd x86_CallInterrupt_Interrupt125
-	dd x86_CallInterrupt_Interrupt126
-	dd x86_CallInterrupt_Interrupt127
-	dd x86_CallInterrupt_Interrupt128
-	dd x86_CallInterrupt_Interrupt129
-	dd x86_CallInterrupt_Interrupt130
-	dd x86_CallInterrupt_Interrupt131
-	dd x86_CallInterrupt_Interrupt132
-	dd x86_CallInterrupt_Interrupt133
-	dd x86_CallInterrupt_Interrupt134
-	dd x86_CallInterrupt_Interrupt135
-	dd x86_CallInterrupt_Interrupt136
-	dd x86_CallInterrupt_Interrupt137
-	dd x86_CallInterrupt_Interrupt138
-	dd x86_CallInterrupt_Interrupt139
-	dd x86_CallInterrupt_Interrupt140
-	dd x86_CallInterrupt_Interrupt141
-	dd x86_CallInterrupt_Interrupt142
-	dd x86_CallInterrupt_Interrupt143
-	dd x86_CallInterrupt_Interrupt144
-	dd x86_CallInterrupt_Interrupt145
-	dd x86_CallInterrupt_Interrupt146
-	dd x86_CallInterrupt_Interrupt147
-	dd x86_CallInterrupt_Interrupt148
-	dd x86_CallInterrupt_Interrupt149
-	dd x86_CallInterrupt_Interrupt150
-	dd x86_CallInterrupt_Interrupt151
-	dd x86_CallInterrupt_Interrupt152
-	dd x86_CallInterrupt_Interrupt153
-	dd x86_CallInterrupt_Interrupt154
-	dd x86_CallInterrupt_Interrupt155
-	dd x86_CallInterrupt_Interrupt156
-	dd x86_CallInterrupt_Interrupt157
-	dd x86_CallInterrupt_Interrupt158
-	dd x86_CallInterrupt_Interrupt159
-	dd x86_CallInterrupt_Interrupt160
-	dd x86_CallInterrupt_Interrupt161
-	dd x86_CallInterrupt_Interrupt162
-	dd x86_CallInterrupt_Interrupt163
-	dd x86_CallInterrupt_Interrupt164
-	dd x86_CallInterrupt_Interrupt165
-	dd x86_CallInterrupt_Interrupt166
-	dd x86_CallInterrupt_Interrupt167
-	dd x86_CallInterrupt_Interrupt168
-	dd x86_CallInterrupt_Interrupt169
-	dd x86_CallInterrupt_Interrupt170
-	dd x86_CallInterrupt_Interrupt171
-	dd x86_CallInterrupt_Interrupt172
-	dd x86_CallInterrupt_Interrupt173
-	dd x86_CallInterrupt_Interrupt174
-	dd x86_CallInterrupt_Interrupt175
-	dd x86_CallInterrupt_Interrupt176
-	dd x86_CallInterrupt_Interrupt177
-	dd x86_CallInterrupt_Interrupt178
-	dd x86_CallInterrupt_Interrupt179
-	dd x86_CallInterrupt_Interrupt180
-	dd x86_CallInterrupt_Interrupt181
-	dd x86_CallInterrupt_Interrupt182
-	dd x86_CallInterrupt_Interrupt183
-	dd x86_CallInterrupt_Interrupt184
-	dd x86_CallInterrupt_Interrupt185
-	dd x86_CallInterrupt_Interrupt186
-	dd x86_CallInterrupt_Interrupt187
-	dd x86_CallInterrupt_Interrupt188
-	dd x86_CallInterrupt_Interrupt189
-	dd x86_CallInterrupt_Interrupt190
-	dd x86_CallInterrupt_Interrupt191
-	dd x86_CallInterrupt_Interrupt192
-	dd x86_CallInterrupt_Interrupt193
-	dd x86_CallInterrupt_Interrupt194
-	dd x86_CallInterrupt_Interrupt195
-	dd x86_CallInterrupt_Interrupt196
-	dd x86_CallInterrupt_Interrupt197
-	dd x86_CallInterrupt_Interrupt198
-	dd x86_CallInterrupt_Interrupt199
-	dd x86_CallInterrupt_Interrupt200
-	dd x86_CallInterrupt_Interrupt201
-	dd x86_CallInterrupt_Interrupt202
-	dd x86_CallInterrupt_Interrupt203
-	dd x86_CallInterrupt_Interrupt204
-	dd x86_CallInterrupt_Interrupt205
-	dd x86_CallInterrupt_Interrupt206
-	dd x86_CallInterrupt_Interrupt207
-	dd x86_CallInterrupt_Interrupt208
-	dd x86_CallInterrupt_Interrupt209
-	dd x86_CallInterrupt_Interrupt210
-	dd x86_CallInterrupt_Interrupt211
-	dd x86_CallInterrupt_Interrupt212
-	dd x86_CallInterrupt_Interrupt213
-	dd x86_CallInterrupt_Interrupt214
-	dd x86_CallInterrupt_Interrupt215
-	dd x86_CallInterrupt_Interrupt216
-	dd x86_CallInterrupt_Interrupt217
-	dd x86_CallInterrupt_Interrupt218
-	dd x86_CallInterrupt_Interrupt219
-	dd x86_CallInterrupt_Interrupt220
-	dd x86_CallInterrupt_Interrupt221
-	dd x86_CallInterrupt_Interrupt222
-	dd x86_CallInterrupt_Interrupt223
-	dd x86_CallInterrupt_Interrupt224
-	dd x86_CallInterrupt_Interrupt225
-	dd x86_CallInterrupt_Interrupt226
-	dd x86_CallInterrupt_Interrupt227
-	dd x86_CallInterrupt_Interrupt228
-	dd x86_CallInterrupt_Interrupt229
-	dd x86_CallInterrupt_Interrupt230
-	dd x86_CallInterrupt_Interrupt231
-	dd x86_CallInterrupt_Interrupt232
-	dd x86_CallInterrupt_Interrupt233
-	dd x86_CallInterrupt_Interrupt234
-	dd x86_CallInterrupt_Interrupt235
-	dd x86_CallInterrupt_Interrupt236
-	dd x86_CallInterrupt_Interrupt237
-	dd x86_CallInterrupt_Interrupt238
-	dd x86_CallInterrupt_Interrupt239
-	dd x86_CallInterrupt_Interrupt240
-	dd x86_CallInterrupt_Interrupt241
-	dd x86_CallInterrupt_Interrupt242
-	dd x86_CallInterrupt_Interrupt243
-	dd x86_CallInterrupt_Interrupt244
-	dd x86_CallInterrupt_Interrupt245
-	dd x86_CallInterrupt_Interrupt246
-	dd x86_CallInterrupt_Interrupt247
-	dd x86_CallInterrupt_Interrupt248
-	dd x86_CallInterrupt_Interrupt249
-	dd x86_CallInterrupt_Interrupt250
-	dd x86_CallInterrupt_Interrupt251
-	dd x86_CallInterrupt_Interrupt252
-	dd x86_CallInterrupt_Interrupt253
-	dd x86_CallInterrupt_Interrupt254
-	dd x86_CallInterrupt_Interrupt255
-; END x86_CallInterrupt_JumpTable
+callInterrupt_JumpTable:
+	dd callInterrupt_Interrupt0
+	dd callInterrupt_Interrupt1
+	dd callInterrupt_Interrupt2
+	dd callInterrupt_Interrupt3
+	dd callInterrupt_Interrupt4
+	dd callInterrupt_Interrupt5
+	dd callInterrupt_Interrupt6
+	dd callInterrupt_Interrupt7
+	dd callInterrupt_Interrupt8
+	dd callInterrupt_Interrupt9
+	dd callInterrupt_Interrupt10
+	dd callInterrupt_Interrupt11
+	dd callInterrupt_Interrupt12
+	dd callInterrupt_Interrupt13
+	dd callInterrupt_Interrupt14
+	dd callInterrupt_Interrupt15
+	dd callInterrupt_Interrupt16
+	dd callInterrupt_Interrupt17
+	dd callInterrupt_Interrupt18
+	dd callInterrupt_Interrupt19
+	dd callInterrupt_Interrupt20
+	dd callInterrupt_Interrupt21
+	dd callInterrupt_Interrupt22
+	dd callInterrupt_Interrupt23
+	dd callInterrupt_Interrupt24
+	dd callInterrupt_Interrupt25
+	dd callInterrupt_Interrupt26
+	dd callInterrupt_Interrupt27
+	dd callInterrupt_Interrupt28
+	dd callInterrupt_Interrupt29
+	dd callInterrupt_Interrupt30
+	dd callInterrupt_Interrupt31
+	dd callInterrupt_Interrupt32
+	dd callInterrupt_Interrupt33
+	dd callInterrupt_Interrupt34
+	dd callInterrupt_Interrupt35
+	dd callInterrupt_Interrupt36
+	dd callInterrupt_Interrupt37
+	dd callInterrupt_Interrupt38
+	dd callInterrupt_Interrupt39
+	dd callInterrupt_Interrupt40
+	dd callInterrupt_Interrupt41
+	dd callInterrupt_Interrupt42
+	dd callInterrupt_Interrupt43
+	dd callInterrupt_Interrupt44
+	dd callInterrupt_Interrupt45
+	dd callInterrupt_Interrupt46
+	dd callInterrupt_Interrupt47
+	dd callInterrupt_Interrupt48
+	dd callInterrupt_Interrupt49
+	dd callInterrupt_Interrupt50
+	dd callInterrupt_Interrupt51
+	dd callInterrupt_Interrupt52
+	dd callInterrupt_Interrupt53
+	dd callInterrupt_Interrupt54
+	dd callInterrupt_Interrupt55
+	dd callInterrupt_Interrupt56
+	dd callInterrupt_Interrupt57
+	dd callInterrupt_Interrupt58
+	dd callInterrupt_Interrupt59
+	dd callInterrupt_Interrupt60
+	dd callInterrupt_Interrupt61
+	dd callInterrupt_Interrupt62
+	dd callInterrupt_Interrupt63
+	dd callInterrupt_Interrupt64
+	dd callInterrupt_Interrupt65
+	dd callInterrupt_Interrupt66
+	dd callInterrupt_Interrupt67
+	dd callInterrupt_Interrupt68
+	dd callInterrupt_Interrupt69
+	dd callInterrupt_Interrupt70
+	dd callInterrupt_Interrupt71
+	dd callInterrupt_Interrupt72
+	dd callInterrupt_Interrupt73
+	dd callInterrupt_Interrupt74
+	dd callInterrupt_Interrupt75
+	dd callInterrupt_Interrupt76
+	dd callInterrupt_Interrupt77
+	dd callInterrupt_Interrupt78
+	dd callInterrupt_Interrupt79
+	dd callInterrupt_Interrupt80
+	dd callInterrupt_Interrupt81
+	dd callInterrupt_Interrupt82
+	dd callInterrupt_Interrupt83
+	dd callInterrupt_Interrupt84
+	dd callInterrupt_Interrupt85
+	dd callInterrupt_Interrupt86
+	dd callInterrupt_Interrupt87
+	dd callInterrupt_Interrupt88
+	dd callInterrupt_Interrupt89
+	dd callInterrupt_Interrupt90
+	dd callInterrupt_Interrupt91
+	dd callInterrupt_Interrupt92
+	dd callInterrupt_Interrupt93
+	dd callInterrupt_Interrupt94
+	dd callInterrupt_Interrupt95
+	dd callInterrupt_Interrupt96
+	dd callInterrupt_Interrupt97
+	dd callInterrupt_Interrupt98
+	dd callInterrupt_Interrupt99
+	dd callInterrupt_Interrupt100
+	dd callInterrupt_Interrupt101
+	dd callInterrupt_Interrupt102
+	dd callInterrupt_Interrupt103
+	dd callInterrupt_Interrupt104
+	dd callInterrupt_Interrupt105
+	dd callInterrupt_Interrupt106
+	dd callInterrupt_Interrupt107
+	dd callInterrupt_Interrupt108
+	dd callInterrupt_Interrupt109
+	dd callInterrupt_Interrupt110
+	dd callInterrupt_Interrupt111
+	dd callInterrupt_Interrupt112
+	dd callInterrupt_Interrupt113
+	dd callInterrupt_Interrupt114
+	dd callInterrupt_Interrupt115
+	dd callInterrupt_Interrupt116
+	dd callInterrupt_Interrupt117
+	dd callInterrupt_Interrupt118
+	dd callInterrupt_Interrupt119
+	dd callInterrupt_Interrupt120
+	dd callInterrupt_Interrupt121
+	dd callInterrupt_Interrupt122
+	dd callInterrupt_Interrupt123
+	dd callInterrupt_Interrupt124
+	dd callInterrupt_Interrupt125
+	dd callInterrupt_Interrupt126
+	dd callInterrupt_Interrupt127
+	dd callInterrupt_Interrupt128
+	dd callInterrupt_Interrupt129
+	dd callInterrupt_Interrupt130
+	dd callInterrupt_Interrupt131
+	dd callInterrupt_Interrupt132
+	dd callInterrupt_Interrupt133
+	dd callInterrupt_Interrupt134
+	dd callInterrupt_Interrupt135
+	dd callInterrupt_Interrupt136
+	dd callInterrupt_Interrupt137
+	dd callInterrupt_Interrupt138
+	dd callInterrupt_Interrupt139
+	dd callInterrupt_Interrupt140
+	dd callInterrupt_Interrupt141
+	dd callInterrupt_Interrupt142
+	dd callInterrupt_Interrupt143
+	dd callInterrupt_Interrupt144
+	dd callInterrupt_Interrupt145
+	dd callInterrupt_Interrupt146
+	dd callInterrupt_Interrupt147
+	dd callInterrupt_Interrupt148
+	dd callInterrupt_Interrupt149
+	dd callInterrupt_Interrupt150
+	dd callInterrupt_Interrupt151
+	dd callInterrupt_Interrupt152
+	dd callInterrupt_Interrupt153
+	dd callInterrupt_Interrupt154
+	dd callInterrupt_Interrupt155
+	dd callInterrupt_Interrupt156
+	dd callInterrupt_Interrupt157
+	dd callInterrupt_Interrupt158
+	dd callInterrupt_Interrupt159
+	dd callInterrupt_Interrupt160
+	dd callInterrupt_Interrupt161
+	dd callInterrupt_Interrupt162
+	dd callInterrupt_Interrupt163
+	dd callInterrupt_Interrupt164
+	dd callInterrupt_Interrupt165
+	dd callInterrupt_Interrupt166
+	dd callInterrupt_Interrupt167
+	dd callInterrupt_Interrupt168
+	dd callInterrupt_Interrupt169
+	dd callInterrupt_Interrupt170
+	dd callInterrupt_Interrupt171
+	dd callInterrupt_Interrupt172
+	dd callInterrupt_Interrupt173
+	dd callInterrupt_Interrupt174
+	dd callInterrupt_Interrupt175
+	dd callInterrupt_Interrupt176
+	dd callInterrupt_Interrupt177
+	dd callInterrupt_Interrupt178
+	dd callInterrupt_Interrupt179
+	dd callInterrupt_Interrupt180
+	dd callInterrupt_Interrupt181
+	dd callInterrupt_Interrupt182
+	dd callInterrupt_Interrupt183
+	dd callInterrupt_Interrupt184
+	dd callInterrupt_Interrupt185
+	dd callInterrupt_Interrupt186
+	dd callInterrupt_Interrupt187
+	dd callInterrupt_Interrupt188
+	dd callInterrupt_Interrupt189
+	dd callInterrupt_Interrupt190
+	dd callInterrupt_Interrupt191
+	dd callInterrupt_Interrupt192
+	dd callInterrupt_Interrupt193
+	dd callInterrupt_Interrupt194
+	dd callInterrupt_Interrupt195
+	dd callInterrupt_Interrupt196
+	dd callInterrupt_Interrupt197
+	dd callInterrupt_Interrupt198
+	dd callInterrupt_Interrupt199
+	dd callInterrupt_Interrupt200
+	dd callInterrupt_Interrupt201
+	dd callInterrupt_Interrupt202
+	dd callInterrupt_Interrupt203
+	dd callInterrupt_Interrupt204
+	dd callInterrupt_Interrupt205
+	dd callInterrupt_Interrupt206
+	dd callInterrupt_Interrupt207
+	dd callInterrupt_Interrupt208
+	dd callInterrupt_Interrupt209
+	dd callInterrupt_Interrupt210
+	dd callInterrupt_Interrupt211
+	dd callInterrupt_Interrupt212
+	dd callInterrupt_Interrupt213
+	dd callInterrupt_Interrupt214
+	dd callInterrupt_Interrupt215
+	dd callInterrupt_Interrupt216
+	dd callInterrupt_Interrupt217
+	dd callInterrupt_Interrupt218
+	dd callInterrupt_Interrupt219
+	dd callInterrupt_Interrupt220
+	dd callInterrupt_Interrupt221
+	dd callInterrupt_Interrupt222
+	dd callInterrupt_Interrupt223
+	dd callInterrupt_Interrupt224
+	dd callInterrupt_Interrupt225
+	dd callInterrupt_Interrupt226
+	dd callInterrupt_Interrupt227
+	dd callInterrupt_Interrupt228
+	dd callInterrupt_Interrupt229
+	dd callInterrupt_Interrupt230
+	dd callInterrupt_Interrupt231
+	dd callInterrupt_Interrupt232
+	dd callInterrupt_Interrupt233
+	dd callInterrupt_Interrupt234
+	dd callInterrupt_Interrupt235
+	dd callInterrupt_Interrupt236
+	dd callInterrupt_Interrupt237
+	dd callInterrupt_Interrupt238
+	dd callInterrupt_Interrupt239
+	dd callInterrupt_Interrupt240
+	dd callInterrupt_Interrupt241
+	dd callInterrupt_Interrupt242
+	dd callInterrupt_Interrupt243
+	dd callInterrupt_Interrupt244
+	dd callInterrupt_Interrupt245
+	dd callInterrupt_Interrupt246
+	dd callInterrupt_Interrupt247
+	dd callInterrupt_Interrupt248
+	dd callInterrupt_Interrupt249
+	dd callInterrupt_Interrupt250
+	dd callInterrupt_Interrupt251
+	dd callInterrupt_Interrupt252
+	dd callInterrupt_Interrupt253
+	dd callInterrupt_Interrupt254
+	dd callInterrupt_Interrupt255
+; END CallInterrupt_JumpTable
 
 section .text
 
-; x86_CallInterrupt Interrupts calls
-	x86_CallInterrupt_Interrupt0:
+; CallInterrupt Interrupts calls
+	callInterrupt_Interrupt0:
 		int 0x0
 		jmp after
-	x86_CallInterrupt_Interrupt1:
+	callInterrupt_Interrupt1:
 		int 0x1
 		jmp after
-	x86_CallInterrupt_Interrupt2:
+	callInterrupt_Interrupt2:
 		int 0x2
 		jmp after
-	x86_CallInterrupt_Interrupt3:
+	callInterrupt_Interrupt3:
 		int 0x3
 		jmp after
-	x86_CallInterrupt_Interrupt4:
+	callInterrupt_Interrupt4:
 		int 0x4
 		jmp after
-	x86_CallInterrupt_Interrupt5:
+	callInterrupt_Interrupt5:
 		int 0x5
 		jmp after
-	x86_CallInterrupt_Interrupt6:
+	callInterrupt_Interrupt6:
 		int 0x6
 		jmp after
-	x86_CallInterrupt_Interrupt7:
+	callInterrupt_Interrupt7:
 		int 0x7
 		jmp after
-	x86_CallInterrupt_Interrupt8:
+	callInterrupt_Interrupt8:
 		int 0x8
 		jmp after
-	x86_CallInterrupt_Interrupt9:
+	callInterrupt_Interrupt9:
 		int 0x9
 		jmp after
-	x86_CallInterrupt_Interrupt10:
+	callInterrupt_Interrupt10:
 		int 0xa
 		jmp after
-	x86_CallInterrupt_Interrupt11:
+	callInterrupt_Interrupt11:
 		int 0xb
 		jmp after
-	x86_CallInterrupt_Interrupt12:
+	callInterrupt_Interrupt12:
 		int 0xc
 		jmp after
-	x86_CallInterrupt_Interrupt13:
+	callInterrupt_Interrupt13:
 		int 0xd
 		jmp after
-	x86_CallInterrupt_Interrupt14:
+	callInterrupt_Interrupt14:
 		int 0xe
 		jmp after
-	x86_CallInterrupt_Interrupt15:
+	callInterrupt_Interrupt15:
 		int 0xf
 		jmp after
-	x86_CallInterrupt_Interrupt16:
+	callInterrupt_Interrupt16:
 		int 0x10
 		jmp after
-	x86_CallInterrupt_Interrupt17:
+	callInterrupt_Interrupt17:
 		int 0x11
 		jmp after
-	x86_CallInterrupt_Interrupt18:
+	callInterrupt_Interrupt18:
 		int 0x12
 		jmp after
-	x86_CallInterrupt_Interrupt19:
+	callInterrupt_Interrupt19:
 		int 0x13
 		jmp after
-	x86_CallInterrupt_Interrupt20:
+	callInterrupt_Interrupt20:
 		int 0x14
 		jmp after
-	x86_CallInterrupt_Interrupt21:
+	callInterrupt_Interrupt21:
 		int 0x15
 		jmp after
-	x86_CallInterrupt_Interrupt22:
+	callInterrupt_Interrupt22:
 		int 0x16
 		jmp after
-	x86_CallInterrupt_Interrupt23:
+	callInterrupt_Interrupt23:
 		int 0x17
 		jmp after
-	x86_CallInterrupt_Interrupt24:
+	callInterrupt_Interrupt24:
 		int 0x18
 		jmp after
-	x86_CallInterrupt_Interrupt25:
+	callInterrupt_Interrupt25:
 		int 0x19
 		jmp after
-	x86_CallInterrupt_Interrupt26:
+	callInterrupt_Interrupt26:
 		int 0x1a
 		jmp after
-	x86_CallInterrupt_Interrupt27:
+	callInterrupt_Interrupt27:
 		int 0x1b
 		jmp after
-	x86_CallInterrupt_Interrupt28:
+	callInterrupt_Interrupt28:
 		int 0x1c
 		jmp after
-	x86_CallInterrupt_Interrupt29:
+	callInterrupt_Interrupt29:
 		int 0x1d
 		jmp after
-	x86_CallInterrupt_Interrupt30:
+	callInterrupt_Interrupt30:
 		int 0x1e
 		jmp after
-	x86_CallInterrupt_Interrupt31:
+	callInterrupt_Interrupt31:
 		int 0x1f
 		jmp after
-	x86_CallInterrupt_Interrupt32:
+	callInterrupt_Interrupt32:
 		int 0x20
 		jmp after
-	x86_CallInterrupt_Interrupt33:
+	callInterrupt_Interrupt33:
 		int 0x21
 		jmp after
-	x86_CallInterrupt_Interrupt34:
+	callInterrupt_Interrupt34:
 		int 0x22
 		jmp after
-	x86_CallInterrupt_Interrupt35:
+	callInterrupt_Interrupt35:
 		int 0x23
 		jmp after
-	x86_CallInterrupt_Interrupt36:
+	callInterrupt_Interrupt36:
 		int 0x24
 		jmp after
-	x86_CallInterrupt_Interrupt37:
+	callInterrupt_Interrupt37:
 		int 0x25
 		jmp after
-	x86_CallInterrupt_Interrupt38:
+	callInterrupt_Interrupt38:
 		int 0x26
 		jmp after
-	x86_CallInterrupt_Interrupt39:
+	callInterrupt_Interrupt39:
 		int 0x27
 		jmp after
-	x86_CallInterrupt_Interrupt40:
+	callInterrupt_Interrupt40:
 		int 0x28
 		jmp after
-	x86_CallInterrupt_Interrupt41:
+	callInterrupt_Interrupt41:
 		int 0x29
 		jmp after
-	x86_CallInterrupt_Interrupt42:
+	callInterrupt_Interrupt42:
 		int 0x2a
 		jmp after
-	x86_CallInterrupt_Interrupt43:
+	callInterrupt_Interrupt43:
 		int 0x2b
 		jmp after
-	x86_CallInterrupt_Interrupt44:
+	callInterrupt_Interrupt44:
 		int 0x2c
 		jmp after
-	x86_CallInterrupt_Interrupt45:
+	callInterrupt_Interrupt45:
 		int 0x2d
 		jmp after
-	x86_CallInterrupt_Interrupt46:
+	callInterrupt_Interrupt46:
 		int 0x2e
 		jmp after
-	x86_CallInterrupt_Interrupt47:
+	callInterrupt_Interrupt47:
 		int 0x2f
 		jmp after
-	x86_CallInterrupt_Interrupt48:
+	callInterrupt_Interrupt48:
 		int 0x30
 		jmp after
-	x86_CallInterrupt_Interrupt49:
+	callInterrupt_Interrupt49:
 		int 0x31
 		jmp after
-	x86_CallInterrupt_Interrupt50:
+	callInterrupt_Interrupt50:
 		int 0x32
 		jmp after
-	x86_CallInterrupt_Interrupt51:
+	callInterrupt_Interrupt51:
 		int 0x33
 		jmp after
-	x86_CallInterrupt_Interrupt52:
+	callInterrupt_Interrupt52:
 		int 0x34
 		jmp after
-	x86_CallInterrupt_Interrupt53:
+	callInterrupt_Interrupt53:
 		int 0x35
 		jmp after
-	x86_CallInterrupt_Interrupt54:
+	callInterrupt_Interrupt54:
 		int 0x36
 		jmp after
-	x86_CallInterrupt_Interrupt55:
+	callInterrupt_Interrupt55:
 		int 0x37
 		jmp after
-	x86_CallInterrupt_Interrupt56:
+	callInterrupt_Interrupt56:
 		int 0x38
 		jmp after
-	x86_CallInterrupt_Interrupt57:
+	callInterrupt_Interrupt57:
 		int 0x39
 		jmp after
-	x86_CallInterrupt_Interrupt58:
+	callInterrupt_Interrupt58:
 		int 0x3a
 		jmp after
-	x86_CallInterrupt_Interrupt59:
+	callInterrupt_Interrupt59:
 		int 0x3b
 		jmp after
-	x86_CallInterrupt_Interrupt60:
+	callInterrupt_Interrupt60:
 		int 0x3c
 		jmp after
-	x86_CallInterrupt_Interrupt61:
+	callInterrupt_Interrupt61:
 		int 0x3d
 		jmp after
-	x86_CallInterrupt_Interrupt62:
+	callInterrupt_Interrupt62:
 		int 0x3e
 		jmp after
-	x86_CallInterrupt_Interrupt63:
+	callInterrupt_Interrupt63:
 		int 0x3f
 		jmp after
-	x86_CallInterrupt_Interrupt64:
+	callInterrupt_Interrupt64:
 		int 0x40
 		jmp after
-	x86_CallInterrupt_Interrupt65:
+	callInterrupt_Interrupt65:
 		int 0x41
 		jmp after
-	x86_CallInterrupt_Interrupt66:
+	callInterrupt_Interrupt66:
 		int 0x42
 		jmp after
-	x86_CallInterrupt_Interrupt67:
+	callInterrupt_Interrupt67:
 		int 0x43
 		jmp after
-	x86_CallInterrupt_Interrupt68:
+	callInterrupt_Interrupt68:
 		int 0x44
 		jmp after
-	x86_CallInterrupt_Interrupt69:
+	callInterrupt_Interrupt69:
 		int 0x45
 		jmp after
-	x86_CallInterrupt_Interrupt70:
+	callInterrupt_Interrupt70:
 		int 0x46
 		jmp after
-	x86_CallInterrupt_Interrupt71:
+	callInterrupt_Interrupt71:
 		int 0x47
 		jmp after
-	x86_CallInterrupt_Interrupt72:
+	callInterrupt_Interrupt72:
 		int 0x48
 		jmp after
-	x86_CallInterrupt_Interrupt73:
+	callInterrupt_Interrupt73:
 		int 0x49
 		jmp after
-	x86_CallInterrupt_Interrupt74:
+	callInterrupt_Interrupt74:
 		int 0x4a
 		jmp after
-	x86_CallInterrupt_Interrupt75:
+	callInterrupt_Interrupt75:
 		int 0x4b
 		jmp after
-	x86_CallInterrupt_Interrupt76:
+	callInterrupt_Interrupt76:
 		int 0x4c
 		jmp after
-	x86_CallInterrupt_Interrupt77:
+	callInterrupt_Interrupt77:
 		int 0x4d
 		jmp after
-	x86_CallInterrupt_Interrupt78:
+	callInterrupt_Interrupt78:
 		int 0x4e
 		jmp after
-	x86_CallInterrupt_Interrupt79:
+	callInterrupt_Interrupt79:
 		int 0x4f
 		jmp after
-	x86_CallInterrupt_Interrupt80:
+	callInterrupt_Interrupt80:
 		int 0x50
 		jmp after
-	x86_CallInterrupt_Interrupt81:
+	callInterrupt_Interrupt81:
 		int 0x51
 		jmp after
-	x86_CallInterrupt_Interrupt82:
+	callInterrupt_Interrupt82:
 		int 0x52
 		jmp after
-	x86_CallInterrupt_Interrupt83:
+	callInterrupt_Interrupt83:
 		int 0x53
 		jmp after
-	x86_CallInterrupt_Interrupt84:
+	callInterrupt_Interrupt84:
 		int 0x54
 		jmp after
-	x86_CallInterrupt_Interrupt85:
+	callInterrupt_Interrupt85:
 		int 0x55
 		jmp after
-	x86_CallInterrupt_Interrupt86:
+	callInterrupt_Interrupt86:
 		int 0x56
 		jmp after
-	x86_CallInterrupt_Interrupt87:
+	callInterrupt_Interrupt87:
 		int 0x57
 		jmp after
-	x86_CallInterrupt_Interrupt88:
+	callInterrupt_Interrupt88:
 		int 0x58
 		jmp after
-	x86_CallInterrupt_Interrupt89:
+	callInterrupt_Interrupt89:
 		int 0x59
 		jmp after
-	x86_CallInterrupt_Interrupt90:
+	callInterrupt_Interrupt90:
 		int 0x5a
 		jmp after
-	x86_CallInterrupt_Interrupt91:
+	callInterrupt_Interrupt91:
 		int 0x5b
 		jmp after
-	x86_CallInterrupt_Interrupt92:
+	callInterrupt_Interrupt92:
 		int 0x5c
 		jmp after
-	x86_CallInterrupt_Interrupt93:
+	callInterrupt_Interrupt93:
 		int 0x5d
 		jmp after
-	x86_CallInterrupt_Interrupt94:
+	callInterrupt_Interrupt94:
 		int 0x5e
 		jmp after
-	x86_CallInterrupt_Interrupt95:
+	callInterrupt_Interrupt95:
 		int 0x5f
 		jmp after
-	x86_CallInterrupt_Interrupt96:
+	callInterrupt_Interrupt96:
 		int 0x60
 		jmp after
-	x86_CallInterrupt_Interrupt97:
+	callInterrupt_Interrupt97:
 		int 0x61
 		jmp after
-	x86_CallInterrupt_Interrupt98:
+	callInterrupt_Interrupt98:
 		int 0x62
 		jmp after
-	x86_CallInterrupt_Interrupt99:
+	callInterrupt_Interrupt99:
 		int 0x63
 		jmp after
-	x86_CallInterrupt_Interrupt100:
+	callInterrupt_Interrupt100:
 		int 0x64
 		jmp after
-	x86_CallInterrupt_Interrupt101:
+	callInterrupt_Interrupt101:
 		int 0x65
 		jmp after
-	x86_CallInterrupt_Interrupt102:
+	callInterrupt_Interrupt102:
 		int 0x66
 		jmp after
-	x86_CallInterrupt_Interrupt103:
+	callInterrupt_Interrupt103:
 		int 0x67
 		jmp after
-	x86_CallInterrupt_Interrupt104:
+	callInterrupt_Interrupt104:
 		int 0x68
 		jmp after
-	x86_CallInterrupt_Interrupt105:
+	callInterrupt_Interrupt105:
 		int 0x69
 		jmp after
-	x86_CallInterrupt_Interrupt106:
+	callInterrupt_Interrupt106:
 		int 0x6a
 		jmp after
-	x86_CallInterrupt_Interrupt107:
+	callInterrupt_Interrupt107:
 		int 0x6b
 		jmp after
-	x86_CallInterrupt_Interrupt108:
+	callInterrupt_Interrupt108:
 		int 0x6c
 		jmp after
-	x86_CallInterrupt_Interrupt109:
+	callInterrupt_Interrupt109:
 		int 0x6d
 		jmp after
-	x86_CallInterrupt_Interrupt110:
+	callInterrupt_Interrupt110:
 		int 0x6e
 		jmp after
-	x86_CallInterrupt_Interrupt111:
+	callInterrupt_Interrupt111:
 		int 0x6f
 		jmp after
-	x86_CallInterrupt_Interrupt112:
+	callInterrupt_Interrupt112:
 		int 0x70
 		jmp after
-	x86_CallInterrupt_Interrupt113:
+	callInterrupt_Interrupt113:
 		int 0x71
 		jmp after
-	x86_CallInterrupt_Interrupt114:
+	callInterrupt_Interrupt114:
 		int 0x72
 		jmp after
-	x86_CallInterrupt_Interrupt115:
+	callInterrupt_Interrupt115:
 		int 0x73
 		jmp after
-	x86_CallInterrupt_Interrupt116:
+	callInterrupt_Interrupt116:
 		int 0x74
 		jmp after
-	x86_CallInterrupt_Interrupt117:
+	callInterrupt_Interrupt117:
 		int 0x75
 		jmp after
-	x86_CallInterrupt_Interrupt118:
+	callInterrupt_Interrupt118:
 		int 0x76
 		jmp after
-	x86_CallInterrupt_Interrupt119:
+	callInterrupt_Interrupt119:
 		int 0x77
 		jmp after
-	x86_CallInterrupt_Interrupt120:
+	callInterrupt_Interrupt120:
 		int 0x78
 		jmp after
-	x86_CallInterrupt_Interrupt121:
+	callInterrupt_Interrupt121:
 		int 0x79
 		jmp after
-	x86_CallInterrupt_Interrupt122:
+	callInterrupt_Interrupt122:
 		int 0x7a
 		jmp after
-	x86_CallInterrupt_Interrupt123:
+	callInterrupt_Interrupt123:
 		int 0x7b
 		jmp after
-	x86_CallInterrupt_Interrupt124:
+	callInterrupt_Interrupt124:
 		int 0x7c
 		jmp after
-	x86_CallInterrupt_Interrupt125:
+	callInterrupt_Interrupt125:
 		int 0x7d
 		jmp after
-	x86_CallInterrupt_Interrupt126:
+	callInterrupt_Interrupt126:
 		int 0x7e
 		jmp after
-	x86_CallInterrupt_Interrupt127:
+	callInterrupt_Interrupt127:
 		int 0x7f
 		jmp after
-	x86_CallInterrupt_Interrupt128:
+	callInterrupt_Interrupt128:
 		int 0x80
 		jmp after
-	x86_CallInterrupt_Interrupt129:
+	callInterrupt_Interrupt129:
 		int 0x81
 		jmp after
-	x86_CallInterrupt_Interrupt130:
+	callInterrupt_Interrupt130:
 		int 0x82
 		jmp after
-	x86_CallInterrupt_Interrupt131:
+	callInterrupt_Interrupt131:
 		int 0x83
 		jmp after
-	x86_CallInterrupt_Interrupt132:
+	callInterrupt_Interrupt132:
 		int 0x84
 		jmp after
-	x86_CallInterrupt_Interrupt133:
+	callInterrupt_Interrupt133:
 		int 0x85
 		jmp after
-	x86_CallInterrupt_Interrupt134:
+	callInterrupt_Interrupt134:
 		int 0x86
 		jmp after
-	x86_CallInterrupt_Interrupt135:
+	callInterrupt_Interrupt135:
 		int 0x87
 		jmp after
-	x86_CallInterrupt_Interrupt136:
+	callInterrupt_Interrupt136:
 		int 0x88
 		jmp after
-	x86_CallInterrupt_Interrupt137:
+	callInterrupt_Interrupt137:
 		int 0x89
 		jmp after
-	x86_CallInterrupt_Interrupt138:
+	callInterrupt_Interrupt138:
 		int 0x8a
 		jmp after
-	x86_CallInterrupt_Interrupt139:
+	callInterrupt_Interrupt139:
 		int 0x8b
 		jmp after
-	x86_CallInterrupt_Interrupt140:
+	callInterrupt_Interrupt140:
 		int 0x8c
 		jmp after
-	x86_CallInterrupt_Interrupt141:
+	callInterrupt_Interrupt141:
 		int 0x8d
 		jmp after
-	x86_CallInterrupt_Interrupt142:
+	callInterrupt_Interrupt142:
 		int 0x8e
 		jmp after
-	x86_CallInterrupt_Interrupt143:
+	callInterrupt_Interrupt143:
 		int 0x8f
 		jmp after
-	x86_CallInterrupt_Interrupt144:
+	callInterrupt_Interrupt144:
 		int 0x90
 		jmp after
-	x86_CallInterrupt_Interrupt145:
+	callInterrupt_Interrupt145:
 		int 0x91
 		jmp after
-	x86_CallInterrupt_Interrupt146:
+	callInterrupt_Interrupt146:
 		int 0x92
 		jmp after
-	x86_CallInterrupt_Interrupt147:
+	callInterrupt_Interrupt147:
 		int 0x93
 		jmp after
-	x86_CallInterrupt_Interrupt148:
+	callInterrupt_Interrupt148:
 		int 0x94
 		jmp after
-	x86_CallInterrupt_Interrupt149:
+	callInterrupt_Interrupt149:
 		int 0x95
 		jmp after
-	x86_CallInterrupt_Interrupt150:
+	callInterrupt_Interrupt150:
 		int 0x96
 		jmp after
-	x86_CallInterrupt_Interrupt151:
+	callInterrupt_Interrupt151:
 		int 0x97
 		jmp after
-	x86_CallInterrupt_Interrupt152:
+	callInterrupt_Interrupt152:
 		int 0x98
 		jmp after
-	x86_CallInterrupt_Interrupt153:
+	callInterrupt_Interrupt153:
 		int 0x99
 		jmp after
-	x86_CallInterrupt_Interrupt154:
+	callInterrupt_Interrupt154:
 		int 0x9a
 		jmp after
-	x86_CallInterrupt_Interrupt155:
+	callInterrupt_Interrupt155:
 		int 0x9b
 		jmp after
-	x86_CallInterrupt_Interrupt156:
+	callInterrupt_Interrupt156:
 		int 0x9c
 		jmp after
-	x86_CallInterrupt_Interrupt157:
+	callInterrupt_Interrupt157:
 		int 0x9d
 		jmp after
-	x86_CallInterrupt_Interrupt158:
+	callInterrupt_Interrupt158:
 		int 0x9e
 		jmp after
-	x86_CallInterrupt_Interrupt159:
+	callInterrupt_Interrupt159:
 		int 0x9f
 		jmp after
-	x86_CallInterrupt_Interrupt160:
+	callInterrupt_Interrupt160:
 		int 0xa0
 		jmp after
-	x86_CallInterrupt_Interrupt161:
+	callInterrupt_Interrupt161:
 		int 0xa1
 		jmp after
-	x86_CallInterrupt_Interrupt162:
+	callInterrupt_Interrupt162:
 		int 0xa2
 		jmp after
-	x86_CallInterrupt_Interrupt163:
+	callInterrupt_Interrupt163:
 		int 0xa3
 		jmp after
-	x86_CallInterrupt_Interrupt164:
+	callInterrupt_Interrupt164:
 		int 0xa4
 		jmp after
-	x86_CallInterrupt_Interrupt165:
+	callInterrupt_Interrupt165:
 		int 0xa5
 		jmp after
-	x86_CallInterrupt_Interrupt166:
+	callInterrupt_Interrupt166:
 		int 0xa6
 		jmp after
-	x86_CallInterrupt_Interrupt167:
+	callInterrupt_Interrupt167:
 		int 0xa7
 		jmp after
-	x86_CallInterrupt_Interrupt168:
+	callInterrupt_Interrupt168:
 		int 0xa8
 		jmp after
-	x86_CallInterrupt_Interrupt169:
+	callInterrupt_Interrupt169:
 		int 0xa9
 		jmp after
-	x86_CallInterrupt_Interrupt170:
+	callInterrupt_Interrupt170:
 		int 0xaa
 		jmp after
-	x86_CallInterrupt_Interrupt171:
+	callInterrupt_Interrupt171:
 		int 0xab
 		jmp after
-	x86_CallInterrupt_Interrupt172:
+	callInterrupt_Interrupt172:
 		int 0xac
 		jmp after
-	x86_CallInterrupt_Interrupt173:
+	callInterrupt_Interrupt173:
 		int 0xad
 		jmp after
-	x86_CallInterrupt_Interrupt174:
+	callInterrupt_Interrupt174:
 		int 0xae
 		jmp after
-	x86_CallInterrupt_Interrupt175:
+	callInterrupt_Interrupt175:
 		int 0xaf
 		jmp after
-	x86_CallInterrupt_Interrupt176:
+	callInterrupt_Interrupt176:
 		int 0xb0
 		jmp after
-	x86_CallInterrupt_Interrupt177:
+	callInterrupt_Interrupt177:
 		int 0xb1
 		jmp after
-	x86_CallInterrupt_Interrupt178:
+	callInterrupt_Interrupt178:
 		int 0xb2
 		jmp after
-	x86_CallInterrupt_Interrupt179:
+	callInterrupt_Interrupt179:
 		int 0xb3
 		jmp after
-	x86_CallInterrupt_Interrupt180:
+	callInterrupt_Interrupt180:
 		int 0xb4
 		jmp after
-	x86_CallInterrupt_Interrupt181:
+	callInterrupt_Interrupt181:
 		int 0xb5
 		jmp after
-	x86_CallInterrupt_Interrupt182:
+	callInterrupt_Interrupt182:
 		int 0xb6
 		jmp after
-	x86_CallInterrupt_Interrupt183:
+	callInterrupt_Interrupt183:
 		int 0xb7
 		jmp after
-	x86_CallInterrupt_Interrupt184:
+	callInterrupt_Interrupt184:
 		int 0xb8
 		jmp after
-	x86_CallInterrupt_Interrupt185:
+	callInterrupt_Interrupt185:
 		int 0xb9
 		jmp after
-	x86_CallInterrupt_Interrupt186:
+	callInterrupt_Interrupt186:
 		int 0xba
 		jmp after
-	x86_CallInterrupt_Interrupt187:
+	callInterrupt_Interrupt187:
 		int 0xbb
 		jmp after
-	x86_CallInterrupt_Interrupt188:
+	callInterrupt_Interrupt188:
 		int 0xbc
 		jmp after
-	x86_CallInterrupt_Interrupt189:
+	callInterrupt_Interrupt189:
 		int 0xbd
 		jmp after
-	x86_CallInterrupt_Interrupt190:
+	callInterrupt_Interrupt190:
 		int 0xbe
 		jmp after
-	x86_CallInterrupt_Interrupt191:
+	callInterrupt_Interrupt191:
 		int 0xbf
 		jmp after
-	x86_CallInterrupt_Interrupt192:
+	callInterrupt_Interrupt192:
 		int 0xc0
 		jmp after
-	x86_CallInterrupt_Interrupt193:
+	callInterrupt_Interrupt193:
 		int 0xc1
 		jmp after
-	x86_CallInterrupt_Interrupt194:
+	callInterrupt_Interrupt194:
 		int 0xc2
 		jmp after
-	x86_CallInterrupt_Interrupt195:
+	callInterrupt_Interrupt195:
 		int 0xc3
 		jmp after
-	x86_CallInterrupt_Interrupt196:
+	callInterrupt_Interrupt196:
 		int 0xc4
 		jmp after
-	x86_CallInterrupt_Interrupt197:
+	callInterrupt_Interrupt197:
 		int 0xc5
 		jmp after
-	x86_CallInterrupt_Interrupt198:
+	callInterrupt_Interrupt198:
 		int 0xc6
 		jmp after
-	x86_CallInterrupt_Interrupt199:
+	callInterrupt_Interrupt199:
 		int 0xc7
 		jmp after
-	x86_CallInterrupt_Interrupt200:
+	callInterrupt_Interrupt200:
 		int 0xc8
 		jmp after
-	x86_CallInterrupt_Interrupt201:
+	callInterrupt_Interrupt201:
 		int 0xc9
 		jmp after
-	x86_CallInterrupt_Interrupt202:
+	callInterrupt_Interrupt202:
 		int 0xca
 		jmp after
-	x86_CallInterrupt_Interrupt203:
+	callInterrupt_Interrupt203:
 		int 0xcb
 		jmp after
-	x86_CallInterrupt_Interrupt204:
+	callInterrupt_Interrupt204:
 		int 0xcc
 		jmp after
-	x86_CallInterrupt_Interrupt205:
+	callInterrupt_Interrupt205:
 		int 0xcd
 		jmp after
-	x86_CallInterrupt_Interrupt206:
+	callInterrupt_Interrupt206:
 		int 0xce
 		jmp after
-	x86_CallInterrupt_Interrupt207:
+	callInterrupt_Interrupt207:
 		int 0xcf
 		jmp after
-	x86_CallInterrupt_Interrupt208:
+	callInterrupt_Interrupt208:
 		int 0xd0
 		jmp after
-	x86_CallInterrupt_Interrupt209:
+	callInterrupt_Interrupt209:
 		int 0xd1
 		jmp after
-	x86_CallInterrupt_Interrupt210:
+	callInterrupt_Interrupt210:
 		int 0xd2
 		jmp after
-	x86_CallInterrupt_Interrupt211:
+	callInterrupt_Interrupt211:
 		int 0xd3
 		jmp after
-	x86_CallInterrupt_Interrupt212:
+	callInterrupt_Interrupt212:
 		int 0xd4
 		jmp after
-	x86_CallInterrupt_Interrupt213:
+	callInterrupt_Interrupt213:
 		int 0xd5
 		jmp after
-	x86_CallInterrupt_Interrupt214:
+	callInterrupt_Interrupt214:
 		int 0xd6
 		jmp after
-	x86_CallInterrupt_Interrupt215:
+	callInterrupt_Interrupt215:
 		int 0xd7
 		jmp after
-	x86_CallInterrupt_Interrupt216:
+	callInterrupt_Interrupt216:
 		int 0xd8
 		jmp after
-	x86_CallInterrupt_Interrupt217:
+	callInterrupt_Interrupt217:
 		int 0xd9
 		jmp after
-	x86_CallInterrupt_Interrupt218:
+	callInterrupt_Interrupt218:
 		int 0xda
 		jmp after
-	x86_CallInterrupt_Interrupt219:
+	callInterrupt_Interrupt219:
 		int 0xdb
 		jmp after
-	x86_CallInterrupt_Interrupt220:
+	callInterrupt_Interrupt220:
 		int 0xdc
 		jmp after
-	x86_CallInterrupt_Interrupt221:
+	callInterrupt_Interrupt221:
 		int 0xdd
 		jmp after
-	x86_CallInterrupt_Interrupt222:
+	callInterrupt_Interrupt222:
 		int 0xde
 		jmp after
-	x86_CallInterrupt_Interrupt223:
+	callInterrupt_Interrupt223:
 		int 0xdf
 		jmp after
-	x86_CallInterrupt_Interrupt224:
+	callInterrupt_Interrupt224:
 		int 0xe0
 		jmp after
-	x86_CallInterrupt_Interrupt225:
+	callInterrupt_Interrupt225:
 		int 0xe1
 		jmp after
-	x86_CallInterrupt_Interrupt226:
+	callInterrupt_Interrupt226:
 		int 0xe2
 		jmp after
-	x86_CallInterrupt_Interrupt227:
+	callInterrupt_Interrupt227:
 		int 0xe3
 		jmp after
-	x86_CallInterrupt_Interrupt228:
+	callInterrupt_Interrupt228:
 		int 0xe4
 		jmp after
-	x86_CallInterrupt_Interrupt229:
+	callInterrupt_Interrupt229:
 		int 0xe5
 		jmp after
-	x86_CallInterrupt_Interrupt230:
+	callInterrupt_Interrupt230:
 		int 0xe6
 		jmp after
-	x86_CallInterrupt_Interrupt231:
+	callInterrupt_Interrupt231:
 		int 0xe7
 		jmp after
-	x86_CallInterrupt_Interrupt232:
+	callInterrupt_Interrupt232:
 		int 0xe8
 		jmp after
-	x86_CallInterrupt_Interrupt233:
+	callInterrupt_Interrupt233:
 		int 0xe9
 		jmp after
-	x86_CallInterrupt_Interrupt234:
+	callInterrupt_Interrupt234:
 		int 0xea
 		jmp after
-	x86_CallInterrupt_Interrupt235:
+	callInterrupt_Interrupt235:
 		int 0xeb
 		jmp after
-	x86_CallInterrupt_Interrupt236:
+	callInterrupt_Interrupt236:
 		int 0xec
 		jmp after
-	x86_CallInterrupt_Interrupt237:
+	callInterrupt_Interrupt237:
 		int 0xed
 		jmp after
-	x86_CallInterrupt_Interrupt238:
+	callInterrupt_Interrupt238:
 		int 0xee
 		jmp after
-	x86_CallInterrupt_Interrupt239:
+	callInterrupt_Interrupt239:
 		int 0xef
 		jmp after
-	x86_CallInterrupt_Interrupt240:
+	callInterrupt_Interrupt240:
 		int 0xf0
 		jmp after
-	x86_CallInterrupt_Interrupt241:
+	callInterrupt_Interrupt241:
 		int 0xf1
 		jmp after
-	x86_CallInterrupt_Interrupt242:
+	callInterrupt_Interrupt242:
 		int 0xf2
 		jmp after
-	x86_CallInterrupt_Interrupt243:
+	callInterrupt_Interrupt243:
 		int 0xf3
 		jmp after
-	x86_CallInterrupt_Interrupt244:
+	callInterrupt_Interrupt244:
 		int 0xf4
 		jmp after
-	x86_CallInterrupt_Interrupt245:
+	callInterrupt_Interrupt245:
 		int 0xf5
 		jmp after
-	x86_CallInterrupt_Interrupt246:
+	callInterrupt_Interrupt246:
 		int 0xf6
 		jmp after
-	x86_CallInterrupt_Interrupt247:
+	callInterrupt_Interrupt247:
 		int 0xf7
 		jmp after
-	x86_CallInterrupt_Interrupt248:
+	callInterrupt_Interrupt248:
 		int 0xf8
 		jmp after
-	x86_CallInterrupt_Interrupt249:
+	callInterrupt_Interrupt249:
 		int 0xf9
 		jmp after
-	x86_CallInterrupt_Interrupt250:
+	callInterrupt_Interrupt250:
 		int 0xfa
 		jmp after
-	x86_CallInterrupt_Interrupt251:
+	callInterrupt_Interrupt251:
 		int 0xfb
 		jmp after
-	x86_CallInterrupt_Interrupt252:
+	callInterrupt_Interrupt252:
 		int 0xfc
 		jmp after
-	x86_CallInterrupt_Interrupt253:
+	callInterrupt_Interrupt253:
 		int 0xfd
 		jmp after
-	x86_CallInterrupt_Interrupt254:
+	callInterrupt_Interrupt254:
 		int 0xfe
 		jmp after
-	x86_CallInterrupt_Interrupt255:
+	callInterrupt_Interrupt255:
 		int 0xff
 		jmp after
 ; end interrupts

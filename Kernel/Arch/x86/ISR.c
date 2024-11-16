@@ -48,29 +48,29 @@ static const char* const g_ExceptionTypes[] = {
 };
 
 // In ISR_defs.c
-void x86_ISR_InitializeInterruptHandlers();
+void ISR_initializeInterruptHandlers();
 
-void x86_ISR_Initialize(){
-	x86_ISR_InitializeInterruptHandlers();
+void ISR_initialize(){
+	ISR_initializeInterruptHandlers();
 
 	// Enable all ISR assembly methods (in ISR_defs.s)
-	// They all call x86_ISR_Common with unified parameters
+	// They all call ISR_Common with unified parameters
 	for(int i=0 ; i<256 ; i++){
-		x86_IDT_EnableInterruptHandler(i);
+		IDT_enableInterruptHandler(i);
 	}
-	x86_IDT_EnableInterruptHandler(0x80);
+	IDT_enableInterruptHandler(0x80);
 }
 
-void x86_ISR_RegisterHandler(uint8_t vector, ISR handler){
+void ISR_registerHandler(uint8_t vector, ISR handler){
 	g_ISR[vector] = handler;
 }
 
-void x86_ISR_DeregisterHandler(uint8_t vector){
+void ISR_deregisterHandler(uint8_t vector){
 	g_ISR[vector] = NULL;
 }
 
-// All ISR lead to a common x86_ISR_Asm_Prehandler function, which calls this function
-void __attribute__((cdecl)) x86_ISR_C_Prehandler(ISR_Params* params){
+// All ISR lead to a common ISR_Asm_Prehandler function, which calls this function
+void __attribute__((cdecl)) ISR_C_prehandler(ISR_Params* params){
 
 	// If we have a handler to call, we call it, and 'alles gut'
 	if (g_ISR[params->vector] != NULL){

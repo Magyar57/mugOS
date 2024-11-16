@@ -19,7 +19,7 @@ FLOPPY_FILES+=$(BUILD_DIR)/test_sub.txt
 
 $(BUILD_DIR)/floppy.img: $(FLOPPY_FILES) | $(BUILD_DIR)
 	dd if=/dev/zero of=$@ bs=512 count=2880 status=none
-	mkfs.fat -F 12 -n "MUGOS" $@
+	mkfs.fat -F 12 -n "mugOS" $@
 	dd if=$(BUILD_DIR)/bootloader-first-stage.bin of=$@ conv=notrunc status=none
 	mcopy -i $@ $(BUILD_DIR)/bootloader-second-stage.bin "::2ndStage.bin"
 	mcopy -i $@ $(BUILD_DIR)/kernel.bin "::kernel.bin"

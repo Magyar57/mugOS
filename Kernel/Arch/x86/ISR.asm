@@ -9,29 +9,29 @@ section .text
 
 ; Tell the assembler about our C functions
 extern printf
-extern x86_ISR_C_Prehandler
+extern ISR_C_prehandler
 
 ; ISR Trap Handler (we have an error code)
 %macro ISR_TRAP_HANDLER 1
-global x86_ISR_%1:
-x86_ISR_%1:
+global ISR_%1:
+ISR_%1:
 	; push err			; error code is pushed by the CPU
 	push %1				; push interrupt number
-	jmp x86_ISR_Asm_Prehandler	; jump to common handler code
+	jmp ISR_asmPrehandler	; jump to common handler code
 %endmacro
 
 ; ISR Trap Handler (we don't have an error code)
 %macro ISR_IRQ_OR_SYSCALL_HANDLER 1
-global x86_ISR_%1:
-x86_ISR_%1:
+global ISR_%1:
+ISR_%1:
 	push 0xffffffff				; push dummy/placeholder error code
 	push %1						; push interrupt number
-	jmp x86_ISR_Asm_Prehandler	; jump to common handler code
+	jmp ISR_asmPrehandler		; jump to common handler code
 %endmacro
 
 %include "ISR_defs.s"
 
-x86_ISR_Asm_Prehandler:
+ISR_asmPrehandler:
 	; CPU pushed 
 	; caller pushed [dummy] error code
 	; caller pushed interrupt number
@@ -48,7 +48,7 @@ x86_ISR_Asm_Prehandler:
 
 	; Call our global pre-handler in C
 	push esp
-	call x86_ISR_C_Prehandler
+	call ISR_C_prehandler
 	add esp, 4
 
 	; Call printf from assembly
@@ -76,4 +76,4 @@ x86_ISR_Asm_Prehandler:
 	popad ; restore registers
 	add esp, 8 ; remove error code and IV
 	iret
-; END x86_ISR_Asm_Prehandler
+; END ISR_asmPrehandler
