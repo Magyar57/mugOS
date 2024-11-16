@@ -1,0 +1,21 @@
+Implementation plan:
+- [X] Hello world bootloader
+- [X] Two-stage bootloader
+- [X] Switch to protected mode
+- [X] Bootloader's FAT driver
+- [X] Hello world kernel
+- [X] Kernel IDT/GDT
+- [X] Handle interrupts (ISR)
+- [X] Handle hardware interrupts (IRQ)
+- [ ] Implement a keyboard driver subsystem (PS/2 keyboard driver + PS/2 controller driver)
+- [ ] Make my C tetris compatible-ish (run in ring 0)
+- [ ] Memory detection
+- [ ] kmalloc
+- [ ] Userland
+- [ ] Bootloader: abandon Legacy in favor of UEFI
+- [ ] Kernel FAT32 driver
+- [ ] Filesystem management
+
+Modifications:
+- [ ] When implementing USB, intialize and disable USB legacy support BEFORE initializing the PS/2 controller
+- [ ] With ACPI implemented, finish step 2 of the 8042 PS/2 controller initalization
