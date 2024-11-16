@@ -9,5 +9,8 @@ toolchain*
 # Runtime output
 bx_enh_dbg.ini
 
+# VSCode
+.vscode/settings.json
+
 # macOS
 .DS_Store
