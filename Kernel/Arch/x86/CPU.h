@@ -1,6 +1,6 @@
-#ifndef __CPU_H__
-#define __CPU_H__
+#ifndef __X86_CPU_H__
+#define __X86_CPU_H__
 
-void __attribute((cdecl)) x86_halt();
+void __attribute((cdecl)) halt();
 
 #endif

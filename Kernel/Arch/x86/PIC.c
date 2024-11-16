@@ -1,9 +1,12 @@
 #include <stdbool.h>
 #include "stdio.h"
-#include "IO.h"
+#include "Arch/io.h"
 #include "Panic.h"
 
 #include "PIC.h"
+
+// 8259 is the intel PIC
+// https://wiki.osdev.org/8259_PIC
 
 #define PIC_MASTER_CMD		0x0020	// Master's PIC Command port
 #define PIC_MASTER_DATA		0x0021	// Master's PIC Data port
@@ -42,17 +45,17 @@ void x86_PIC_Remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	// We don't need to io_wait in between PIC coms if we interleave them
 
 	// ICW1
-	x86_outb(PIC_MASTER_CMD, PIC_ICW1_ICW4|PIC_ICW1_INIT);
-	x86_outb(PIC_SLAVE_CMD, PIC_ICW1_ICW4|PIC_ICW1_INIT);
+	outb(PIC_MASTER_CMD, PIC_ICW1_ICW4|PIC_ICW1_INIT);
+	outb(PIC_SLAVE_CMD, PIC_ICW1_ICW4|PIC_ICW1_INIT);
 	// ICW2 - Offsets
-	x86_outb(PIC_MASTER_DATA, offsetMasterPIC);
-	x86_outb(PIC_SLAVE_DATA, offsetSlavePIC);
+	outb(PIC_MASTER_DATA, offsetMasterPIC);
+	outb(PIC_SLAVE_DATA, offsetSlavePIC);
 	// ICW3
-	x86_outb(PIC_MASTER_DATA, 4); // Tell master for the slave at IRQ2 (0000 0100)
-	x86_outb(PIC_SLAVE_DATA, 2); // Tell slave for its cascade identity (0000 0010)
+	outb(PIC_MASTER_DATA, 4); // Tell master for the slave at IRQ2 (0000 0100)
+	outb(PIC_SLAVE_DATA, 2); // Tell slave for its cascade identity (0000 0010)
 	// ICW4
-	x86_outb(PIC_MASTER_DATA, PIC_ICW4_8086); // Have the PICs use 8086 mode (and not 8080 mode)
-	x86_outb(PIC_SLAVE_DATA, PIC_ICW4_8086);
+	outb(PIC_MASTER_DATA, PIC_ICW4_8086); // Have the PICs use 8086 mode (and not 8080 mode)
+	outb(PIC_SLAVE_DATA, PIC_ICW4_8086);
 
 	x86_PIC_EnableAllIRQ();
 }
@@ -72,9 +75,9 @@ void x86_PIC_DisableIRQ(uint8_t irq){
 		irq -= 8;
 	}
 
-	uint8_t mask = x86_inb(port);
+	uint8_t mask = inb(port);
 	mask |= (1 << irq); // Add the corresponding bit to the mask
-	x86_outb(port, mask);
+	outb(port, mask);
 }
 
 void x86_PIC_EnableIRQ(uint8_t irq){
@@ -90,21 +93,21 @@ void x86_PIC_EnableIRQ(uint8_t irq){
 		port = PIC_SLAVE_DATA;
 		irq -= 8;
 	}
-	uint8_t mask = x86_inb(port);
+	uint8_t mask = inb(port);
 	mask &= ~(1 << irq); // Remove the corresponding bit to the mask
-	x86_outb(port, mask);
+	outb(port, mask);
 }
 
 void x86_PIC_EnableAllIRQ(){
 	// Unmask all interrupts
-	x86_outb(PIC_MASTER_DATA, 0x00);
-	x86_outb(PIC_SLAVE_DATA, 0x00);
+	outb(PIC_MASTER_DATA, 0x00);
+	outb(PIC_SLAVE_DATA, 0x00);
 }
 
 void x86_PIC_DisableAllIRQ(){
 	// Unmask all interrupts
-	x86_outb(PIC_MASTER_DATA, 0x00);
-	x86_outb(PIC_SLAVE_DATA, 0x00);
+	outb(PIC_MASTER_DATA, 0x00);
+	outb(PIC_SLAVE_DATA, 0x00);
 }
 
 void x86_PIC_Disable(){
@@ -112,16 +115,16 @@ void x86_PIC_Disable(){
 }
 
 void x86_PIC_SendEIO(int irq){
-	if (irq >= 8) x86_outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
-	x86_outb(PIC_MASTER_CMD, PIC_CMD_EOI);
+	if (irq >= 8) outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
+	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
 }
 
 static inline uint16_t x86_PIC_GetCombinedRegister(int ocw3){
 	// OCW3 to PIC CMD to get the register values. PIC_SLAVE is chained, and
 	// represents IRQs 8-15. PIC_MASTER is IRQs 0-7, with 2 being the chain
-	x86_outb(PIC_MASTER_CMD, ocw3);
-	x86_outb(PIC_SLAVE_CMD, ocw3);
-	return (x86_inb(PIC_SLAVE_CMD) << 8) | x86_inb(PIC_MASTER_CMD);
+	outb(PIC_MASTER_CMD, ocw3);
+	outb(PIC_SLAVE_CMD, ocw3);
+	return (inb(PIC_SLAVE_CMD) << 8) | inb(PIC_MASTER_CMD);
 }
 
 uint16_t x86_PIC_GetCombinedIRR(){

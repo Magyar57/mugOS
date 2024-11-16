@@ -1,7 +1,7 @@
-#ifndef __ARCH_H__
-#define __ARCH_H__
+#ifndef __HAL_H__
+#define __HAL_H__
 
-// Arch.h:
+// HAL.h:
 // Defines the Hardware Abstraction Layer (HAL),
 // and implements it depending on the requested architecture ARCH_*
 
@@ -9,15 +9,6 @@
 #error "Invalid architecture provided ! Please define a valid architecture maccro from the supported list."
 #endif
 
-#include <stdint.h>
-
-void HAL_Initialize();
-
-void outb(uint16_t port, uint8_t value);
-uint8_t inb(uint16_t port);
-void io_wait();
-
-// Halt indefinitely the CPU
-void halt();
+void HAL_initialize();
 
 #endif

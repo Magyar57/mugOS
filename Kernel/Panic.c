@@ -1,5 +1,5 @@
 #include "stdio.h"
-#include "Arch/Arch.h"
+#include "Arch/CPU.h"
 
 #include "Panic.h"
 

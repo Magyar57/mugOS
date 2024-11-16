@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include "stdio.h"
 #include "string.h"
-
-#include "Arch/Arch.h"
+#include "Arch/HAL.h"
+// #include "Drivers/PS2.h"
 
 extern uint8_t __bss_start;
 extern uint8_t __end;
@@ -18,7 +18,8 @@ void __attribute__((section(".entry"))) start(){
 	clear_screen();
 	puts("Supposons que je sois dans votre kernel !");
 
-	HAL_Initialize();
+	HAL_initialize();
+	// PS2_initalize();
 
 	while(true); // infinite active wait
 }
