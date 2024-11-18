@@ -34,6 +34,23 @@ char* strcpy(char* dst, const char* src){
 	return dst_begin;
 }
 
+char* strncpy(char* dst, const char* src, size_t len){
+	if (dst == NULL) return NULL;
+	if (src == NULL) {
+		*dst = '\0';
+		return dst;
+	}
+
+	size_t i = 0;
+	while ((i<len) && (src[i]!='\0')){
+		dst[i] = src[i];
+		i++;
+	}
+	if (i<len) dst[i] = '\0';
+
+	return dst;
+}
+
 size_t strlen(const char* str){
 	unsigned int res = 0;
 	while(*str){
@@ -44,9 +61,9 @@ size_t strlen(const char* str){
 	return res;
 }
 
-void* memcpy(const void* dst, const void* src, size_t size){	
+void* memcpy(const void* dst, const void* src, size_t size){
 	// Note: the can be heavily optimized by writing it in assembly, using specific directives than take advantage of parralelization
-	
+
 	uint8_t* u8dst = (uint8_t*) dst;
 	const uint8_t* u8src = (const uint8_t*) src;
 
