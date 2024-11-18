@@ -208,6 +208,12 @@ void i8242_initalize(){
 	puts("[  OK  ] PS/2 Controller driver: Initalization success");
 }
 
+void PS2Controller_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out){
+	*isEnabled_out = g_enabled;
+	*port1Available_out = g_isPort1Valid;
+	*port2Available_out = g_isPort2Valid;
+}
+
 bool PS2Controller_sendByteToDevice1(uint8_t byte){
 	assert(g_enabled && g_isPort1Valid);
 
