@@ -61,9 +61,9 @@
 #define PS2C_DEV_RES_ACK					0xfa
 #define PS2C_DEV_RES_SELF_TEST_PASSED		0xaa
 
-bool g_enabled = false;
-bool g_isPort1Valid = false; // works
-bool g_isPort2Valid = false; // is present AND works
+static bool g_enabled = false;
+static bool g_isPort1Valid = false; // works
+static bool g_isPort2Valid = false; // is present AND works
 
 #define TIMEOUT 1<<16 // TIMEOUT is a counter used when waiting for responses
 
