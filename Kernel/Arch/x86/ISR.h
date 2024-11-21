@@ -12,7 +12,7 @@ typedef struct {
 
 typedef void (*ISR)(ISR_Params*);
 
-// Initialize the ISR (Interrupt Service Routines) in the IDT
+// Initialize the ISR (Interrupt Service Routines) in the IDT (important: call IDT_initialize beforehand !)
 void ISR_initialize();
 
 // Register a handler for a given interrupt vector
