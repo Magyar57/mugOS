@@ -57,6 +57,10 @@ static bool g_enabled;
 static PS2Device g_PS2Keyboard;
 static PS2Device g_PS2Mouse;
 
+// We need these keyboard-related definitions here for the PS/2 driver intialization
+static void setLEDs(uint8_t leds);
+static uint8_t g_leds = 0; // The low 3 bits represent each led's status
+
 #pragma region PS/2 Initalize
 
 // Send a byte to device 1, and resends (max 3 times) if response is Resend
@@ -168,9 +172,9 @@ void PS2_initalizeKeyboard(PS2Device* keyboard){
 	sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_DELAY_AND_RATE);
 	sendByteToDevice1_HandleResend(0b00000000 | 0b00010110); // Default 10.9 Hz (22) + 500 ms repeat
 
-	// Set LEDs
-	sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_LED);
-	sendByteToDevice1_HandleResend(PS2_KB_DATA_LED_SCROLLLOCK|PS2_KB_DATA_LED_NUMLOCK|PS2_KB_DATA_LED_CAPSLOCK);
+	// Set LEDs: by default, only NUMLOCK is set
+	g_leds = PS2_KB_DATA_LED_NUMLOCK;
+	setLEDs(g_leds);
 
 	keyboard->enabled = true;
 	printf("[ INFO ] PS/2 driver: Indentified keyboard as '%s'\n", keyboard->identifier);
@@ -227,15 +231,21 @@ void PS2_initalize(){
 // These are its states
 static bool g_isEscapedState = false;
 static bool g_isBreakedState = false;
-static int g_pressedPrintScreenSerie = 0; // index in the pressed print screen sequence
-static int g_releasedPrintScreenSerie = 0; // index in the released print screen sequence
+static int g_pressedPrintScreenSequence = 0; // index in the pressed print screen sequence
+static int g_releasedPrintScreenSequence = 0; // index in the released print screen sequence
 static int g_pauseSequence = 0; // index in the pause sequence (pause has no release)
+
+static inline void setLEDs(uint8_t leds){
+	// Note: we ignore errors for the sake of simplicity
+	sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_LED);
+	sendByteToDevice1_HandleResend(leds);
+}
 
 static inline void resetKeyboardState(){
 	g_isEscapedState = false;
 	g_isBreakedState = false;
-	g_pressedPrintScreenSerie = 0;
-	g_releasedPrintScreenSerie = 0;
+	g_pressedPrintScreenSequence = 0;
+	g_releasedPrintScreenSequence = 0;
 	g_pauseSequence = 0;
 }
 
@@ -431,52 +441,51 @@ static inline bool isResponseCode(uint8_t code){
 }
 
 static void handleScancode(uint8_t scancode){
-	// Check for Print Screen sequence PRESSED=[0xe0,0x12,0xe0,0x7c] RELEASED=[0xe0,0xf0,0x7c,0xe0,0xf0,0x12]
-	if (g_pressedPrintScreenSerie>0){
-		switch (g_pressedPrintScreenSerie) {
+	// Check for Print Screen sequence PRESSED=[0xe0,0x12,0xe0,0x7c]
+	if (g_pressedPrintScreenSequence>0){
+		switch (g_pressedPrintScreenSequence) {
 			case 1:
-				if (scancode != 0x12) {g_pressedPrintScreenSerie = 0; break;}
-				g_pressedPrintScreenSerie++;
+				if (scancode != 0x12) {g_pressedPrintScreenSequence = 0; break;}
+				g_pressedPrintScreenSequence++;
 				g_isEscapedState = false;
 				return;
 			case 2:
-				if (scancode != 0xe0) {g_pressedPrintScreenSerie = 0; break;}
-				g_pressedPrintScreenSerie++;
+				if (scancode != 0xe0) {g_pressedPrintScreenSequence = 0; break;}
+				g_pressedPrintScreenSequence++;
 				return;
 			case 3:
-				if (scancode != 0x7c) {g_pressedPrintScreenSerie = 0; break;}
-				puts("print screen pressed");
-				// Keyboard_notifyPressed(KEY_PRINT);
-				g_pressedPrintScreenSerie = 0;
+				if (scancode != 0x7c) {g_pressedPrintScreenSequence = 0; break;}
+				Keyboard_notifyPressed(KEY_PRINTSCREEN);
+				g_pressedPrintScreenSequence = 0;
 				return;
 			default:
 				break;
 		}
 	}
-	if (g_releasedPrintScreenSerie>0){
-		switch (g_releasedPrintScreenSerie) {
+	// Check for Print Screen sequence RELEASED=[0xe0,0xf0,0x7c,0xe0,0xf0,0x12]
+	if (g_releasedPrintScreenSequence>0){
+		switch (g_releasedPrintScreenSequence) {
 			case 1:
-				if (scancode != 0xf0) {g_releasedPrintScreenSerie = 0; break;}
-				g_releasedPrintScreenSerie++;
+				if (scancode != 0xf0) {g_releasedPrintScreenSequence = 0; break;}
+				g_releasedPrintScreenSequence++;
 				g_isBreakedState = true;
 				break;
 			case 2:
-				if (scancode != 0x7c) {g_releasedPrintScreenSerie = 0; break;}
-				g_releasedPrintScreenSerie++;
+				if (scancode != 0x7c) {g_releasedPrintScreenSequence = 0; break;}
+				g_releasedPrintScreenSequence++;
 				return;
 			case 3:
-				if (scancode != 0xe0) {g_releasedPrintScreenSerie = 0; g_isEscapedState = false; g_isBreakedState = false; break;}
-				g_releasedPrintScreenSerie++;
+				if (scancode != 0xe0) {g_releasedPrintScreenSequence = 0; g_isEscapedState = false; g_isBreakedState = false; break;}
+				g_releasedPrintScreenSequence++;
 				return;
 			case 4:
-				if (scancode != 0xf0) {g_releasedPrintScreenSerie = 0; break;}
-				g_releasedPrintScreenSerie++;
+				if (scancode != 0xf0) {g_releasedPrintScreenSequence = 0; break;}
+				g_releasedPrintScreenSequence++;
 				return;
 			case 5:
-				if (scancode != 0x12) {g_releasedPrintScreenSerie = 0; break;}
-				puts("print screen released");
-				// Keyboard_notifyReleased(KEY_PRINT);
-				g_releasedPrintScreenSerie = 0;
+				if (scancode != 0x12) {g_releasedPrintScreenSequence = 0; break;}
+				Keyboard_notifyReleased(KEY_PRINTSCREEN);
+				g_releasedPrintScreenSequence = 0;
 				g_isEscapedState = false;
 				g_isBreakedState = false;
 				return;
@@ -498,8 +507,8 @@ static void handleScancode(uint8_t scancode){
 
 	if (scancode == PS2_KB_SCANCODE_ESCAPE) {
 		g_isEscapedState = true;
-		g_pressedPrintScreenSerie = 1;
-		g_releasedPrintScreenSerie = 1;
+		g_pressedPrintScreenSequence = 1;
+		g_releasedPrintScreenSequence = 1;
 		return;
 	}
 	if (scancode == PS2_KB_SCANCODE_ESCAPE_PAUSE) {
@@ -518,27 +527,30 @@ static void handleScancode(uint8_t scancode){
 	}
 	else keycode = getKeycode(scancode);
 
-	// Driver did not recognize the scancode
-	if (keycode == KEY_RESERVED) {
-		printf("Unrecognized scancode %p\n", scancode);
-		resetKeyboardState();
-		return;
+	switch (keycode){
+		case KEY_RESERVED: // Driver did not recognize the scancode
+			printf("Unrecognized scancode %p\n", scancode);
+			resetKeyboardState();
+			return;
+		case KEY_NUMLOCK:
+			if(g_isBreakedState) break;
+			g_leds ^= PS2_KB_DATA_LED_NUMLOCK; // flip numlock bit
+			setLEDs(g_leds);
+			break;
+		case KEY_SCROLLLOCK:
+			if(g_isBreakedState) break;
+			g_leds ^= PS2_KB_DATA_LED_SCROLLLOCK;
+			setLEDs(g_leds);
+			break;
+		case KEY_CAPSLOCK:
+			if(g_isBreakedState) break;
+			g_leds ^= PS2_KB_DATA_LED_CAPSLOCK;
+			setLEDs(g_leds);
+			break;
+		default:
+			// Key was recognized
+			break;
 	}
-
-	// TODO find print screen keycode
-
-	// TODO sysrq:
-	// make = 0xe0 0x12 0xe0 0x7c
-	// break = 0xe0 0xf0 0x7c 0xe0 0xf0 0x12
-
-	// TODO NUMLOCK, SCROLLLOCK, CAPSLOCK
-	// if (keycode == KEY_NUMLOCK){
-	// 	puts("switching led");
-	// 	uint8_t buff = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_LED);
-	// 	printf("res=%p\n", buff);
-	// 	buff = sendByteToDevice1_HandleResend(PS2_KB_DATA_LED_SCROLLLOCK|PS2_KB_DATA_LED_NUMLOCK|PS2_KB_DATA_LED_CAPSLOCK);
-	// 	printf("res=%p\n", buff);
-	// }
 
 	// Update the keyboard driver
 	(g_isBreakedState) ? Keyboard_notifyReleased(keycode) : Keyboard_notifyPressed(keycode);
