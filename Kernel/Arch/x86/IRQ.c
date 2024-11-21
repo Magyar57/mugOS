@@ -4,7 +4,7 @@
 #include "Arch/io.h"
 #include "ISR.h"
 #include "PIC.h"
-// #include "Drivers/PS2.h"
+#include "Drivers/PS2.h"
 
 #include "IRQ.h"
 
@@ -79,13 +79,12 @@ void IRQ_timer(ISR_Params* params){
 
 void IRQ_keyboard(ISR_Params* params){
 	// Tell the PS/2 driver to update
-	// PS2_checkStatus();
-
-	// outb(KBD_PORT_STATUS_REG, 0xfe); // reset signal
+	PS2_notifyKeyboard();
 }
 
 void IRQ_mouse(ISR_Params* params){
-	puts("PS2 Mouse");
+	// Tell the PS/2 driver to update
+	PS2_notifyMouse();
 }
 
 void IRQ_initialize(){

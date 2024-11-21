@@ -4,7 +4,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "Arch/HAL.h"
-// #include "Drivers/PS2.h"
+#include "Drivers/PS2.h"
 
 extern uint8_t __bss_start;
 extern uint8_t __end;
@@ -19,7 +19,7 @@ void __attribute__((section(".entry"))) start(){
 	puts("Supposons que je sois dans votre kernel !");
 
 	HAL_initialize();
-	// PS2_initalize();
+	PS2_initalize(); // Initialize PS/2 driver
 
 	while(true); // infinite active wait
 }
