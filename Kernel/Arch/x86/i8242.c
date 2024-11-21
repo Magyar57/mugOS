@@ -214,6 +214,18 @@ void PS2Controller_getStatus(bool* isEnabled_out, bool* port1Available_out, bool
 	*port2Available_out = g_isPort2Valid;
 }
 
+void PS2Controller_enableDevicesInterrupts(){
+	uint8_t ccb = readControllerConfigurationByte();
+	ccb |= (PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT);
+	writeControllerConfigurationByte(ccb);
+}
+
+void PS2Controller_disableDevicesInterrupts(){
+	uint8_t ccb = readControllerConfigurationByte();
+	ccb = ccb & ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT);
+	writeControllerConfigurationByte(ccb);
+}
+
 bool PS2Controller_sendByteToDevice1(uint8_t byte){
 	assert(g_enabled && g_isPort1Valid);
 

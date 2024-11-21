@@ -15,6 +15,12 @@ void i8242_initalize();
 // Returns weather the controller/driver is initalized and enabled, and which ports are enabled
 void PS2Controller_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out);
 
+// Enable the interrupts sent from the devices
+void PS2Controller_enableDevicesInterrupts();
+
+// Disable the interrupts sent from the devices
+void PS2Controller_disableDevicesInterrupts();
+
 // Send a byte to the PS/2 device 1
 // Returns: true on success, false on failure
 bool PS2Controller_sendByteToDevice1(uint8_t byte);
