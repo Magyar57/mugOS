@@ -12,7 +12,10 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
-            }
+            },
+			"presentation": {
+				"clear": true
+			}
         },
 		{
             "label": "Docker build",
@@ -25,7 +28,10 @@
             "group": {
                 "kind": "build",
                 "isDefault": false
-            }
+            },
+			"presentation": {
+				"clear": true
+			}
         }
     ]
 }
