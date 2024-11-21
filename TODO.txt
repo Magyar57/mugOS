@@ -7,10 +7,13 @@ Implementation plan:
 - [X] Kernel IDT/GDT
 - [X] Handle interrupts (ISR)
 - [X] Handle hardware interrupts (IRQ)
-- [ ] Implement a keyboard driver subsystem (PS/2 keyboard driver + PS/2 controller driver)
+- [X] Implement PS/2 drivers (controller and devices)
+- [ ] Implement a keyboard driver subsystem
 - [ ] Make my C tetris compatible-ish (run in ring 0)
 - [ ] Memory detection
 - [ ] kmalloc
+- [ ] Double fault handler
+- [ ] Serial output driver
 - [ ] Userland
 - [ ] Bootloader: abandon Legacy in favor of UEFI
 - [ ] Kernel FAT32 driver
@@ -19,3 +22,6 @@ Implementation plan:
 Modifications:
 - [ ] When implementing USB, intialize and disable USB legacy support BEFORE initializing the PS/2 controller
 - [ ] With ACPI implemented, finish step 2 of the 8042 PS/2 controller initalization
+
+Notes:
+- Current PS/2 implementation purposely does not support hot-plug (as it was not designed for it originally...)
