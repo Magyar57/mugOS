@@ -22,6 +22,7 @@ Implementation plan:
 Modifications:
 - [ ] When implementing USB, intialize and disable USB legacy support BEFORE initializing the PS/2 controller
 - [ ] With ACPI implemented, finish step 2 of the 8042 PS/2 controller initalization
+- [ ] With proper executable and lib support, remove callbacks from the keyboard driver when its owner exits
 
 Notes:
 - Current PS/2 implementation purposely does not support hot-plug (as it was not designed for it originally...)
