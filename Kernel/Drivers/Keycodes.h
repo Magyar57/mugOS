@@ -106,7 +106,6 @@ typedef unsigned int Keycode;
 #define KEY_RCTRL				97
 #define KEY_NUMPAD_SLASH		98
 #define KEY_PRINTSCREEN			99
-#define KEY_SYSRQ				KEY_PRINTSCREEN
 #define KEY_RALT				100
 #define KEY_LINEFEED			101
 #define KEY_HOME				102

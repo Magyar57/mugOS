@@ -8,7 +8,7 @@ Implementation plan:
 - [X] Handle interrupts (ISR)
 - [X] Handle hardware interrupts (IRQ)
 - [X] Implement PS/2 drivers (controller and devices)
-- [ ] Implement a keyboard driver subsystem
+- [X] Implement a keyboard driver subsystem
 - [ ] Make my C tetris compatible-ish (run in ring 0)
 - [ ] Memory detection
 - [ ] kmalloc

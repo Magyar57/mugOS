@@ -30,11 +30,16 @@ typedef void(*KeyCallback)(int keycode, int character, uint8_t mode, uint8_t mod
 
 /// @brief Adds a KeyCallback @p callback function as callback (see KeyCallback for parameters description)
 /// @returns True on success, false on error (callback array full)
-bool Keyboard_setKeyCallback(KeyCallback callback);
+bool Keyboard_registerKeyCallback(KeyCallback callback);
+
+/// @brief Removes a KeyCallback @p callback function from the internal array
+/// @returns void
+void Keyboard_unregisterKeyCallback(KeyCallback callback);
 
 // Internal use
 void Keyboard_initalize();
 void Keyboard_notifyReleased(Keycode keycode);
 void Keyboard_notifyPressed(Keycode keycode);
+void Keyboard_NotifySysRq(); // Notify SysRq key pressed (special case)
 
 #endif

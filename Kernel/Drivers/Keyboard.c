@@ -469,12 +469,20 @@ static inline void executeCallbacks(int keycode, int character, uint8_t mode, ui
 	}
 }
 
-bool Keyboard_setKeyCallback(KeyCallback callback){
+bool Keyboard_registerKeyCallback(KeyCallback callback){
 	int index = findAvailableCallbackIndex();
 	if (index == -1) return false;
 	
 	g_callbacks[index] = callback;
 	return true;
+}
+
+void Keyboard_unregisterKeyCallback(KeyCallback callback){
+	for (int i=0 ; i<MAX_CALLBACKS ; i++){
+		if (g_callbacks[i] == callback){
+			g_callbacks[i] = NULL;
+		}
+	}
 }
 
 void Keyboard_initalize(){
@@ -700,4 +708,19 @@ void Keyboard_notifyPressed(Keycode keycode){
 
 	char c = getChar_AZERTY(keycode);
 	executeCallbacks(keycode, (int) c, KB_CALLBACK_KEY_PRESSED, g_modifierKeys);
+}
+
+void keyCallback_printKey(int keycode, int character, uint8_t mode, uint8_t modifier_keys){
+	printf("keyboard: key %p (%c)\n", keycode, character);
+}
+
+void Keyboard_NotifySysRq(){
+	// For now, sysrq just enables keyboard print
+	static bool callbackOn = false;
+
+	callbackOn ? 
+		Keyboard_unregisterKeyCallback(keyCallback_printKey) :
+		Keyboard_registerKeyCallback(keyCallback_printKey);
+
+	callbackOn = !callbackOn;
 }

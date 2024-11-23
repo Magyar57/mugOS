@@ -226,6 +226,7 @@ void PS2_initalize(){
 #define PS2_KB_SCANCODE_ESCAPE					0xe0
 #define PS2_KB_SCANCODE_ESCAPE_PAUSE			0xe1
 #define PS2_KB_SCANCODE_BREAK					0xf0
+#define PS2_KB_SCANCODE_SYSRQ					0x84
 
 // This keyboard driver is implemented as a state machine
 // These are its states
@@ -520,6 +521,12 @@ static void handleScancode(uint8_t scancode){
 		return;
 	}
 
+	if (scancode == PS2_KB_SCANCODE_SYSRQ){
+		if (g_isBreakedState) return; // do not notify on release
+		Keyboard_NotifySysRq();
+		return;
+	}
+
 	Keycode keycode;
 	if (g_isEscapedState) {
 		keycode = getKeycodeEscaped(scancode);
@@ -561,7 +568,10 @@ void PS2_notifyKeyboard(){
 	if(!g_PS2Keyboard.enabled) return;
 	uint8_t code;
 
-	// printf("keyboard interrupt code=%p\n", inb(0x60));
+	// Debug print
+	// code = inb(0x60);
+	// if (code == 0x5a) puts("");
+	// else printf("%p ", code);
 	// return;
 
 	bool res = PS2Controller_receiveDeviceByte(&code);
