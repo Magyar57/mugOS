@@ -203,9 +203,151 @@ static char getChar_AZERTY_CapsLock(Keycode k){
 	}
 }
 
-static char getChar_AZERTY_ShiftAltGr(Keycode k){return '?';} // TODO
+static char getChar_AZERTY_ShiftAltGr(Keycode k){
+		switch (k){
+		case KEY_RESERVED:			return 0;
+		case KEY_1:					return 173; // ¡
+		case KEY_2:					return 0; // ⅛
+		case KEY_3:					return 156; // £
+		case KEY_4:					return '$';
+		case KEY_5:					return 0; // ⅜
+		case KEY_6:					return 0; // ⅝
+		case KEY_7:					return 0; // ⅞
+		case KEY_8:					return 0; // ™
+		case KEY_9:					return 241; // ±
+		case KEY_0:					return 248; // °
+		case KEY_MINUS:				return 168; // ¿
+		case KEY_EQUAL:				return 0; // ˛
+		case KEY_TAB:				return '\t';
+		case KEY_Q:					return 146; // Æ
+		case KEY_W:					return '<';
+		case KEY_E:					return 155; // ¢
+		case KEY_R:					return 0; // ®
+		case KEY_T:					return 0; // Ŧ
+		case KEY_Y:					return 157; // ¥
+		case KEY_U:					return 0; // ↑
+		case KEY_I:					return 0; // ı
+		case KEY_O:					return 0; // Ø
+		case KEY_P:					return 0; // Þ
+		case KEY_LBRACKET:			return 248; // °
+		case KEY_RBRACKET:			return 0; // ¯
+		case KEY_ENTER:				return '\n'; // enter
+		case KEY_A:					return 234; // Ω
+		case KEY_S:					return 0; // ẞ
+		case KEY_D:					return 0; // Ð
+		case KEY_F:					return 0; // ª
+		case KEY_G:					return 0; // Ŋ
+		case KEY_H:					return 0; // Ħ
+		case KEY_J:					return 0;
+		case KEY_K:					return '&';
+		case KEY_L:					return 0; // Ł
+		case KEY_SEMICOLON:			return 248; // º
+		case KEY_QUOTE:				return 0; // ˇ
+		case KEY_GRAVE:				return 170; // ¬
+		case KEY_BACKSLASH:			return 0; // ˘
+		case KEY_Z:					return 0; // Ł
+		case KEY_X:					return '>';
+		case KEY_C:					return 0; // ©
+		case KEY_V:					return 0; // ‚
+		case KEY_B:					return 0; // ‘
+		case KEY_N:					return 0; // ’
+		case KEY_M:					return 0; // ˝
+		case KEY_COMMA:				return 0; // ×
+		case KEY_DOT:				return 246; // ÷
+		case KEY_SLASH:				return 0; // ˙
+		case KEY_NUMPAD_ASTERISK:	return '*';
+		case KEY_SPACE:				return ' ';
+		case KEY_NUMPAD_7:			return '7'; // Keypad 7 OR Home
+		case KEY_NUMPAD_8:			return '8'; // Keypad 8 OR Up
+		case KEY_NUMPAD_9:			return '9'; // Keypad 9 OR Page Up
+		case KEY_NUMPAD_MINUS:		return '-'; // Keypad -
+		case KEY_NUMPAD_4:			return '4'; // Keypad 4 OR Left
+		case KEY_NUMPAD_5:			return '5'; // Keypad 5
+		case KEY_NUMPAD_6:			return '6'; // Keypad 6 OR Right
+		case KEY_NUMPAD_PLUS:		return '+'; // Keypad +
+		case KEY_NUMPAD_1:			return '1'; // Keypad 1 OR End
+		case KEY_NUMPAD_2:			return '2'; // Keypad 2 OR Down
+		case KEY_NUMPAD_3:			return '3'; // Keypad 3 OR Page Down
+		case KEY_NUMPAD_0:			return '0'; // Keypad 0 OR Insert
+		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
+		case KEY_LESSTHAN:			return 0; // ¦
+		default:
+			return 0;
+	}
+}
 
-static char getChar_AZERTY_AltGr(Keycode k){return '?';} // TODO
+static char getChar_AZERTY_AltGr(Keycode k){
+		switch (k){
+		case KEY_RESERVED:			return 0;
+		case KEY_1:					return 0; // ¹
+		case KEY_2:					return '~';
+		case KEY_3:					return '#';
+		case KEY_4:					return '{';
+		case KEY_5:					return '[';
+		case KEY_6:					return '|';
+		case KEY_7:					return '`';
+		case KEY_8:					return '\\';
+		case KEY_9:					return '^';
+		case KEY_0:					return '@';
+		case KEY_MINUS:				return ']';
+		case KEY_EQUAL:				return '}';
+		case KEY_TAB:				return '\t';
+		case KEY_Q:					return 145; // æ
+		case KEY_W:					return 174; // «
+		case KEY_E:					return 0; // €
+		case KEY_R:					return 0; // ¶
+		case KEY_T:					return 0; // ŧ
+		case KEY_Y:					return 0; // ←
+		case KEY_U:					return 0; // ↓
+		case KEY_I:					return 0; // →
+		case KEY_O:					return 0; // ø
+		case KEY_P:					return 0; // þ
+		case KEY_LBRACKET:			return 0; // ¨
+		case KEY_RBRACKET:			return 0; // ¤
+		case KEY_ENTER:				return '\n'; // enter
+		case KEY_A:					return '@';
+		case KEY_S:					return 0; // ß
+		case KEY_D:					return 0; // ð
+		case KEY_F:					return 0; // đ
+		case KEY_G:					return 0; // ŋ
+		case KEY_H:					return 0; // ħ
+		case KEY_J:					return 0; // ̉
+		case KEY_K:					return 0; // ĸ
+		case KEY_L:					return 0; // ł
+		case KEY_SEMICOLON:			return 230; // µ
+		case KEY_QUOTE:				return '^';
+		case KEY_GRAVE:				return 170; // ¬
+		case KEY_BACKSLASH:			return '`';
+		case KEY_Z:					return 0; // ł
+		case KEY_X:					return 175; // »
+		case KEY_C:					return 155; // ¢
+		case KEY_V:					return 0; // „
+		case KEY_B:					return 0; // “
+		case KEY_N:					return 0; // ”
+		case KEY_M:					return 0; // ´ (as in ó)
+		case KEY_COMMA:				return 249; // •
+		case KEY_DOT:				return 250; // ·
+		case KEY_SLASH:				return 0;
+		case KEY_NUMPAD_ASTERISK:	return '*';
+		case KEY_SPACE:				return ' ';
+		case KEY_NUMPAD_7:			return '7'; // Keypad 7 OR Home
+		case KEY_NUMPAD_8:			return '8'; // Keypad 8 OR Up
+		case KEY_NUMPAD_9:			return '9'; // Keypad 9 OR Page Up
+		case KEY_NUMPAD_MINUS:		return '-'; // Keypad -
+		case KEY_NUMPAD_4:			return '4'; // Keypad 4 OR Left
+		case KEY_NUMPAD_5:			return '5'; // Keypad 5
+		case KEY_NUMPAD_6:			return '6'; // Keypad 6 OR Right
+		case KEY_NUMPAD_PLUS:		return '+'; // Keypad +
+		case KEY_NUMPAD_1:			return '1'; // Keypad 1 OR End
+		case KEY_NUMPAD_2:			return '2'; // Keypad 2 OR Down
+		case KEY_NUMPAD_3:			return '3'; // Keypad 3 OR Page Down
+		case KEY_NUMPAD_0:			return '0'; // Keypad 0 OR Insert
+		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
+		case KEY_LESSTHAN:			return '|';
+		default:
+			return 0;
+	}
+}
 
 static char getChar_AZERTY_Shift(Keycode k){
 	switch (k){
