@@ -2,6 +2,7 @@
 #define __KEYBOARD_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "Keycodes.h"
 
 // Keyboard driver/subsystem
