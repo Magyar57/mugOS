@@ -6,6 +6,7 @@
 #include "Arch/HAL.h"
 #include "Drivers/PS2.h"
 #include "Drivers/Keyboard.h"
+#include "Tetris/Tetris.h"
 
 extern uint8_t __bss_start;
 extern uint8_t __end;
@@ -22,6 +23,9 @@ void __attribute__((section(".entry"))) start(){
 	HAL_initialize();
 	PS2_initalize(); // Initialize PS/2 driver
 	Keyboard_initalize(); // Initialize keyboard driver/subsystem
+
+	// Run tetris !
+	Tetris_runGame();
 
 	while(true); // infinite active wait
 }
