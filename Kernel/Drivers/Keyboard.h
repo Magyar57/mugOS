@@ -21,7 +21,7 @@
 // #define KB_CALLBACK_KEY_REPEAT		0x02
 #define KB_CALLBACK_KEY_RELEASED	0x03
 
-/// @brief Callback function type `void key_callback(int @p keycode, int @p character, bool @p mode, uint8_t @p modifier_keys)`
+/// @brief Callback function type `void key_callback(int @p keycode, int @p character, uint8_t @p mode, uint8_t @p modifier_keys)`
 /// @param keycode The keycode for which the key was pressed (see Keycodes.h)
 /// @param character The ASCII character corresponding to the key (0 if non-printable)
 /// @param mode Key mode, either KB_CALLBACK_KEY_PRESSED (or KB_CALLBACK_KEY_REPEAT [not supported yet]) or KB_CALLBACK_KEY_RELEASED
