@@ -1,18 +1,15 @@
-#define _POSIX_C_SOURCE 200809L
-#include <stdio.h>
 #include <stddef.h>
-// #include <stdlib.h>
-// #include <unistd.h>
 #include <stdbool.h>
-#include <string.h>
-// #include <time.h>
+#include "stdio.h"
+#include "string.h"
 #include "TetrisKeyboard.h"
 #include "Board.h"
 #include "TetrominoManager.h"
 #include "Graphics.h"
 #include "Drivers/Keycodes.h"
-
 #include "Panic.h"
+
+#include "Tetris.h"
 
 // Note: we use the nanosleep and clock_gettime POSIX functions
 
@@ -168,20 +165,21 @@ void draw(){
 	// We suppose that update does not put it in a colliding position
 	putTetromino(g_Board, &g_curTetro);
 
-	const int BOARD_BUFFSIZE = BOARD_WIDTH*MAX_BLOCK_SIZE + 1; // +1 for the final '\0'
-	const int MENU_BUFFSIZE = 4 * MAX_BLOCK_SIZE + 4;
+	const int BOARD_BUFFSIZE = BOARD_WIDTH*BLOCK_SIZE + 1; // +1 for the final '\0'
+	const int MENU_BUFFSIZE = 4 * BLOCK_SIZE + 4;
 	char board_line_buff[BOARD_BUFFSIZE];
 	char menu_buff[MENU_BUFFSIZE];
 
 	// puts("  ┌───────Tetris───────┐  ┌────Next────┐");
-	const char BANDEAU_HAUT[] = {' ', ' ', 218, 196, 196, 196, 196, 196, 196, 196, 'T', 'e', 't', 'r', 'i', 's',
+	const char HEADER[] = {' ', ' ', 218, 196, 196, 196, 196, 196, 196, 196, 'T', 'e', 't', 'r', 'i', 's',
 		196, 196, 196, 196, 196, 196, 196, 191, ' ', ' ', 218, 196, 196, 196, 196, 'N', 'e', 'x', 't', 196, 196, 196, 196, 191,'\0'};
 	// puts("  └────────────────────┘");
-	const char BANDEAU_BAS[] = {' ', ' ', 192, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196,
+	const char FOOTER[] = {' ', ' ', 192, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196, 196,
 		196, 196, 196, 196, 196, 196, 196, 217, '\0'};
+	// printf("  │%s│  %s\n", board_line_buff, menu_buff);
 	const char LINE[] = {' ', ' ', 179, '%', 's', 179, ' ', ' ', '%', 's', '\n', '\0'};
 
-	puts(BANDEAU_HAUT);
+	puts(HEADER);
 	for(int i=0 ; i<BOARD_HEIGHT ; i++){
 		memset(board_line_buff, 0, BOARD_BUFFSIZE);
 		memset(menu_buff, 0, MENU_BUFFSIZE);
@@ -189,51 +187,24 @@ void draw(){
 		getBoardLine(g_Board, i, board_line_buff);
 		getMenuLine(i, menu_buff, getNextTetrominoType(), getStoredTetrominoType());
 
-		// printf("  │%s│  %s\n", board_line_buff, menu_buff);
 		printf(LINE, board_line_buff, menu_buff);
 	}
-	puts(BANDEAU_BAS);
+	puts(FOOTER);
 	if (DEBUG) puts(g_debugString);
 	if (g_gameOver) puts("Game over ! Press Escape to quit or R to replay :)");
 
+	setColors(g_Board, getNextTetrominoType(), getStoredTetrominoType());
 	removeTetromino(g_Board, &g_curTetro);
-	// fflush(stdout);
-}
-
-// Sleep until end of frame time, by substracting dt to the target frame time
-// Returns the time slept
-double vsync_wait(double dt){
-	// struct timespec time_to_wait, remaining;
-	// time_to_wait.tv_sec = 0;
-	// time_to_wait.tv_nsec = (TARGET_FRAMETIME - dt) * 1e6; // convert ms to ns
-
-	// if (nanosleep(&time_to_wait, &remaining) != 0){
-	// 	perror("nanosleep");
-	// 	fprintf(stderr, "remaining s=%ld ns=%ld ", remaining.tv_sec, remaining.tv_nsec);
-	// 	fprintf(stderr, "time_to_wait s=%ld ns=%ld\n", time_to_wait.tv_sec, time_to_wait.tv_nsec);
-	// }
-
-	// return (double) ((time_to_wait.tv_sec-remaining.tv_sec)*1e-3 + (time_to_wait.tv_nsec-remaining.tv_nsec)*1e-6);
-	return 0.0;
 }
 
 void Tetris_runGame() {
-	// struct timespec t0, tf;
-	// double dt = 0.0; // Frame time in ms
-	// double tw; // Time waited
-
 	initalizeGame();
 
 	while(!g_ShouldQuit) {
-		// clock_gettime(CLOCK_MONOTONIC, &t0);
-
 		draw();
 		update(16.667, 0.0);
 
-		// clock_gettime(CLOCK_MONOTONIC, &tf);
-		// dt = (double) ((tf.tv_sec-t0.tv_sec)*1e3 + (tf.tv_nsec-t0.tv_nsec)*1e-6);
-		// tw = vsync_wait(dt);
-		for(int i=0 ; i<10000000 ; i++); // active wait (value was found manually)
+		for(int i=0 ; i<10000000 ; i++); // active wait
 	}
 
 	puts("Quited tetris, halting");

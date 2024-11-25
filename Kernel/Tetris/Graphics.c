@@ -1,25 +1,21 @@
-// #include <stdlib.h>
 #include <stddef.h>
-#include <string.h>
-#include <assert.h>
+#include "string.h"
+#include "assert.h"
 #include "Board.h"
 
 #include "Graphics.h"
 
-#define COLOR_CYAN		"" //"\033[38:5:51m"
-#define COLOR_YELLOW	"" //"\033[38:5:226m"
-#define COLOR_PURPLE	"" //"\033[38:5:57m"
-#define COLOR_ORANGE	"" //"\033[38:5:202m"
-#define COLOR_BLUE		"" //"\033[38:5:20m"
-#define COLOR_RED		"" //"\033[38:5:196m"
-#define COLOR_GREEN		"" //"\033[38:5:46m"
-#define COLOR_RESET		"" //"\033[0m"
-
-#define FINAL_SIZEOF(COLOR) sizeof(COLOR) + 7 + sizeof(COLOR_RESET) -3
-#define FINAL_SIZEOF(COLOR) sizeof(COLOR) + 7 + sizeof(COLOR_RESET) -3
+#define COLOR_CYAN		0x03
+#define COLOR_YELLOW	0x0e
+#define COLOR_PURPLE	0x05
+#define COLOR_ORANGE	0x0c
+#define COLOR_BLUE		0x01
+#define COLOR_RED		0x04
+#define COLOR_GREEN		0x02
+#define COLOR_RESET		0x07
 
 static int putTetrominosBlock(TetrominoBlock block, char* out){
-	const char BLOCK_STR[] = {219, 219}; // "€€"
+	// const char BLOCK_STR[] = {219, 219}; // "€€"
 
 	switch (block){
 		case BLOCK_NONE:
@@ -28,35 +24,11 @@ static int putTetrominosBlock(TetrominoBlock block, char* out){
 			out[1] = '.';
 			break;
 		case BLOCK_CYAN:
-			// strcpy(out, BLOCK_STR);
-			out[0] = 219;
-			out[1] = 219;
-			break;
 		case BLOCK_YELLOW:
-			// strcpy(out, BLOCK_STR);
-			out[0] = 219;
-			out[1] = 219;
-			break;
 		case BLOCK_PURPLE:
-			// strcpy(out, BLOCK_STR);
-			out[0] = 219;
-			out[1] = 219;
-			break;
 		case BLOCK_ORANGE:
-			// strcpy(out, BLOCK_STR);
-			out[0] = 219;
-			out[1] = 219;
-			break;
 		case BLOCK_BLUE:
-			// strcpy(out, BLOCK_STR);
-			out[0] = 219;
-			out[1] = 219;
-			break;
 		case BLOCK_RED:
-			// strcpy(out, BLOCK_STR);
-			out[0] = 219;
-			out[1] = 219;
-			break;
 		case BLOCK_GREEN:
 			// strcpy(out, BLOCK_STR);
 			out[0] = 219;
@@ -66,6 +38,30 @@ static int putTetrominosBlock(TetrominoBlock block, char* out){
 			return 0;
 	}
 	return 2;
+}
+
+static uint8_t getBlockColor(TetrominoBlock t){
+	switch (t){
+		case BLOCK_NONE:
+			return COLOR_RESET;
+		case BLOCK_CYAN:
+			return COLOR_CYAN;
+		case BLOCK_YELLOW:
+			return COLOR_YELLOW;
+		case BLOCK_PURPLE:
+			return COLOR_PURPLE;
+		case BLOCK_ORANGE:
+			return COLOR_ORANGE;
+		case BLOCK_BLUE:
+			return COLOR_BLUE;
+		case BLOCK_RED:
+			return COLOR_RED;
+		case BLOCK_GREEN:
+			return COLOR_GREEN;
+
+		default:
+			return COLOR_RESET;
+	}
 }
 
 void getBoardLine(Board board, int line, char* buff_out){
@@ -166,4 +162,33 @@ void getMenuLine(int line, char* buff_out, TetrominoType next, TetrominoType sto
 		strcpy(buff_out, "≥ Quit   esc ≥");
 	if (line == 19)
 		strcpy(buff_out, "¿ƒƒƒƒƒƒƒƒƒƒƒƒŸ");
+}
+
+// Note: uses directly the VGA video memory
+void setColors(Board board, TetrominoType next, TetrominoType storage){
+	uint8_t* const VIDEO_MEMORY = (uint8_t*) 0xb8000;
+
+	for(int i=0 ; i<BOARD_HEIGHT ; i++){
+		for (int j=0 ; j<BOARD_WIDTH ; j++){
+			TetrominoBlock cur = board[i*BOARD_WIDTH + j];
+			if (cur != BLOCK_NONE){
+				// index in board: (i, j)
+				// index in VIDEO_MEMORY: (i+1, 4j + 6)
+				// flattened: (i+1)*SCREEN_WIDTH*2 + 4j+6
+				// And add the offset 1 for color
+				VIDEO_MEMORY[(i+1)*80*2 + 4*j+6 +1] = getBlockColor(cur);
+				// Second character (blocks are two char wide)
+				VIDEO_MEMORY[(i+1)*80*2 + 4*j+6 +3] = getBlockColor(cur);
+			}
+		}
+	}
+
+	int colorNext = getBlockColor(next);
+	int colorStorage = getBlockColor(storage);
+	for (int i=0 ; i<8 ; i++){
+		VIDEO_MEMORY[(2)*80*2 + (29+i)*2 +1] = colorNext;
+		VIDEO_MEMORY[(3)*80*2 + (29+i)*2 +1] = colorNext;
+		VIDEO_MEMORY[(8)*80*2 + (29+i)*2 +1] = colorStorage;
+		VIDEO_MEMORY[(9)*80*2 + (29+i)*2 +1] = colorStorage;
+	}
 }
