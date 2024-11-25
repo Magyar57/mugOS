@@ -23,28 +23,44 @@ static int putTetrominosBlock(TetrominoBlock block, char* out){
 
 	switch (block){
 		case BLOCK_NONE:
-			strcpy(out, " .");
+			// strcpy(out, " .");
+			out[0] = ' ';
+			out[1] = '.';
 			break;
 		case BLOCK_CYAN:
-			strcpy(out, BLOCK_STR);
+			// strcpy(out, BLOCK_STR);
+			out[0] = 219;
+			out[1] = 219;
 			break;
 		case BLOCK_YELLOW:
-			strcpy(out, BLOCK_STR);
+			// strcpy(out, BLOCK_STR);
+			out[0] = 219;
+			out[1] = 219;
 			break;
 		case BLOCK_PURPLE:
-			strcpy(out, BLOCK_STR);
+			// strcpy(out, BLOCK_STR);
+			out[0] = 219;
+			out[1] = 219;
 			break;
 		case BLOCK_ORANGE:
-			strcpy(out, BLOCK_STR);
+			// strcpy(out, BLOCK_STR);
+			out[0] = 219;
+			out[1] = 219;
 			break;
 		case BLOCK_BLUE:
-			strcpy(out, BLOCK_STR);
+			// strcpy(out, BLOCK_STR);
+			out[0] = 219;
+			out[1] = 219;
 			break;
 		case BLOCK_RED:
-			strcpy(out, BLOCK_STR);
+			// strcpy(out, BLOCK_STR);
+			out[0] = 219;
+			out[1] = 219;
 			break;
 		case BLOCK_GREEN:
-			strcpy(out, BLOCK_STR);
+			// strcpy(out, BLOCK_STR);
+			out[0] = 219;
+			out[1] = 219;
 			break;
 		default:
 			return 0;
@@ -74,8 +90,9 @@ static void getTetrominoLine(char* buff_out, TetrominoType tetro, int line){
 	int buffer_index = 0;
 
 	// Write border and padding
+	// strcpy(buff_out, "³");
 	strcpy(buff_out, "³");
-	buffer_index += 3;
+	buffer_index += 1;
 	for(int i=0 ; i<padding ; i++) buff_out[buffer_index+i] = ' ';
 	buffer_index += padding;
 
@@ -89,8 +106,9 @@ static void getTetrominoLine(char* buff_out, TetrominoType tetro, int line){
 
 	// Draw tetro line
 	for(int i=0 ; i<layout_size ; i++){
-		if (layout[line*layout_size + i] != 0)
+		if (layout[line*layout_size + i] != 0){
 			buffer_index += putTetrominosBlock(block, buff_out+buffer_index);
+		}
 		else{
 			buff_out[buffer_index++] = ' ';
 			buff_out[buffer_index++] = ' ';
@@ -103,7 +121,7 @@ static void getTetrominoLine(char* buff_out, TetrominoType tetro, int line){
 	strcpy(buff_out+buffer_index, "³");
 }
 
-// This function is horrible, fuck technical debt
+// This function is horrible, I love technical debt
 void getMenuLine(int line, char* buff_out, TetrominoType next, TetrominoType storage){
 	assert(buff_out != NULL);
 	assert(next != TETROMINO_NONE);
