@@ -22,6 +22,7 @@ bool g_tetroWasStoredThisStep;
 Board g_Board;
 Tetromino g_curTetro;
 char g_debugString[256];
+bool g_needsRedraw;
 
 #define GAME_STEP			1000	// Step every 1000 ms
 #define TARGET_FRAMETIME	16.667	// 16 ms => 60 fps
@@ -41,6 +42,7 @@ char g_debugString[256];
 void initalizeGame(){
 	g_gameOver = false;
 	g_tetroWasStoredThisStep = false;
+	g_needsRedraw = true;
 	// srand(time(NULL));
 	TetrisKeyboard_initalize();
 	memset(g_debugString, 0, sizeof(g_debugString));
@@ -64,6 +66,7 @@ void step(double dt, double waited){
 	// If not, we fall
 	if(!collide){
 		g_curTetro.pos_line++;
+		g_needsRedraw = true;
 		return;
 	}
 
@@ -77,6 +80,8 @@ void step(double dt, double waited){
 	if (collides(g_Board, &g_curTetro, g_curTetro.pos_line, g_curTetro.pos_column, g_curTetro.rotation)){
 		g_gameOver = true;
 	}
+
+	g_needsRedraw = true;
 }
 
 void update_gameOver(){
@@ -195,14 +200,15 @@ void draw(){
 
 	setColors(g_Board, getNextTetrominoType(), getStoredTetrominoType());
 	removeTetromino(g_Board, &g_curTetro);
+	g_needsRedraw = false;
 }
 
 void Tetris_runGame() {
 	initalizeGame();
 
 	while(!g_ShouldQuit) {
-		draw();
 		update(16.667, 0.0);
+		if (g_needsRedraw) draw();
 
 		for(int i=0 ; i<10000000 ; i++); // active wait
 	}
