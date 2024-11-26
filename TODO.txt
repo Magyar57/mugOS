@@ -1,4 +1,4 @@
-Implementation plan:
+Roadmap:
 - [X] Hello world bootloader
 - [X] Two-stage bootloader
 - [X] Switch to protected mode
@@ -9,10 +9,10 @@ Implementation plan:
 - [X] Handle hardware interrupts (IRQ)
 - [X] Implement PS/2 drivers (controller and devices)
 - [X] Implement a keyboard driver subsystem
-- [ ] Make my C tetris compatible-ish (run in ring 0)
+- [X] Port my C Tetris to mugOS (run in ring 0)
+- [X] Double fault handler
 - [ ] Memory detection
 - [ ] kmalloc
-- [ ] Double fault handler
 - [ ] Serial output driver
 - [ ] Userland
 - [ ] Bootloader: abandon Legacy in favor of UEFI
