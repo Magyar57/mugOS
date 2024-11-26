@@ -1,4 +1,7 @@
-Roadmap:
+# mugOS Roadmap and TODOs
+
+## Roadmap
+
 - [X] Hello world bootloader
 - [X] Two-stage bootloader
 - [X] Switch to protected mode
@@ -18,8 +21,12 @@ Roadmap:
 - [ ] Bootloader: abandon Legacy in favor of UEFI
 - [ ] Kernel FAT32 driver
 - [ ] Filesystem management
+- [ ] Add gdb support
 
-Modifications:
+## Modifications
+
+These are modifications to be done, that are dependent on other techs to be implemented first.
+
 - [ ] When implementing USB, intialize and disable USB legacy support BEFORE initializing the PS/2 controller
 - [ ] With ACPI implemented, finish step 2 of the 8042 PS/2 controller initalization
 - [ ] With proper executable and lib support, remove callbacks from the keyboard driver when its owner exits
