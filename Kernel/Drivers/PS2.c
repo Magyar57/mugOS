@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "stdio.h"
+#include "string.h"
 #include "assert.h"
 #include "Arch/io.h"
 #include "Arch/PS2Controller.h"
@@ -17,17 +18,20 @@
 // This is similar to other OSes
 // Note 2: we assume that the PS/2 Controller disabled translation for port 1
 
-// Commands
+// Commands (prefixes: KB=Keyboard, MOUSE=Mouse, None=Both)
 #define PS2_KB_CMD_SET_LED				0xed
 #define PS2_KB_CMD_ECHO					0xee
 #define PS2_KB_CMD_SET_KEYSET			0xf0 // Get/Set scancode set
-#define PS2_KB_CMD_IDENTIFY				0xf2
+#define PS2_CMD_IDENTIFY				0xf2
 #define PS2_KB_CMD_SET_DELAY_AND_RATE	0xf3
 #define PS2_KB_CMD_ENABLE_SCANNING		0xf4
 #define PS2_KB_CMD_DISABLE_SCANNING		0xf5
 #define PS2_KB_CMD_SET_DEFAULT_PARAMS	0xf6
 #define PS2_KB_CMD_RESEND				0xfe // Resend last byte
 #define PS2_KB_CMD_RESET				0xff
+#define PS2_MOUSE_CMD_SET_SAMPLERATE	0xf3
+#define PS2_MOUSE_CMD_REQUEST_PACKET	0xf3 // Request the current packet, as a complete one
+#define PS2_MOUSE_CMD_SET_RESOLUTION	0xe8
 // Commands data byte
 #define PS2_KB_DATA_SCANCODE_GET		0x00
 #define PS2_KB_DATA_SCANCODE_SET1		0x01
@@ -46,16 +50,27 @@
 #define PS2_KB_RES_RESEND				0xfe
 #define PS2_KB_RES_ERROR1				0xff // Same as KB_RESPONSE_ERROR0, other scan code
 
-#define IDENTIFIER_SIZE 64
-typedef struct s_PS2Device {
+typedef struct s_PS2Keyboard {
 	bool enabled;
-	const char* identifier;
-	// char identifier[IDENTIFIER_SIZE];
-} PS2Device;
+	const char* name;
+} PS2Keyboard;
+
+typedef enum e_PS2MouseType {
+	PS2MOUSETYPE_STD = 0x00,
+	PS2MOUSETYPE_WHEEL = 0x03,
+	PS2MOUSETYPE_5BUTTONS = 0x04
+} PS2MouseType;
+
+typedef struct s_PS2Mouse {
+	bool enabled;
+	PS2MouseType type;
+	const char* name;
+	uint8_t packetSize;
+} PS2Mouse;
 
 static bool g_enabled;
-static PS2Device g_PS2Keyboard;
-static PS2Device g_PS2Mouse;
+static PS2Keyboard g_PS2Keyboard;
+static PS2Mouse g_PS2Mouse;
 
 // We need these keyboard-related definitions here for the PS/2 driver intialization
 static void setLEDs(uint8_t leds);
@@ -81,49 +96,38 @@ static inline uint8_t sendByteToDevice1_HandleResend(uint8_t byte){
 // Send a byte to device 2, and resends (max 3 times) if response is Resend
 // Returns: response on success, PS2_KB_RES_RESEND on failure
 static inline uint8_t sendByteToDevice2_HandleResend(uint8_t byte){
-	puts("TODO");
-	return PS2_KB_RES_RESEND;
+	uint8_t buff;
+	for(int i=0 ; i<3 ; i++){
+		bool success;
+		success = PS2Controller_sendByteToDevice2(byte);
+		if (!success) return PS2_KB_RES_RESEND;
+		success = PS2Controller_receiveDeviceByte(&buff);
+		if (!success) return PS2_KB_RES_RESEND;
+		if (buff != PS2_KB_RES_RESEND) break;
+	}
+	return buff;
 }
 
-// Detect the device given by the first argument.
-// Returns:
-//  - Type of device as a constant string
-//  - Weather the device is a keyboard in isKeyboard_out
-// If the device is invalid, returns NULL (and isKeyboard_out is undefined)
-static const char* detectDevice(int device, bool* isKeyboard_out){
-	assert(device == 1 || device == 2);
-	uint8_t buff;
-	uint8_t (*sendByteToDevice)(uint8_t);
-	sendByteToDevice = (device == 1) ? sendByteToDevice1_HandleResend : sendByteToDevice2_HandleResend;
+// Get a keyboard name/type (scanning must be disabled !!)
+// Returns its name (NULL if unrecognized or is a mouse)
+static const char* getKeyboardName(){
+	uint8_t buff, byte1, byte2;
 
-	buff = sendByteToDevice(PS2_KB_CMD_DISABLE_SCANNING);
+	buff = sendByteToDevice1_HandleResend(PS2_CMD_IDENTIFY);
 	if (buff != PS2_KB_RES_ACK) return NULL;
 
-	buff = sendByteToDevice(PS2_KB_CMD_IDENTIFY);
-	if (buff != PS2_KB_RES_ACK) return NULL;
-
-	uint8_t byte1, byte2;
 	bool byte1_present = PS2Controller_receiveDeviceByte(&byte1);
 	if (!byte1_present){
-		*isKeyboard_out = true;
 		return "AT Keyboard";
 	}
 
 	bool byte2_present = PS2Controller_receiveDeviceByte(&byte2);
 
-	// Only one byte to handle
+	// Only one byte: mouse
 	if (!byte2_present){
-		*isKeyboard_out = false;
-		switch (byte1){
-			case 0x00: return "Standard PS/2 mouse";
-			case 0x03: return "PS/2 Mouse with scroll wheel";
-			case 0x04: return "PS/2 5-button mouse";
-			default: return NULL;
-		}
+		return NULL;
 	}
 
-	// 2 bytes to handle
-	*isKeyboard_out = true;
 	switch (byte1){
 		case 0xab:
 			switch (byte2){
@@ -142,20 +146,37 @@ static const char* detectDevice(int device, bool* isKeyboard_out){
 				case 0xa1: return "PS/2 NCD Sun Keyboard";
 				default: return NULL;
 			}
-		default: return NULL;
+		default:
+			return NULL;
 	}
 }
 
+// Detect a mouse on port 2 and returns its id (0xff if unrecognized or is a keyboard)
+static PS2MouseType getMouseType(){
+	uint8_t buff;
+
+	buff = sendByteToDevice2_HandleResend(PS2_CMD_IDENTIFY);
+	if (buff != PS2_KB_RES_ACK) return 0xff;
+
+	bool byte_present = PS2Controller_receiveDeviceByte(&buff);
+	if (!byte_present) return 0xff;
+
+	return buff;
+}
+
 // Note: check that port 1 is available and populated before calling this method
-void PS2_initalizeKeyboard(PS2Device* keyboard){
-	bool isKeyboard;
+void PS2_initalizeKeyboard(PS2Keyboard* keyboard){
 	uint8_t buff1, buff2;
 	keyboard->enabled = false;
 
-	keyboard->identifier = detectDevice(1, &isKeyboard);
-	if ((keyboard->identifier == NULL) || !isKeyboard){
-		return;
-	}
+	// Disable scanning for initialization
+	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_DISABLE_SCANNING);
+	if (buff1 != PS2_KB_RES_ACK) return;
+
+	// Get the keyboard name string
+	keyboard->name = getKeyboardName(keyboard);
+	if (keyboard->name == NULL)	return;
+	keyboard->enabled = true;
 
 	// Switch to scan code set 2
 	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_KEYSET);
@@ -176,14 +197,66 @@ void PS2_initalizeKeyboard(PS2Device* keyboard){
 	g_leds = PS2_KB_DATA_LED_NUMLOCK;
 	setLEDs(g_leds);
 
-	keyboard->enabled = true;
-	printf("[ INFO ] PS/2 driver: Indentified keyboard as '%s'\n", keyboard->identifier);
+	printf("[ INFO ] PS/2 driver: Indentified keyboard as '%s'\n", keyboard->name);
 }
 
 // Note: check that port 2 is available and populated before calling this method
-void PS2_initalizeMouse(PS2Device* mouse){
+void PS2_initalizeMouse(PS2Mouse* mouse){
 	mouse->enabled = false;
-	puts("[ TODO ] PS/2 driver: PS/2 mouse not implemented (in " __FILE__ ")");
+
+	mouse->type = getMouseType();
+
+	// Try to enable scroll wheel
+	// Magic sequence: set sample rate to 200, then 100, then 80
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_SET_SAMPLERATE);
+	sendByteToDevice2_HandleResend(200);
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_SET_SAMPLERATE);
+	sendByteToDevice2_HandleResend(100);
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_SET_SAMPLERATE);
+	sendByteToDevice2_HandleResend(80);
+	mouse->type = getMouseType(); // update mouse type
+
+	// Try to enable mouse button 4 and 5
+	// Magic sequence: set sample rate to 200, then 200, then 80
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_SET_SAMPLERATE);
+	sendByteToDevice2_HandleResend(200);
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_SET_SAMPLERATE);
+	sendByteToDevice2_HandleResend(200);
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_SET_SAMPLERATE);
+	sendByteToDevice2_HandleResend(80);
+	mouse->type = getMouseType(); // update mouse type
+
+	// Set Samplerate and Resolution
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_SET_SAMPLERATE);
+	sendByteToDevice2_HandleResend(40); // 40 samples/sec (as recommended by osdev.org)
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_SET_RESOLUTION);
+	sendByteToDevice2_HandleResend(0x03); // 8 count/mm
+
+	// Enable packets
+	// TODO
+	sendByteToDevice2_HandleResend(0xf4);
+
+	// Set the mouse name
+	switch (mouse->type){
+		case PS2MOUSETYPE_STD:
+			mouse->name = "Standard PS/2 mouse";
+			mouse->packetSize = 3;
+			break;
+		case PS2MOUSETYPE_WHEEL:
+			mouse->name = "PS/2 Mouse with scroll wheel";
+			mouse->packetSize = 4;
+			break;
+		case PS2MOUSETYPE_5BUTTONS:
+			mouse->name = "PS/2 5-button mouse";
+			mouse->packetSize = 4;
+			break;
+		default:
+			puts("[ INFO ] PS/2 driver: Couldn't initalize PS/2 mouse (invalid mouse id)");
+			return;
+	}
+
+	mouse->enabled = true;
+	printf("[ INFO ] PS/2 driver: Identified mouse as '%s'\n", mouse->name);
 }
 
 void PS2_initalize(){
@@ -592,10 +665,32 @@ void PS2_notifyKeyboard(){
 
 #pragma region PS/2 Mouse
 
-// STUB
+static unsigned int g_mouseCurPacketIndex = 0;
+static uint8_t g_mouseCurPacket[4];
+
+void PS2_handleMousePacket(uint8_t packet[4]){
+	// byte1 bits: Y overflow, X overflow, Y sign bit, X sign bit, Always 1, Middle Btn, Right Btn, Left Btn
+	// byte2: X movement
+	// byte3: Y movement
+	// byte4: [OPT]:
+
+	// If X or Y overflow, ignore packet !
+
+	printf("[INT] PS/2 mouse interrupt packet=[%p, %p, %p, %p]\n", packet[0], packet[1], packet[2], packet[3]);
+}
+
 void PS2_notifyMouse(){
-	uint8_t data = inb(0x60);
-	printf("[INT] PS/2 mouse interrupt data=%p\n", data);
+	uint8_t data;
+
+	bool res = PS2Controller_receiveDeviceByte(&data);
+	if (!res) return;
+
+	g_mouseCurPacket[g_mouseCurPacketIndex] = data;
+	if (++g_mouseCurPacketIndex == g_PS2Mouse.packetSize){
+		PS2_handleMousePacket(g_mouseCurPacket);
+		memset(g_mouseCurPacket, 0, sizeof(g_mouseCurPacket));
+		g_mouseCurPacketIndex = 0;
+	}
 }
 
 #pragma endregion PS/2 Mouse
