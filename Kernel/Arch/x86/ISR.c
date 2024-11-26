@@ -8,6 +8,9 @@
 
 #include "ISR.h"
 
+#define ISR_DIVIDE_BY_ZERO_ERROR	0x00
+#define ISR_DOUBLE_FAULT			0x08
+
 // Global array of [un]registered interrupt handlers
 ISR g_ISR[256];
 
@@ -47,20 +50,6 @@ static const char* const g_ExceptionTypes[] = {
 	// After: only interrupts
 };
 
-// In ISR_defs.c
-void ISR_initializeInterruptHandlers();
-
-void ISR_initialize(){
-	ISR_initializeInterruptHandlers();
-
-	// Enable all ISR assembly methods (in ISR_defs.s)
-	// They all call ISR_Common with unified parameters
-	for(int i=0 ; i<256 ; i++){
-		IDT_enableInterruptHandler(i);
-	}
-	IDT_enableInterruptHandler(0x80);
-}
-
 void ISR_registerHandler(uint8_t vector, ISR handler){
 	g_ISR[vector] = handler;
 }
@@ -68,6 +57,8 @@ void ISR_registerHandler(uint8_t vector, ISR handler){
 void ISR_deregisterHandler(uint8_t vector){
 	g_ISR[vector] = NULL;
 }
+
+// ================ ISR Handlers ================
 
 // All ISR lead to a common ISR_Asm_Prehandler function, which calls this function
 void __attribute__((cdecl)) ISR_C_prehandler(ISR_Params* params){
@@ -88,4 +79,40 @@ void __attribute__((cdecl)) ISR_C_prehandler(ISR_Params* params){
 	printf("\teip=%p esp=%p ebp=%p\n", params->eip, params->esp, params->ebp);
 	printf("\tcs=%p ds=%p ss=%p\n", params->cs, params->ds, params->ss);
 	PANIC();
+}
+
+void ISR_divisionByZeroError(ISR_Params* params){
+	puts("Division by zero error !!");
+	PANIC();
+}
+
+void ISR_doubleFault(ISR_Params* params){
+	puts("Double fault !!");
+	printf("\tvector=%p eflags=%p err=%p\n", params->vector, params->eflags, params->err);
+	printf("\teax=%p ebx=%p ecx=%p edx=%p esi=%p edi=%p\n",
+		params->eax, params->ebx, params->ecx, params->edx, params->esi, params->edi
+	);
+	printf("\teip=%p esp=%p ebp=%p\n", params->eip, params->esp, params->ebp);
+	printf("\tcs=%p ds=%p ss=%p\n", params->cs, params->ds, params->ss);
+	PANIC();
+}
+
+// ================ Initialize ================
+
+// In ISR_defs.c
+void ISR_initializeInterruptHandlers();
+
+void ISR_initialize(){
+	ISR_initializeInterruptHandlers();
+
+	// Enable all ISR assembly methods (in ISR_defs.s)
+	// They all call ISR_Common with unified parameters
+	for(int i=0 ; i<256 ; i++){
+		IDT_enableInterruptHandler(i); // Enable Asm ISR
+		g_ISR[i] = NULL; // Initialize C ISR
+	}
+
+	// Register our ISR handlers
+	ISR_registerHandler(ISR_DIVIDE_BY_ZERO_ERROR, ISR_divisionByZeroError);
+	ISR_registerHandler(ISR_DOUBLE_FAULT, ISR_doubleFault);
 }
