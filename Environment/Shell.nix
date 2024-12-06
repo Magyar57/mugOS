@@ -4,7 +4,7 @@ pkgs.mkShell {
 
 	# Disable all hardening flags (otherwise gcc won't compile)
 	hardeningDisable = [ "all" ];
-	
+
 	# Dependencies
 	buildInputs = [
 		pkgs.file
