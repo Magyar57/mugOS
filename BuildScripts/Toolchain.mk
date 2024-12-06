@@ -9,7 +9,7 @@ toolchain: toolchain_binutils toolchain_gcc
 toolchain_binutils: | $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-ld
 toolchain_gcc: | $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-gcc
 
-.PHONY: toolchain clean-toolchain
+.PHONY: toolchain clean-toolchain remove-toolchain
 
 $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-ld: | $(TOOLCHAIN_PATH)
 	if [ ! -f "$(TOOLCHAIN_PATH)/binutils.tar.xz" ]; then wget $(BINUTILS_URL) -O $(TOOLCHAIN_PATH)/binutils.tar.xz; fi
@@ -38,4 +38,8 @@ $(TOOLCHAIN_PATH):
 # Clean
 #
 clean-toolchain:
+	rm -rf $(TOOLCHAIN_PATH)/binutils.tar.xz $(TOOLCHAIN_PATH)/binutils-src $(TOOLCHAIN_PATH)/binutils-build
+	rm -rf $(TOOLCHAIN_PATH)/gcc.tar.gz $(TOOLCHAIN_PATH)/gcc-src $(TOOLCHAIN_PATH)/gcc-build
+
+remove-toolchain:
 	rm -rf $(TOOLCHAIN_PATH)
