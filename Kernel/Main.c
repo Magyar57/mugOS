@@ -10,9 +10,10 @@
 extern uint8_t __bss_start;
 extern uint8_t __end;
 
-// Entry point for the second-stage bootloader C code.
-// It is called by the Main.asm code (which is the entry point of the 2nd stage bootloader)
-void __attribute__((section(".entry"))) start(){
+// Kernel entry point
+// Note: It is marked as ".entry" so that we can place it at the top of
+// the binary when linking (see the ld map Linker.map)
+void __attribute__((section(".entry"))) kmain(){
 	// Clear uninitalized data
 	memset(&__bss_start, 0, (&__end) - (&__bss_start));
 
