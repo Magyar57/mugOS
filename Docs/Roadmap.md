@@ -14,7 +14,7 @@
 - [X] Implement a keyboard driver subsystem
 - [X] Port my C Tetris to mugOS (run in ring 0)
 - [X] Double fault handler
-- [ ] Text-mode VGA driver
+- [X] Text-mode VGA driver
 - [ ] Logging subsystem
 - [ ] Serial output driver
 - [ ] Bootloader: abandon Legacy in favor of UEFI
