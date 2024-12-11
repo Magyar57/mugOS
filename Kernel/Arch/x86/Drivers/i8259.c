@@ -3,7 +3,7 @@
 #include "io.h"
 #include "Panic.h"
 
-#include "PIC.h"
+#include "i8259.h"
 
 // Intel 8259 PIC Driver
 // https://wiki.osdev.org/8259_PIC
@@ -34,7 +34,7 @@ static inline bool isDivisibleBy8(uint8_t num){
 	return ((num & 7) == 0);
 }
 
-void PIC_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
+void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	if ( !isDivisibleBy8(offsetMasterPIC) || !isDivisibleBy8(offsetSlavePIC) ){
 		printf("PIC Configuration error: tried to remap with an incorrect offset\n");
 		printf("Both %p and %p must be divisible by 8\n", offsetMasterPIC, offsetSlavePIC);
@@ -57,10 +57,10 @@ void PIC_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	outb(PIC_MASTER_DATA, PIC_ICW4_8086); // Have the PICs use 8086 mode (and not 8080 mode)
 	outb(PIC_SLAVE_DATA, PIC_ICW4_8086);
 
-	PIC_enableAllIRQ();
+	i8259_enableAllIRQ();
 }
 
-void PIC_disableIRQ(uint8_t irq){
+void i8259_disableIRQ(uint8_t irq){
 	if (irq>=16) return; // Ignore invalid IRQ number
 
 	uint8_t port;
@@ -80,7 +80,7 @@ void PIC_disableIRQ(uint8_t irq){
 	outb(port, mask);
 }
 
-void PIC_enableIRQ(uint8_t irq){
+void i8259_enableIRQ(uint8_t irq){
 	if (irq>=16) return; // Ignore invalid IRQ number
 	uint8_t port;
 
@@ -98,23 +98,23 @@ void PIC_enableIRQ(uint8_t irq){
 	outb(port, mask);
 }
 
-void PIC_enableAllIRQ(){
+void i8259_enableAllIRQ(){
 	// Unmask all interrupts
 	outb(PIC_MASTER_DATA, 0x00);
 	outb(PIC_SLAVE_DATA, 0x00);
 }
 
-void PIC_disableAllIRQ(){
+void i8259_disableAllIRQ(){
 	// Mask all interrupts
 	outb(PIC_MASTER_DATA, 0xff);
 	outb(PIC_SLAVE_DATA, 0xff);
 }
 
-void PIC_disable(){
-	PIC_disableAllIRQ();
+void i8259_disable(){
+	i8259_disableAllIRQ();
 }
 
-void PIC_sendEIO(int irq){
+void i8259_sendEIO(int irq){
 	if (irq >= 8) outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
 	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
 }
@@ -127,10 +127,10 @@ static inline uint16_t getCombinedRegister(int ocw3){
 	return (inb(PIC_SLAVE_CMD) << 8) | inb(PIC_MASTER_CMD);
 }
 
-uint16_t PIC_getCombinedIRR(){
+uint16_t i8259_getCombinedIRR(){
 	return getCombinedRegister(PIC_CMD_READ_IRR);
 }
 
-uint16_t PIC_getCombinedISR(){
+uint16_t i8259_getCombinedISR(){
 	return getCombinedRegister(PIC_CMD_READ_ISR);
 }

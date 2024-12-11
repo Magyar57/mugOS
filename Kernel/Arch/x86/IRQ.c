@@ -3,7 +3,7 @@
 #include "Panic.h"
 #include "io.h"
 #include "ISR.h"
-#include "PIC.h"
+#include "Drivers/i8259.h"
 #include "Drivers/PS2.h"
 
 #include "IRQ.h"
@@ -57,7 +57,7 @@ void IRQ_prehandler(ISR_Params* params){
 
 	if (g_IRQHandlers[irq] != NULL){
 		g_IRQHandlers[irq](params);
-		PIC_sendEIO(irq);
+		i8259_sendEIO(irq);
 		return;
 	}
 
@@ -89,7 +89,8 @@ void IRQ_mouse(ISR_Params* params){
 
 void IRQ_initialize(){
 	// Remap the PIC
-	PIC_remap(IRQ_MASTER_PIC_REMAP_OFFSET, IRQ_MASTER_PIC_REMAP_OFFSET+8);
+	i8259_remap(IRQ_MASTER_PIC_REMAP_OFFSET, IRQ_MASTER_PIC_REMAP_OFFSET+8);
+	i8259_disableAllIRQ();
 
 	// Register our IRQ Pre-handler
 	for(int i=0 ; i<16 ; i++){
@@ -101,5 +102,5 @@ void IRQ_initialize(){
 	IRQ_registerHandler(IRQ_KEYBOARD, IRQ_keyboard);
 	IRQ_registerHandler(IRQ_PS2_MOUSE, IRQ_mouse);
 
-	PIC_enableAllIRQ();
+	i8259_enableAllIRQ();
 }
