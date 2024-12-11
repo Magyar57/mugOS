@@ -18,10 +18,10 @@ void __attribute__((section(".entry"))) kmain(){
 	// Clear uninitalized data
 	memset(&__bss_start, 0, (&__end) - (&__bss_start));
 
-	clear_screen();
+	Graphics_initialize();
+	Graphics_clearScreen();
 	puts("Supposons que je sois dans votre kernel !");
 
-	Graphics_initialize();
 	HAL_initialize();
 	PS2_initalize(); // Initialize PS/2 driver
 	Keyboard_initalize(); // Initialize keyboard driver/subsystem

@@ -10,3 +10,7 @@ void Graphics_initialize(){
 		PANIC();
 	}
 }
+
+void Graphics_clearScreen(){
+	VGA_clearScreen();
+}

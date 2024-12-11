@@ -8,12 +8,9 @@
 
 #define TAB_SIZE 4
 
-uint8_t* g_ScreenBuffer = (uint8_t*) 0x000b8000;
-#define SCREEN_WIDTH  80 // Default text mode screen width
-#define SCREEN_HEIGHT 25 // Default text mode screen height
-#define DEFAULT_COLOR (0 << 4) | (7) // (background_color << 4) | (character_color)
-int g_screenX = 0; // Cursor's X position
-int g_screenY = 12; // Cursor's Y position
+// temporary hardcode putchar to VGA_putchar
+#include "Drivers/VGA.h"
+#define putchar VGA_putchar
 
 // Enum for the printf state-machine state
 enum PRINTF_STATE {
@@ -33,78 +30,16 @@ enum PRINTF_LENGTH {
 	PRINTF_LENGTH_LONG_LONG
 };
 
-static inline void putc_xy(int x, int y, char c){
-	// Note the multiplication by 2: this is because the first byte is the char on screen,
-	// and the second byte is the color (4-bits foreground and 4-bits background)
-	x = x % SCREEN_WIDTH;
-	y = y % SCREEN_HEIGHT;
-
-	g_ScreenBuffer[2*(y*SCREEN_WIDTH + x)] = c;
-}
-
-static inline void put_color_xy(int x, int y, uint8_t color){
-	x = x % SCREEN_WIDTH;
-	y = y % SCREEN_HEIGHT;
-
-	g_ScreenBuffer[2*(y*SCREEN_WIDTH + x) + 1] = color;
-}
-
-static inline char getc_xy(int x, int y){
-	x = x % SCREEN_WIDTH;
-	y = y % SCREEN_HEIGHT;
-
-	return g_ScreenBuffer[2*(y*SCREEN_WIDTH + x)];
-}
-
-static inline char get_color_xy(int x, int y){
-	x = x % SCREEN_WIDTH;
-	y = y % SCREEN_HEIGHT;
-
-	return g_ScreenBuffer[2*(y*SCREEN_WIDTH + x) + 1];
-}
-
-void putc(char c){
-	// Instead of using the BIOS interupt (x86_Video_WriteCharTeletype), in protected mode
-	// we need to interact with the screen IO, which is memory-mapped
-	// x86_Video_WriteCharTeletype(c, 0);
-
-	if (c == '\n'){
-		g_screenX = 0;
-		g_screenY++;
-		goto end_putc;
-	}
-	if (c == '\r'){
-		g_screenX = 0;
-		goto end_putc;
-	}
-	if (c == '\t'){
-		do {
-			putc_xy(g_screenX, g_screenY, ' ');
-			g_screenX++;
-		} while(g_screenX % TAB_SIZE != 0 && g_screenX<SCREEN_WIDTH);
-		goto end_putc;
-	}
-
-	putc_xy(g_screenX, g_screenY, c);
-
-	g_screenX = (g_screenX+1) % SCREEN_WIDTH;
-	if (g_screenX == 0) g_screenY++;
-
-	end_putc:
-	if (g_screenY >= SCREEN_HEIGHT) scroll_down(1);
-	set_cursor_position(g_screenX, g_screenY);
-}
-
 void puts_no_lf(const char* str){
 	while(*str){
-		putc(*str);
+		putchar(*str);
 		str++;
 	}
 }
 
 void puts(const char* str){
 	puts_no_lf(str);
-	putc('\n');
+	putchar('\n');
 }
 
 static inline void printf_unsigned(unsigned long long number, int radix){
@@ -124,12 +59,12 @@ static inline void printf_unsigned(unsigned long long number, int radix){
 	} while(number > 0 && pos<PRINTF_NUMBER_BUFFER_SIZE);
 
 	// Print the parsed number to the screen
-	while (--pos >= 0) putc(buffer[pos]);
+	while (--pos >= 0) putchar(buffer[pos]);
 }
 
 static inline void printf_signed(long long number, int radix){
 	if (number < 0){
-		putc('-');
+		putchar('-');
 		number = -number;
 	}
 
@@ -157,7 +92,7 @@ void printf(const char* formatted_string, ...){
 						state = PRINTF_STATE_LENGTH;
 						break;
 					default:
-						putc(*formatted_string);
+						putchar(*formatted_string);
 						break;
 				}
 				break;
@@ -203,13 +138,13 @@ void printf(const char* formatted_string, ...){
 					case 'c':
 						// Note: we call va_args with int size, and not char, because in 32bits pmode
 						// all arguments pushed onto the stack are rounded to 32 bits
-						putc((char) va_arg(args, int));
+						putchar((char) va_arg(args, int));
 						break;
 					case 's':
 						puts_no_lf(va_arg(args, const char*));
 						break;
 					case '%':
-						putc('%');
+						putchar('%');
 						break;
 					case 'd':
 					case 'i':
@@ -225,8 +160,8 @@ void printf(const char* formatted_string, ...){
 					case 'X':
 					case 'x':
 					case 'p':
-						putc('0');
-						putc('x');
+						putchar('0');
+						putchar('x');
 						number = true;
 						sign = false;
 						radix = 16;
@@ -274,50 +209,4 @@ void printf(const char* formatted_string, ...){
 	}
 
 	va_end(args);
-}
-
-void clear_screen(){
-	for(int y=0 ; y<SCREEN_HEIGHT ; y++){
-		for(int x=0 ; x<SCREEN_WIDTH ; x++){
-			putc_xy(x, y, ' ');
-			// put_color_xy(x, y, y*SCREEN_WIDTH+x);
-			put_color_xy(x, y, DEFAULT_COLOR);
-		}
-	}
-
-	g_screenX = 0;
-	g_screenY = 0;
-	set_cursor_position(g_screenX, g_screenY);
-}
-
-void set_cursor_position(int x, int y){
-	int new_pos = y * SCREEN_WIDTH + x;
-
-	// Lower byte
-	outb(0x3d4, 0x0f);
-	outb(0x3d5, (uint8_t) 0x000000ff & new_pos);
-	// Upper byte
-	outb(0x3d4, 0x0e);
-	outb(0x3d5, (uint8_t) ((0x0000ff00 & new_pos) >> 8));
-}
-
-void scroll_down(int n){
-	for(int y=n ; y<SCREEN_HEIGHT ; y++){
-		for(int x=0 ; x<SCREEN_WIDTH ; x++){
-			char c = getc_xy(x, y);
-			char color = get_color_xy(x, y);
-			putc_xy(x, y-n, c);
-			put_color_xy(x, y-n, color);
-		}
-	}
-
-	for(int y=SCREEN_HEIGHT-n ; y<SCREEN_HEIGHT ; y++){
-		for (int x=0; x<SCREEN_WIDTH ; x++){
-			putc_xy(x, y, '\0');
-			put_color_xy(x, y, DEFAULT_COLOR);
-		}
-	}
-
-	g_screenY -= n;
-	set_cursor_position(g_screenX, g_screenY);
 }
