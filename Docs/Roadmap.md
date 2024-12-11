@@ -14,13 +14,16 @@
 - [X] Implement a keyboard driver subsystem
 - [X] Port my C Tetris to mugOS (run in ring 0)
 - [X] Double fault handler
+- [ ] Text-mode VGA driver
+- [ ] Logging subsystem
+- [ ] Serial output driver
+- [ ] Bootloader: abandon Legacy in favor of UEFI
 - [ ] Memory detection
 - [ ] kmalloc
-- [ ] Serial output driver
 - [ ] Userland
-- [ ] Bootloader: abandon Legacy in favor of UEFI
-- [ ] Kernel FAT32 driver
-- [ ] Filesystem management
+- [ ] Kernel FAT driver
+- [ ] Virtual filesystem (VFS)
+- [ ] ELF binary support
 - [ ] Add gdb support
 
 ## Modifications
