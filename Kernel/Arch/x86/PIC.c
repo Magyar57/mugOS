@@ -5,7 +5,7 @@
 
 #include "PIC.h"
 
-// 8259 is the intel PIC
+// Intel 8259 PIC Driver
 // https://wiki.osdev.org/8259_PIC
 
 #define PIC_MASTER_CMD		0x0020	// Master's PIC Command port
@@ -27,8 +27,8 @@
 #define PIC_ICW4_SFNM		0x10	// Special fully nested (not)
 // PIC Commands
 #define PIC_CMD_EOI			0x20	// EOI End Of Interrupt
-#define PIC_CMD_READ_IRR	0x0a	// Read IRR In-Service Register
-#define PIC_CMD_READ_ISR	0x0b	// Read ISR Interrupt Request Register
+#define PIC_CMD_READ_IRR	0x0a	// Read IRR Interrupt Request Register
+#define PIC_CMD_READ_ISR	0x0b	// Read ISR In-Service Register
 
 static inline bool isDivisibleBy8(uint8_t num){
 	return ((num & 7) == 0);
@@ -105,9 +105,9 @@ void PIC_enableAllIRQ(){
 }
 
 void PIC_disableAllIRQ(){
-	// Unmask all interrupts
-	outb(PIC_MASTER_DATA, 0x00);
-	outb(PIC_SLAVE_DATA, 0x00);
+	// Mask all interrupts
+	outb(PIC_MASTER_DATA, 0xff);
+	outb(PIC_SLAVE_DATA, 0xff);
 }
 
 void PIC_disable(){
@@ -119,7 +119,7 @@ void PIC_sendEIO(int irq){
 	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
 }
 
-static inline uint16_t PIC_GetCombinedRegister(int ocw3){
+static inline uint16_t getCombinedRegister(int ocw3){
 	// OCW3 to PIC CMD to get the register values. PIC_SLAVE is chained, and
 	// represents IRQs 8-15. PIC_MASTER is IRQs 0-7, with 2 being the chain
 	outb(PIC_MASTER_CMD, ocw3);
@@ -128,9 +128,9 @@ static inline uint16_t PIC_GetCombinedRegister(int ocw3){
 }
 
 uint16_t PIC_getCombinedIRR(){
-	return PIC_GetCombinedRegister(PIC_CMD_READ_IRR);
+	return getCombinedRegister(PIC_CMD_READ_IRR);
 }
 
-uint16_t PIC_getCombinedISR(void){
-	return PIC_GetCombinedRegister(PIC_CMD_READ_ISR);
+uint16_t PIC_getCombinedISR(){
+	return getCombinedRegister(PIC_CMD_READ_ISR);
 }
