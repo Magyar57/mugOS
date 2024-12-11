@@ -93,22 +93,22 @@ static bool i8242_resetDevice(int device){
 	uint8_t buff;
 
 	(device == 1) ?
-		PS2Controller_sendByteToDevice1(PS2C_DEV_CMD_RESET) : PS2Controller_sendByteToDevice2(PS2C_DEV_CMD_RESET);
+		i8242_sendByteToDevice1(PS2C_DEV_CMD_RESET) : i8242_sendByteToDevice2(PS2C_DEV_CMD_RESET);
 
 	// Byte 1: ACK or TEST_PASSED
-	if (!PS2Controller_receiveDeviceByte(&buff) && buff!=PS2C_DEV_RES_ACK && buff!=PS2C_DEV_RES_SELF_TEST_PASSED){
+	if (!i8242_receiveDeviceByte(&buff) && buff!=PS2C_DEV_RES_ACK && buff!=PS2C_DEV_RES_SELF_TEST_PASSED){
 		return false;
 	}
 	// Byte 2: ACK or TEST_PASSED
-	if (!PS2Controller_receiveDeviceByte(&buff) && (buff!=PS2C_DEV_RES_ACK) && (buff!=PS2C_DEV_RES_SELF_TEST_PASSED)){
+	if (!i8242_receiveDeviceByte(&buff) && (buff!=PS2C_DEV_RES_ACK) && (buff!=PS2C_DEV_RES_SELF_TEST_PASSED)){
 		return false;
 	}
 	// Byte 3: device ID (can be NOT present in the case of AT Keyboard)
-	if (!PS2Controller_receiveDeviceByte(&buff)){
+	if (!i8242_receiveDeviceByte(&buff)){
 		return true;
 	}
 	// Byte 4: present for some devices
-	if (!PS2Controller_receiveDeviceByte(&buff)){
+	if (!i8242_receiveDeviceByte(&buff)){
 		return true;
 	}
 
@@ -208,25 +208,25 @@ void i8242_initalize(){
 	puts("[  OK  ] PS/2 Controller driver: Initalization success");
 }
 
-void PS2Controller_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out){
+void i8242_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out){
 	*isEnabled_out = g_enabled;
 	*port1Available_out = g_isPort1Valid;
 	*port2Available_out = g_isPort2Valid;
 }
 
-void PS2Controller_enableDevicesInterrupts(){
+void i8242_enableDevicesInterrupts(){
 	uint8_t ccb = readControllerConfigurationByte();
 	ccb |= (PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT);
 	writeControllerConfigurationByte(ccb);
 }
 
-void PS2Controller_disableDevicesInterrupts(){
+void i8242_disableDevicesInterrupts(){
 	uint8_t ccb = readControllerConfigurationByte();
 	ccb = ccb & ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT);
 	writeControllerConfigurationByte(ccb);
 }
 
-bool PS2Controller_sendByteToDevice1(uint8_t byte){
+bool i8242_sendByteToDevice1(uint8_t byte){
 	assert(g_enabled && g_isPort1Valid);
 
 	int timer = 0;
@@ -244,15 +244,15 @@ bool PS2Controller_sendByteToDevice1(uint8_t byte){
 	return true;
 }
 
-bool PS2Controller_sendByteToDevice2(uint8_t byte){
+bool i8242_sendByteToDevice2(uint8_t byte){
 	assert(g_enabled && g_isPort2Valid);
 
 	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_WRITE_PORT2_INPUT_BUFF);
 	// Nothing more needed for device 2, we can reuse our code for the first one
-	return PS2Controller_sendByteToDevice1(byte);
+	return i8242_sendByteToDevice1(byte);
 }
 
-bool PS2Controller_receiveDeviceByte(uint8_t* byte_out){
+bool i8242_receiveDeviceByte(uint8_t* byte_out){
 	assert(g_enabled);
 	assert(g_isPort1Valid || g_isPort2Valid);
 	bool buffer_full = false;
