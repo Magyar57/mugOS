@@ -1,5 +1,6 @@
 TARGET_ASMFLAGS+=
-TARGET_CFLAGS+=-I../..
+TARGET_CFLAGS+=
+TARGET_CFLAGS_INCLUDE=-I../..
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
@@ -15,7 +16,7 @@ arch: $(OBJECTS_C) $(OBJECTS_ASM)
 # Generic object rules
 
 $(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIR)
-	$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
+	$(TARGET_CC) $(TARGET_CFLAGS) $(TARGET_CFLAGS_INCLUDE) -c -o $@ $<
 
 $(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIR)
 	$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<

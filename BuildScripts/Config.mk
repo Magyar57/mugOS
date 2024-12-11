@@ -10,14 +10,14 @@ export LD:=gcc
 export ASM:=nasm
 export LINKFLAGS:=
 export LIBS:=
-export CLEAR_ENV:=CFLAGS= ASMFLAGS= CC= CXX= LD= ASM= LINKFLAGS= LIBS= 
+export CLEAR_ENV:=CFLAGS= ASMFLAGS= CC= CXX= LD= ASM= LINKFLAGS= LIBS=
 
 # Compilation for target system
 export TARGET:=i686-elf
 export TARGET_ASM:=nasm
 export TARGET_ASMFLAGS:=
 export TARGET_CC:=$(TARGET)-gcc
-export TARGET_CFLAGS:=-std=c99 -g -Wall #-O2
+export TARGET_CFLAGS:=-std=c99 -g -Wall
 export TARGET_CXX:=$(TARGET)-g++
 export TARGET_CXXFLAGS:=
 export TARGET_LD:=$(TARGET)-gcc

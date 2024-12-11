@@ -4,8 +4,8 @@
 #include "stdio.h"
 #include "string.h"
 #include "assert.h"
-#include "Arch/io.h"
-#include "Arch/PS2Controller.h"
+#include "io.h"
+#include "PS2Controller.h"
 #include "Drivers/Keycodes.h"
 #include "Drivers/Keyboard.h"
 

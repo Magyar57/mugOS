@@ -1,8 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdarg.h>
-
-#include "Arch/io.h"
+#include "io.h"
 #include "stdio.h"
 
 #define PRINTF_NUMBER_BUFFER_SIZE 32

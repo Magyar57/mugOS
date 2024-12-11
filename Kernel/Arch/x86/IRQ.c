@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include "stdio.h"
 #include "Panic.h"
-#include "Arch/io.h"
+#include "io.h"
 #include "ISR.h"
 #include "PIC.h"
 #include "Drivers/PS2.h"

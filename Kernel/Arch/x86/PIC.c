@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include "stdio.h"
-#include "Arch/io.h"
+#include "io.h"
 #include "Panic.h"
 
 #include "PIC.h"
