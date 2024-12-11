@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "stdio.h"
-#include "Interrupts.h"
+#include "CPU.h"
 
 #include "GDT.h"
 

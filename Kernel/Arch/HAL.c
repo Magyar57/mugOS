@@ -6,7 +6,7 @@
 // ================ x86 ================
 #ifdef ARCH_x86
 
-#include "Arch/x86/Interrupts.h"
+#include "Arch/x86/CPU.h"
 #include "Arch/x86/GDT.h"
 #include "Arch/x86/IDT.h"
 #include "Arch/x86/ISR.h"

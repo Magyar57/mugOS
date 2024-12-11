@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "stdio.h"
-#include "Interrupts.h"
+#include "CPU.h"
 #include "GDT.h"
 #include "IDT.h"
 #include "Panic.h"
