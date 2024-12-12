@@ -1,7 +1,7 @@
 #ifndef __STRING_H__
 #define __STRING_H__
 
-#include "stdio.h"
+#include <stddef.h>
 
 // Find a char "chr" in the string
 // @return A pointer to the first occurrence of chr in the C string str. NULL if not found
