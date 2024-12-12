@@ -1,6 +1,6 @@
 TARGET_ASMFLAGS+=-f elf
 TARGET_CFLAGS+=-ffreestanding -nostdlib -D ARCH_$(ARCH) -I.
-TARGET_CFLAGS_INCLUDE=-IArch/$(ARCH)
+TARGET_CFLAGS_INCLUDE=-IArch/$(ARCH) -IStdlib
 TARGET_LIBS+=-lgcc
 TARGET_LDFLAGS+=-T Linker.map -nostdlib
 
@@ -19,6 +19,7 @@ all: kernel
 kernel: $(BUILD_DIR)/kernel.bin
 
 $(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM) $(BUILD_SUBDIR)/HAL.o Arch/HAL.h $(ARCH_SOURCES) $(SUB_SOURCES)
+	@$(MAKE) -C Stdlib $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
 	@$(MAKE) -C Drivers $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
 	@$(MAKE) -C Arch/$(ARCH) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
 	$(TARGET_LD) $(TARGET_LDFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $(BUILD_SUBDIR)/*.o $(BUILD_SUBDIR)/*.obj $(TARGET_LIBS)

@@ -1,6 +1,6 @@
 TARGET_ASMFLAGS+=
 TARGET_CFLAGS+=
-TARGET_CFLAGS_INCLUDE=-I../..
+TARGET_CFLAGS_INCLUDE=-I../..  -I../../Stdlib
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))

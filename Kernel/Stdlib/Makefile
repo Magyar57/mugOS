@@ -1,15 +1,15 @@
 TARGET_ASMFLAGS+=
 TARGET_CFLAGS+=
-TARGET_CFLAGS_INCLUDE=-I.. -I../Arch/$(ARCH) -I../Stdlib
+TARGET_CFLAGS_INCLUDE=-I.. -I../Arch/$(ARCH)
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
 
-all: drivers
+all: stdlib
 
-.PHONY: all drivers
+.PHONY: all stdlib
 
-drivers: $(OBJECTS_C)
+stdlib: $(OBJECTS_C)
 
 # Generic object rules
 
