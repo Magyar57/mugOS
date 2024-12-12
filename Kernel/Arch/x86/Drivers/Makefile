@@ -1,6 +1,5 @@
 TARGET_ASMFLAGS+=
 TARGET_CFLAGS+=
-TARGET_CFLAGS_INCLUDE=-I.. -I../../.. -I../../../Stdlib
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
@@ -14,4 +13,4 @@ drivers: $(OBJECTS_C)
 # Generic object rules
 
 $(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIR)
-	$(TARGET_CC) $(TARGET_CFLAGS) $(TARGET_CFLAGS_INCLUDE) -c -o $@ $<
+	$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
