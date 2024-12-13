@@ -15,7 +15,7 @@
 - [X] Port my C Tetris to mugOS (run in ring 0)
 - [X] Double fault handler
 - [X] Text-mode VGA driver
-- [ ] Logging subsystem
+- [X] Logging subsystem
 - [ ] Serial output driver
 - [ ] Bootloader: abandon Legacy in favor of UEFI
 - [ ] Memory detection
