@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdarg.h>
+#include "unistd.h"
 #include "string.h"
 
 #include "stdio.h"
@@ -7,6 +8,18 @@
 #define TAB_SIZE 4
 
 // ================ Helper for printf implementation ================
+
+// Doc: https://cplusplus.com/reference/cstdio/printf/
+// %[$][flags][width][.precision][length modifier]specifier
+// supported options:
+// - specifier: c s % d i o x u p 
+// - width: h hh l ll
+
+// Tests
+// printf("%% %c %s ", 'a', "my_string");
+// printf("%d %i %x %p %o ", 1234, -5678, 0x7fff, 0xbeef, 012345);
+// printf("%hd %hi %hhu %hhd\r\n", (short)57, (short)-42, (unsigned char) 20, (char)-10);
+// printf("%ld %lx %lld %llx\r\n\n", -100000000l, 0x7ffffffful, 10200300400ll, 0xeeeeaaaa7777ffffull);
 
 // Enum for the printf state-machine state
 enum PRINTF_STATE {
@@ -26,7 +39,28 @@ enum PRINTF_LENGTH {
 	PRINTF_LENGTH_LONG_LONG
 };
 
-static int printf_unsigned(FILE* restrict stream, unsigned long long number, int radix){
+int dputc(int c, int fd){
+	if (fd<0) return EOF;
+
+	char to_write = (unsigned char) c;
+	ssize_t res = write(fd, &to_write, 1);
+
+	return (res == 1) ? to_write : EOF;
+}
+
+int dputs(const char* restrict s, int fd){
+	int res;
+
+	while(*s){
+		res = dputc(*s, fd);
+		if (res == EOF) return EOF;
+		s++;
+	}
+
+	return 1;
+}
+
+static int printf_unsigned(int fd, unsigned long long number, int radix){
 	int printed = 0;
 
 	// All possible characters that we can encouter
@@ -45,7 +79,7 @@ static int printf_unsigned(FILE* restrict stream, unsigned long long number, int
 
 	// Print the parsed number to the screen
 	while (--pos >= 0) {
-		int res = fputc(buffer[pos], stream);
+		int res = dputc(buffer[pos], fd);
 		if (res == EOF) return printed; // cannot write anymore
 		printed++;
 	}
@@ -53,16 +87,16 @@ static int printf_unsigned(FILE* restrict stream, unsigned long long number, int
 	return printed;
 }
 
-static int printf_signed(FILE* restrict stream, long long number, int radix){
+static int printf_signed(int fd, long long number, int radix){
 	int offset = 0;
 
 	if (number < 0){
-		fputc('-', stream);
+		dputc('-', fd);
 		number = -number;
 		offset = 1;
 	}
 
-	return offset + printf_unsigned(stream, number, radix);
+	return offset + printf_unsigned(fd, number, radix);
 }
 
 // ================ printf functions ================
@@ -87,7 +121,15 @@ int fprintf(FILE* restrict stream, const char* restrict format, ...){
 	return res;
 }
 
-// int dprintf(int fd, const char* restrict format, ...);
+int dprintf(int fd, const char* restrict format, ...){
+	va_list args;
+
+	va_start(args, format);
+	int res = vdprintf(fd, format, args);
+	va_end(args);
+
+	return res;
+}
 
 // int sprintf(char* restrict str, const char* restrict format, ...);
 
@@ -98,12 +140,21 @@ int vprintf(const char* restrict format, va_list args){
 }
 
 int vfprintf(FILE* restrict stream, const char* restrict format, va_list args){
+	if ((stream == NULL) || (stream->fd < 0))
+		return -1;
+
+	return vdprintf(stream->fd, format, args);
+}
+
+int vdprintf(int fd, const char* restrict format, va_list args){
 	int state = PRINTF_STATE_NORMAL;
 	int length = PRINTF_LENGTH_DEFAULT;
 	bool number = false;
 	bool sign = false;
 	int radix = 10;
 	int printed = 0;
+
+	if (fd < 0) return -1;
 
 	while(*format){
 
@@ -115,7 +166,7 @@ int vfprintf(FILE* restrict stream, const char* restrict format, va_list args){
 						state = PRINTF_STATE_LENGTH;
 						break;
 					default:
-						fputc(*format, stream);
+						dputc(*format, fd);
 						printed++;
 						break;
 				}
@@ -162,16 +213,16 @@ int vfprintf(FILE* restrict stream, const char* restrict format, va_list args){
 					case 'c':
 						// Note: we call va_args with int size, and not char, because in 32bits pmode
 						// all arguments pushed onto the stack are rounded to 32 bits
-						fputc((char) va_arg(args, int), stream);
+						dputc((char) va_arg(args, int), fd);
 						printed++;
 						break;
 					case 's':
 						const char* s = va_arg(args, const char*);
-						fputs(s, stream);
+						dputs(s, fd);
 						printed += strlen(s);
 						break;
 					case '%':
-						fputc('%', stream);
+						dputc('%', fd);
 						printed++;
 						break;
 					case 'd':
@@ -188,8 +239,8 @@ int vfprintf(FILE* restrict stream, const char* restrict format, va_list args){
 					case 'X':
 					case 'x':
 					case 'p':
-						fputc('0', stream);
-						fputc('x', stream);
+						dputc('0', fd);
+						dputc('x', fd);
 						printed += 2;
 						number = true;
 						sign = false;
@@ -209,16 +260,16 @@ int vfprintf(FILE* restrict stream, const char* restrict format, va_list args){
 				case PRINTF_LENGTH_SHORT_SHORT:
 				case PRINTF_LENGTH_SHORT:
 				case PRINTF_LENGTH_DEFAULT:
-					if (sign)	printed += printf_signed(stream, va_arg(args, int), radix);
-					else		printed += printf_unsigned(stream, va_arg(args, unsigned int), radix);
+					if (sign)	printed += printf_signed(fd, va_arg(args, int), radix);
+					else		printed += printf_unsigned(fd, va_arg(args, unsigned int), radix);
 					break;
 				case PRINTF_LENGTH_LONG:
-					if (sign)	printed += printf_signed(stream, va_arg(args, long), radix);
-					else		printed += printf_unsigned(stream, va_arg(args, unsigned long), radix);
+					if (sign)	printed += printf_signed(fd, va_arg(args, long), radix);
+					else		printed += printf_unsigned(fd, va_arg(args, unsigned long), radix);
 					break;
 				case PRINTF_LENGTH_LONG_LONG:
-					if (sign)	printed += printf_signed(stream, va_arg(args, long long), radix);
-					else		printed += printf_unsigned(stream, va_arg(args, unsigned long long), radix);
+					if (sign)	printed += printf_signed(fd, va_arg(args, long long), radix);
+					else		printed += printf_unsigned(fd, va_arg(args, unsigned long long), radix);
 					break;
 				default:
 					break;
@@ -239,8 +290,6 @@ int vfprintf(FILE* restrict stream, const char* restrict format, va_list args){
 
 	return printed;
 }
-
-// int vdprintf(int fd, const char* restrict format, va_list args);
 
 // int vsprintf(char* restrict str, const char* restrict format, va_list args);
 
