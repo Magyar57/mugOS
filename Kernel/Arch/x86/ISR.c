@@ -73,12 +73,7 @@ void __attribute__((cdecl)) ISR_C_prehandler(ISR_Params* params){
 
 	// Otherwise we PANIC !
 	const char* interrupt_type = (params->vector < 32) ? g_ExceptionTypes[params->vector] : "Interrupt";
-	log(PANIC, MODULE, "Unhandled %s !", interrupt_type);
-	log(PANIC, NULL, "-> vector=%p eflags=%p err=%p", params->vector, params->eflags, params->err);
-	log(PANIC, NULL, "-> eax=%p ebx=%p ecx=%p edx=%p", params->eax, params->ebx, params->ecx, params->edx);
-	log(PANIC, NULL, "-> esi=%p edi=%p", params->esi, params->edi);
-	log(PANIC, NULL, "-> eip=%p esp=%p ebp=%p", params->eip, params->esp, params->ebp);
-	log(PANIC, NULL, "-> cs=%p ds=%p ss=%p", params->cs, params->ds, params->ss);
+	log(PANIC, MODULE, "Unhandled %s ! (vector=%p err=%p)", interrupt_type, params->vector, params->err);
 	panic();
 }
 
