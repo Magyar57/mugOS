@@ -27,10 +27,10 @@ int putchar(int c){
 }
 
 int fputs(const char* restrict s, FILE* restrict stream){
-	int res;
+	if (s==NULL) return EOF;
 
 	while(*s){
-		res = fputc(*s, stream);
+		int res = fputc(*s, stream);
 		if (res == EOF) return EOF;
 		s++;
 	}
@@ -39,11 +39,11 @@ int fputs(const char* restrict s, FILE* restrict stream){
 }
 
 int puts(const char *s){
-	int res_puts = fputs(s, stdout);
-	int res_putc = fputc('\n', stdout);
+	int res = fputs(s, stdout);
+	if (res == EOF) return EOF;
 
-	if (res_puts == EOF || res_putc == EOF)
-		return EOF;
+	res = fputc('\n', stdout);
+	if (res == EOF) return EOF;
 
 	return 1;
 }

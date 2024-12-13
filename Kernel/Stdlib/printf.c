@@ -50,6 +50,7 @@ int dputc(int c, int fd){
 
 int dputs(const char* restrict s, int fd){
 	int res;
+	if (s == NULL) return EOF;
 
 	while(*s){
 		res = dputc(*s, fd);
@@ -154,7 +155,8 @@ int vdprintf(int fd, const char* restrict format, va_list args){
 	int radix = 10;
 	int printed = 0;
 
-	if (fd < 0) return -1;
+	if (format == NULL) return -1;
+	if (fd < 0) return -2;
 
 	while(*format){
 
@@ -218,8 +220,14 @@ int vdprintf(int fd, const char* restrict format, va_list args){
 						break;
 					case 's':
 						const char* s = va_arg(args, const char*);
-						dputs(s, fd);
-						printed += strlen(s);
+						if (s == NULL) {
+							dputs("(null)", fd);
+							printed += 6;
+						}
+						else {
+							dputs(s, fd);
+							printed += strlen(s);
+						}
 						break;
 					case '%':
 						dputc('%', fd);
