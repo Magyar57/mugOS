@@ -1,12 +1,14 @@
 #include <stddef.h>
-#include "stdio.h"
-#include "Panic.h"
 #include "io.h"
+#include "Logging.h"
+#include "Panic.h"
 #include "ISR.h"
 #include "Drivers/i8259.h"
 #include "Drivers/PS2.h"
 
 #include "IRQ.h"
+
+#define MODULE "IRQ"
 
 // IRQ 0-7 are mapped to interrupts 32 to 39 ; IRQ 8-15 to interrupts 40 to 47
 #define IRQ_MASTER_PIC_REMAP_OFFSET 0x20
@@ -63,14 +65,13 @@ void IRQ_prehandler(ISR_Params* params){
 
 	// Otherwise we PANIC !
 	const char* interrupt_type = g_IRQTypes[irq];
-	printf("Unhandled IRQ number %d - %s\n", irq, interrupt_type);
-	printf("\tvector=%p eflags=%p err=%p\n", params->vector, params->eflags, params->err);
-	printf("\teax=%p ebx=%p ecx=%p edx=%p esi=%p edi=%p\n",
-		params->eax, params->ebx, params->ecx, params->edx, params->esi, params->edi
-	);
-	printf("\teip=%p esp=%p ebp=%p\n", params->eip, params->esp, params->ebp);
-	printf("\tcs=%p ds=%p ss=%p\n", params->cs, params->ds, params->ss);
-	PANIC();
+	log(PANIC, MODULE, "Unhandled IRQ number %d - %s", irq, interrupt_type);
+	log(PANIC, NULL, "-> vector=%p eflags=%p err=%p", params->vector, params->eflags, params->err);
+	log(PANIC, NULL, "-> eax=%p ebx=%p ecx=%p edx=%p", params->eax, params->ebx, params->ecx, params->edx);
+	log(PANIC, NULL, "-> esi=%p edi=%p", params->esi, params->edi);
+	log(PANIC, NULL, "-> eip=%p esp=%p ebp=%p", params->eip, params->esp, params->ebp);
+	log(PANIC, NULL, "-> cs=%p ds=%p ss=%p", params->cs, params->ds, params->ss);
+	panic();
 }
 
 void IRQ_timer(ISR_Params* params){

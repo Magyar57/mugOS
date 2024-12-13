@@ -2,6 +2,6 @@
 #define __PANIC_H__
 
 // Trigger kernel panic. Will halt the system
-void PANIC();
+void panic();
 
 #endif

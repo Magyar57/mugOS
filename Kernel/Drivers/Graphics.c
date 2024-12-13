@@ -7,7 +7,7 @@
 void Graphics_initialize(){
 	bool vga_ok = VGA_initialize();
 	if (!vga_ok){
-		PANIC();
+		panic();
 	}
 }
 

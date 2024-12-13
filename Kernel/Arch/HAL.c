@@ -1,5 +1,5 @@
 #include <stddef.h>
-#include "stdio.h"
+#include "Logging.h"
 
 #include "HAL.h"
 
@@ -21,7 +21,7 @@ void HAL_initialize(){
 	IRQ_initialize();
 
 	enableInterrupts();
-	puts("[  OK  ] x86 HAL initalized");
+	log(SUCCESS, "x86 HAL", "Initalization success");
 }
 
 #endif // ARCH_x86

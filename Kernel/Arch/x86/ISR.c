@@ -1,12 +1,14 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "stdio.h"
+#include "Logging.h"
 #include "CPU.h"
 #include "GDT.h"
 #include "IDT.h"
 #include "Panic.h"
 
 #include "ISR.h"
+
+#define MODULE "ISR"
 
 #define ISR_DIVIDE_BY_ZERO_ERROR	0x00
 #define ISR_DOUBLE_FAULT			0x08
@@ -71,30 +73,28 @@ void __attribute__((cdecl)) ISR_C_prehandler(ISR_Params* params){
 
 	// Otherwise we PANIC !
 	const char* interrupt_type = (params->vector < 32) ? g_ExceptionTypes[params->vector] : "Interrupt";
-	printf("Unhandled %s !\n", interrupt_type);
-	printf("\tvector=%p eflags=%p err=%p\n", params->vector, params->eflags, params->err);
-	printf("\teax=%p ebx=%p ecx=%p edx=%p esi=%p edi=%p\n",
-		params->eax, params->ebx, params->ecx, params->edx, params->esi, params->edi
-	);
-	printf("\teip=%p esp=%p ebp=%p\n", params->eip, params->esp, params->ebp);
-	printf("\tcs=%p ds=%p ss=%p\n", params->cs, params->ds, params->ss);
-	PANIC();
+	log(PANIC, MODULE, "Unhandled %s !", interrupt_type);
+	log(PANIC, NULL, "-> vector=%p eflags=%p err=%p", params->vector, params->eflags, params->err);
+	log(PANIC, NULL, "-> eax=%p ebx=%p ecx=%p edx=%p", params->eax, params->ebx, params->ecx, params->edx);
+	log(PANIC, NULL, "-> esi=%p edi=%p", params->esi, params->edi);
+	log(PANIC, NULL, "-> eip=%p esp=%p ebp=%p", params->eip, params->esp, params->ebp);
+	log(PANIC, NULL, "-> cs=%p ds=%p ss=%p", params->cs, params->ds, params->ss);
+	panic();
 }
 
 void ISR_divisionByZeroError(ISR_Params* params){
-	puts("Division by zero error !!");
-	PANIC();
+	log(PANIC, NULL, "Division by zero error !!");
+	panic();
 }
 
 void ISR_doubleFault(ISR_Params* params){
-	puts("Double fault !!");
-	printf("\tvector=%p eflags=%p err=%p\n", params->vector, params->eflags, params->err);
-	printf("\teax=%p ebx=%p ecx=%p edx=%p esi=%p edi=%p\n",
-		params->eax, params->ebx, params->ecx, params->edx, params->esi, params->edi
-	);
-	printf("\teip=%p esp=%p ebp=%p\n", params->eip, params->esp, params->ebp);
-	printf("\tcs=%p ds=%p ss=%p\n", params->cs, params->ds, params->ss);
-	PANIC();
+	log(PANIC, NULL, "Double fault !!");
+	log(PANIC, NULL, "-> vector=%p eflags=%p err=%p", params->vector, params->eflags, params->err);
+	log(PANIC, NULL, "-> eax=%p ebx=%p ecx=%p edx=%p", params->eax, params->ebx, params->ecx, params->edx);
+	log(PANIC, NULL, "-> esi=%p edi=%p", params->esi, params->edi);
+	log(PANIC, NULL, "-> eip=%p esp=%p ebp=%p", params->eip, params->esp, params->ebp);
+	log(PANIC, NULL, "-> cs=%p ds=%p ss=%p", params->cs, params->ds, params->ss);
+	panic();
 }
 
 // ================ Initialize ================

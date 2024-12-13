@@ -1,9 +1,11 @@
 #include <stdbool.h>
-#include "stdio.h"
+#include "Logging.h"
 #include "assert.h"
 #include "io.h"
 
 #include "i8242.h"
+
+#define MODULE "PS/2 Controller driver"
 
 // Intel 8242 PS/2 Controller driver
 // https://wiki.osdev.org/%228042%22_PS/2_Controller
@@ -139,9 +141,14 @@ void i8242_initalize(){
 	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_SELF_TEST);
 	buff = readPort(PS2C_PORT_DATA);
 	if (buff != PS2C_RES_SELF_TEST_SUCCESS){
-		g_enabled = false;
-		puts("[ERROR!] PS/2 Controller driver: initalization failed, chip self test failed"); // TODO retry ?
-		return;
+		// Retry once
+		sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_SELF_TEST);
+		buff = readPort(PS2C_PORT_DATA);		
+		if (buff != PS2C_RES_SELF_TEST_SUCCESS){
+			g_enabled = false;
+			Logging_log(ERROR, MODULE, "initalization failed, chip self test failed");
+			return;
+		}
 	}
 
 	// 7. Determine presence of port 2
@@ -172,7 +179,7 @@ void i8242_initalize(){
 	// Update driver state
 	g_enabled = (g_isPort1Valid | g_isPort2Valid);
 	if (!g_enabled){
-		puts("[ERROR!] PS/2 Controller driver: initalization failed, no functionning PS/2 port found.");
+		Logging_log(ERROR, MODULE, "initalization failed, no functionning PS/2 port found.");
 		return;
 	}
 
@@ -186,12 +193,12 @@ void i8242_initalize(){
 	res = i8242_resetDevice(1);
 	if (!res) {
 		g_isPort1Valid = false;
-		puts("[  INFO  ] PS/2 Controller driver: Device 1 reset failed, deactivated");
+		Logging_log(INFO, MODULE, "Device 1 reset failed, deactivated");
 	}
 	res = i8242_resetDevice(2);
 	if (!res) {
 		g_isPort1Valid = false;
-		puts("[  INFO  ] PS/2 Controller driver: Device 2 reset failed, deactivated");
+		Logging_log(INFO, MODULE, "Device 2 reset failed, deactivated");
 	}
 
 	// Re-enable devices and interrupts for available devices
@@ -205,7 +212,7 @@ void i8242_initalize(){
 		sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_ENABLE_PORT2);
 	}
 	writeControllerConfigurationByte(buff);
-	puts("[  OK  ] PS/2 Controller driver: Initalization success");
+	Logging_log(SUCCESS, MODULE, "Initalization success");
 }
 
 void i8242_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out){

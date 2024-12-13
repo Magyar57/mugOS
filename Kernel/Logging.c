@@ -1,19 +1,21 @@
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include "stdio.h"
 
 #include "Logging.h"
 
-const char* loglevelPrefix[] = {
+static const char* loglevelPrefix[] = {
 	"[#DEBUG] ",
 	"[  OK  ] ",
 	"[ INFO ] ",
 	"[ WARN ] ",
 	"[ERROR!] ",
+	">>PANIC!<< "
 };
 
 void Logging_log(int logLevel, const char* moduleName, const char* logFmtStr, ...){
-	if (logLevel<0 || logLevel>ERROR) return;
+	if (logLevel<0 || logLevel>PANIC) return;
 	FILE* stream = (logLevel != ERROR) ? stdout : stderr;
 
 	fputs(loglevelPrefix[logLevel], stream);

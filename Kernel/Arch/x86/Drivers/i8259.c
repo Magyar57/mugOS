@@ -1,6 +1,6 @@
 #include <stdbool.h>
-#include "stdio.h"
 #include "io.h"
+#include "Logging.h"
 #include "Panic.h"
 
 #include "i8259.h"
@@ -36,9 +36,9 @@ static inline bool isDivisibleBy8(uint8_t num){
 
 void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	if ( !isDivisibleBy8(offsetMasterPIC) || !isDivisibleBy8(offsetSlavePIC) ){
-		printf("PIC Configuration error: tried to remap with an incorrect offset\n");
-		printf("Both %p and %p must be divisible by 8\n", offsetMasterPIC, offsetSlavePIC);
-		PANIC();
+		log(PANIC, __FILE__, "PIC Configuration error: tried to remap with an incorrect offset");
+		log(PANIC, __FILE__, "Both %p and %p must be divisible by 8", offsetMasterPIC, offsetSlavePIC);
+		panic();
 	}
 
 	// According to this forum: https://forum.osdev.org/viewtopic.php?t=30111

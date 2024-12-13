@@ -1,9 +1,10 @@
-#include "stdio.h"
+#include <stddef.h>
+#include "Logging.h"
 #include "CPU.h"
 
 #include "Panic.h"
 
-void PANIC(){
-	puts("KERNEL PANIC!");
+void panic(){
+	log(PANIC, NULL, "halting");
 	halt();
 }

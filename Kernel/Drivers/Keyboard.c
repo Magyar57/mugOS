@@ -1,9 +1,11 @@
 #include <stddef.h>
 #include <stdbool.h>
-#include "stdio.h"
+#include "Logging.h"
 #include "Drivers/Keycodes.h"
 
 #include "Keyboard.h"
+
+#define MODULE "Keyboard submodule"
 
 // Driver state variables
 bool g_capslockOn;
@@ -501,7 +503,7 @@ void Keyboard_initalize(){
 		g_callbacks[i] = NULL;
 	}
 
-	puts("[  OK  ] Keyboard driver: Initialization success");
+	Logging_log(SUCCESS, MODULE, "Initialization success");
 }
 
 void Keyboard_notifyReleased(Keycode keycode){
@@ -711,7 +713,7 @@ void Keyboard_notifyPressed(Keycode keycode){
 }
 
 void keyCallback_printKey(int keycode, int character, uint8_t mode, uint8_t modifier_keys){
-	printf("keyboard: key %p (%c)\n", keycode, character);
+	debug("key %p (%c)", keycode, character);
 }
 
 void Keyboard_NotifySysRq(){

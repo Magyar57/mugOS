@@ -1,15 +1,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "stdio.h"
 #include "string.h"
 #include "assert.h"
 #include "io.h"
+#include "Logging.h"
 #include "Drivers/PS2Controller.h"
 #include "Drivers/Keycodes.h"
 #include "Drivers/Keyboard.h"
 
 #include "PS2.h"
+
+#define MODULE "PS/2 driver"
 
 // https://wiki.osdev.org/PS/2_Keyboard
 // ASCII table: https://www.asciitable.com/
@@ -182,7 +184,7 @@ void PS2_initalizeKeyboard(PS2Keyboard* keyboard){
 	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_KEYSET);
 	buff2 = sendByteToDevice1_HandleResend(PS2_KB_DATA_SCANCODE_SET2);
 	if (buff1!=PS2_KB_RES_ACK || buff2!=PS2_KB_RES_ACK){
-		puts("[ INFO ] PS/2 driver: PS/2 Keyboard doesn't support scan code set 1, deactivated support.");
+		Logging_log(INFO, MODULE, "PS/2 Keyboard doesn't support scan code set 1, deactivated.");
 		keyboard->enabled = false;
 		return;
 	}
@@ -197,7 +199,7 @@ void PS2_initalizeKeyboard(PS2Keyboard* keyboard){
 	g_leds = PS2_KB_DATA_LED_NUMLOCK;
 	setLEDs(g_leds);
 
-	printf("[ INFO ] PS/2 driver: Indentified keyboard as '%s'\n", keyboard->name);
+	Logging_log(INFO, MODULE, "Indentified keyboard as '%s'", keyboard->name);
 }
 
 // Note: check that port 2 is available and populated before calling this method
@@ -251,12 +253,12 @@ void PS2_initalizeMouse(PS2Mouse* mouse){
 			mouse->packetSize = 4;
 			break;
 		default:
-			puts("[ INFO ] PS/2 driver: Couldn't initalize PS/2 mouse (invalid mouse id)");
+			Logging_log(INFO, MODULE, "Couldn't initalize PS/2 mouse (invalid mouse id)");
 			return;
 	}
 
 	mouse->enabled = true;
-	printf("[ INFO ] PS/2 driver: Identified mouse as '%s'\n", mouse->name);
+	Logging_log(INFO, MODULE, "Identified mouse as '%s'", mouse->name);
 }
 
 void PS2_initalize(){
@@ -269,7 +271,7 @@ void PS2_initalize(){
 		g_enabled = false;
 		g_PS2Keyboard.enabled = false;
 		g_PS2Mouse.enabled = false;
-		puts("[ERROR!] PS/2 driver: Initalization failed, PS/2 Controller driver is disabled");
+		Logging_log(ERROR, MODULE, "Initalization failed, PS/2 Controller driver is disabled");
 		return;
 	}
 
@@ -289,7 +291,7 @@ void PS2_initalize(){
 	}
 
 	PS2Controller_enableDevicesInterrupts();
-	puts("[  OK  ] PS/2 driver: Initialization success");
+	Logging_log(SUCCESS, MODULE, "Initialization success");
 }
 
 #pragma endregion PS/2 Initalize
@@ -609,7 +611,7 @@ static void handleScancode(uint8_t scancode){
 
 	switch (keycode){
 		case KEY_RESERVED: // Driver did not recognize the scancode
-			printf("Unrecognized scancode %p\n", scancode);
+			log(ERROR, MODULE, "Unrecognized scancode %p", scancode);
 			resetKeyboardState();
 			return;
 		case KEY_NUMLOCK:
@@ -643,8 +645,8 @@ void PS2_notifyKeyboard(){
 
 	// Debug print
 	// code = inb(0x60);
-	// if (code == 0x5a) puts("");
-	// else printf("%p ", code);
+	// if (code == 0x5a) debug("");
+	// else debug("%p ", code);
 	// return;
 
 	bool res = PS2Controller_receiveDeviceByte(&code);
@@ -654,7 +656,7 @@ void PS2_notifyKeyboard(){
 
 	// Verify that it IS a keycode and not a response from a command (should not happen though)
 	if (isResponseCode(code)){
-		printf("[ INT  ] Got a reponse byte instead of a keycode, ignoring (byte=%p)\n", code);
+		log(WARNING, MODULE, "Got a reponse byte instead of a keycode, ignoring (byte=%p)", code);
 		return;
 	}
 
@@ -676,7 +678,7 @@ void PS2_handleMousePacket(uint8_t packet[4]){
 
 	// If X or Y overflow, ignore packet !
 
-	printf("[INT] PS/2 mouse interrupt packet=[%p, %p, %p, %p]\n", packet[0], packet[1], packet[2], packet[3]);
+	debug("mouse interrupt, packet=[%p, %p, %p, %p]", packet[0], packet[1], packet[2], packet[3]);
 }
 
 void PS2_notifyMouse(){
