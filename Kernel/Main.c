@@ -26,5 +26,6 @@ void __attribute__((section(".entry"))) kmain(){
 	PS2_initalize(); // Initialize PS/2 driver
 	Keyboard_initalize(); // Initialize keyboard driver/subsystem
 
-	while(true); // infinite active wait
+	// Infinite loop: whenever an interrupts fire, handle it ; then stop again.
+	while(true) halt();
 }

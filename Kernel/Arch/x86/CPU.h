@@ -3,8 +3,11 @@
 
 #include <stdint.h>
 
-// Halt (stops indefinitely) the processor
-void __attribute((cdecl)) halt();
+// Halt (stops until next interrupt) the processor
+void __attribute__((cdecl)) halt();
+
+// Stops DEFINITELY the processor (interrupts are masked)
+void __attribute__((cdecl)) terminate();
 
 // Disable interrupts (cli)
 void __attribute__((cdecl)) disableInterrupts();

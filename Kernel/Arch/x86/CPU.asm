@@ -5,11 +5,19 @@ section .text
 ; void halt();
 global halt
 halt:
-	.halt:
+	hlt
+	ret
+; END halt
+
+; void terminate();
+global terminate
+terminate:
+	.terminate:
 	cli
 	hlt
-	jmp .halt
-; END halt
+	jmp .terminate
+	ret
+; END terminate
 
 ; void disableInterrupts();
 global disableInterrupts
