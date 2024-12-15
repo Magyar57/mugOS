@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "stdio.h"
 #include "string.h"
+#include "CPU.h"
 #include "Arch/HAL.h"
 #include "Drivers/Graphics.h"
 #include "Drivers/PS2.h"
