@@ -10,7 +10,7 @@
 			"preLaunchTask": "Native build",
 			"request": "launch",
 			"program": "qemu-system-i386",
-			"args": ["-fda", "${workspaceFolder}/build/floppy.img", "-monitor", "stdio"],
+			"args": ["-fda", "${workspaceFolder}/build/floppy.img"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
