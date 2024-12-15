@@ -19,7 +19,8 @@ void Logging_log(int logLevel, const char* moduleName, const char* logFmtStr, ..
 	FILE* stream = (logLevel != ERROR) ? stdout : stderr;
 
 	fputs(loglevelPrefix[logLevel], stream);
-	if (moduleName != NULL) fprintf(stream, "%s: ", moduleName);
+	if (moduleName != NULL) fprintf(stream, "%s -> ", moduleName);
+	else fprintf(stream, "-> ");
 
 	va_list args;
 	va_start(args, logFmtStr);
