@@ -30,13 +30,13 @@
 			"preLaunchTask": "Native build",
 			"request": "launch",
 			"program": "bochs",
-			"args": ["-f", "${workspaceFolder}/Environment/Bochs.cfg"],
+			"args": ["-f", "${workspaceFolder}/Environment/Bochs.cfg", "-q"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
 			"externalConsole": false,
 			"linux": {
-				"program": "/usr/bin/bochs-debugger",
+				"program": "/usr/bin/bochs",
 			},
 			"osx": {
 				"program": "/opt/homebrew/bin/bochs",
