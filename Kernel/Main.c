@@ -6,6 +6,7 @@
 #include "CPU.h"
 #include "Arch/HAL.h"
 #include "Drivers/Graphics.h"
+#include "Drivers/Serial.h"
 #include "Drivers/PS2.h"
 #include "Drivers/Keyboard.h"
 
@@ -24,6 +25,7 @@ void __attribute__((section(".entry"))) kmain(){
 	puts("Supposons que je sois dans votre kernel !");
 
 	HAL_initialize();
+	Serial_initalize();
 	PS2_initalize(); // Initialize PS/2 driver
 	Keyboard_initalize(); // Initialize keyboard driver/subsystem
 
