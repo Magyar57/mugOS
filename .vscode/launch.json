@@ -30,7 +30,7 @@
 			"preLaunchTask": "Native build",
 			"request": "launch",
 			"program": "bochs",
-			"args": ["-f", "${workspaceFolder}/Debuggers/Bochs.cfg"],
+			"args": ["-f", "${workspaceFolder}/Environment/Bochs.cfg"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
