@@ -109,28 +109,29 @@ void handleUARTInterrupt(ISR_Params* params){
 	do {
 		// Read IRR, only keep interrupt bits (lower 3 bits)
 		iir = inb(port+SERIAL_OFFSET_IIR) & 0b00001111;
-		debug("iir=%d", iir);
 
 		switch (iir){
 		case SERIAL_IIR_INT_PENDING:
-			debug("IIR: no interrupt pending, WTF ?");
+			log(WARNING, MODULE, "Got IRQ, but no interrupt is pending");
 			break;
 		case SERIAL_IIR_INT_MODEM:
-			debug("IIR: interrupt is pending => modem status interrupt");
+			debug("IRQ => modem status interrupt");
 			uint8_t msr = inb(port+SERIAL_OFFSET_MSR);
 			debug("read MSR: %p", msr);
 			break;
 		case SERIAL_IIR_INT_TRANSMITTER:
-			debug("IIR: interrupt is pending => THRE out buff empty");
-			// TODO serve "by reading IIR (if source of int only!) or writing to THR"
+			debug("IRQ => THRE out buff empty");
+			// TODO serve "by reading IIR or writing to THR"
 			break;
 		case SERIAL_IIR_INT_DATA:
-			debug("IIR: interrupt is pending => data available");
+			debug("IRQ => data available");
 			// TODO serve "by reading RBR until under level"
+			msr = inb(port+SERIAL_OFFSET_MSR);
+			debug("msr=%p", msr);
 			break;
 		case SERIAL_IIR_INT_LINE:
-			debug("IIR: interrupt is pending => line status changed");
-			// serve "by reading the LSR"
+			debug("IRQ => line status changed");
+			// Served "by reading the LSR"
 			uint8_t lsr = inb(port+SERIAL_OFFSET_LSR);
 			if (lsr & SERIAL_LSR_DR) debug("LSR (%p): data to be read ! :)", lsr);
 			if (lsr & SERIAL_LSR_OE) debug("LSR(%p): data was lost", lsr);
@@ -141,26 +142,23 @@ void handleUARTInterrupt(ISR_Params* params){
 			if (lsr & SERIAL_LSR_TEMT) debug("LSR(%p): transmitter is idle", lsr);
 			break;
 		case SERIAL_IIR_INT_FIFO:
-			debug("IIR: interrupt is pending => no receiver FIFO action since 4 words' time but data in RX-FIFO");
-			// TODO serve "by reading RBR"
+			// No receiver FIFO action since 4 words' time but data in RX-FIFO
+			// Served "by reading RBR"
+			uint8_t buff = inb(port+SERIAL_OFFSET_BUFFER);
+			debug("Device sent: %p (%c)", buff, buff);
 			break;
 		default:
-			debug("Invalid IRR value, WTF ??");
+			log(WARNING, MODULE, "IRQ: Invalid IRR value");
 			break;
 		}
 
 		// Update for next iteration
 		iir = inb(port+SERIAL_OFFSET_IIR) & 0x07;
-		static bool firstIter = true;
-		if (!firstIter)
-			for(;;);
-		else
-			firstIter = false;
 	} while (iir != SERIAL_IIR_INT_PENDING);
 }
 
-/// @brief Test if a UART chip is connected to a port
-UARTController detectUART(int port){
+/// @brief Test if a UART controller is connected to a port
+UARTController detectUARTController(int port){
    	int mcr_save;
 
    	// Check if a UART is present anyway
@@ -188,7 +186,7 @@ UARTController detectUART(int port){
    	return UART_16550A;
 }
 
-static bool initalizeDevice(int port){
+static bool initalizeUARTController(int port){
 	outb(port+SERIAL_OFFSET_IER, 0x00); // Disable all interrupts
 
 	// Set BAUD rate
@@ -223,7 +221,7 @@ static bool initalizeDevice(int port){
 	return true;
 }
 
-static void enablePortInterrupts(int port){
+static void enableDeviceInterrupts(int port){
 	// Enable everything
 	uint8_t val = SERIAL_IER_DR|SERIAL_IER_THRE|SERIAL_IER_LINE|SERIAL_IER_MODEM;
 	outb(port+SERIAL_OFFSET_IER, val);
@@ -232,17 +230,17 @@ static void enablePortInterrupts(int port){
 void Serial_initalize(){
 	int nDevices = 0;
 
-	// Test all ports
+	// Initialize UART Controllers, Serial Devices (if present), and set m_devices accordingly
 	for(int i=0 ; i<N_PORTS ; i++){
 		UARTDevice* curDev = m_devices+i;
 
 		curDev->identifier = i+1;
 		curDev->port = PORTS[i];
-		curDev->controller = detectUART(curDev->port);
+		curDev->controller = detectUARTController(curDev->port);
 		curDev->controllerName = UARTControllersNames[curDev->controller];
 		if (curDev->controller == UART_NONE) continue;
 
-		curDev->present = initalizeDevice(curDev->port);
+		curDev->present = initalizeUARTController(curDev->port);
 		if (!curDev->present){
 			log(ERROR, MODULE, "Found faulty UART Controller '%s' on port %d, ignoring", curDev->controllerName, curDev->identifier);
 			continue;
@@ -263,7 +261,7 @@ void Serial_initalize(){
 	IRQ_registerHandler(4, handleUARTInterrupt); // IRQ4: COM1 or COM3 port
 	for(int i=0 ; i<N_PORTS ; i++){
 		if (m_devices[i].present){
-			enablePortInterrupts(m_devices[i].port);
+			enableDeviceInterrupts(m_devices[i].port);
 		}
 	}
 	log(SUCCESS, MODULE, "Initialized %d Serial device(s)", nDevices);
