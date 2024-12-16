@@ -5,41 +5,38 @@
 
 #include "Serial.h"
 
+// This is both:
+// - A x86 UART Controller driver (8250, 16450, 16550 and 16550A)
+// - A UART Device interface
+
 #define MODULE "Serial Port driver"
 
-// Possible ports to poll (x86 specific !!)
-const int PORTS[] = {
-	0x3f8,	// SERIAL_PORT_COM1
-	0x2f8,	// SERIAL_PORT_COM2
-	0x3e8,	// SERIAL_PORT_COM3
-	0x2e8,	// SERIAL_PORT_COM4
-	0x5f8,	// SERIAL_PORT_COM5
-	0x4f8,	// SERIAL_PORT_COM6
-	0x5e8,	// SERIAL_PORT_COM7
-	0x4e8	// SERIAL_PORT_COM8
-};
+// Possible ports to poll (x86 specific !)
+#define N_PORTS 8
+const int PORTS[N_PORTS] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8, 0x5f8, 0x4f8, 0x5e8, 0x4e8 };
 
-// UART chip types
+// UART controllers types
 typedef enum {
 	UART_NONE,
 	UART_8250,
 	UART_16450,
 	UART_16550,
 	UART_16550A,
-} UART;
-// Chip names
-const char* UART_Chips[] = {
-	"INVALID",
-	"8250",
-	"16450",
-	"16550",
-	"16550A"
-};
+} UARTController;
+const char* UARTControllersNames[] = { "None", "8250", "16450", "16550", "16550A" };
 
-int m_portNumber = -1; // From 1 to 8. -1: no serial device present
-UART m_UART = 0;
+typedef struct s_UARTDevice {
+	int identifier; // COM1 on DOS, /dev/ttyS0 on linux ; we simply use the number
+	int present;
+	int port;
+	UARTController controller;
+	const char* controllerName;
+} UARTDevice;
 
-// UART registers. Ports are given as an offset from the COM port
+UARTDevice m_devices[N_PORTS];
+int m_defaultDevice = -1;
+
+// UART registers. Ports are given as an offset from the device port
 #define SERIAL_OFFSET_BUFFER				0 // - Receive/transmit buffer (read/write)
 #define SERIAL_OFFSET_IER					1 // - Interrupt enable register (IER)			=> (READ/WRITE)	make the chip trigger (or not) IRQs
 #define SERIAL_OFFSET_IIR					2 // - Interrupt Identification Register (IIR)	=> (READ)       info about currently pending IRQs
@@ -104,9 +101,9 @@ UART m_UART = 0;
 
 void handleUARTInterrupt(ISR_Params* params){
 	uint8_t iir;
-	int port = PORTS[m_portNumber];
 
-	debug("COM/UART interrupt");
+	// Determine port
+	int port = PORTS[0]; // TODO how ?
 
 	// Service interrupts while bit 0 is clear
 	do {
@@ -124,7 +121,7 @@ void handleUARTInterrupt(ISR_Params* params){
 			debug("read MSR: %p", msr);
 			break;
 		case SERIAL_IIR_INT_TRANSMITTER:
-			debug("IIR: interrupt is pending => Transmitter Holding Register is Empty");
+			debug("IIR: interrupt is pending => THRE out buff empty");
 			// TODO serve "by reading IIR (if source of int only!) or writing to THR"
 			break;
 		case SERIAL_IIR_INT_DATA:
@@ -133,7 +130,15 @@ void handleUARTInterrupt(ISR_Params* params){
 			break;
 		case SERIAL_IIR_INT_LINE:
 			debug("IIR: interrupt is pending => line status changed");
-			// TODO serve "by reading the LSR"
+			// serve "by reading the LSR"
+			uint8_t lsr = inb(port+SERIAL_OFFSET_LSR);
+			if (lsr & SERIAL_LSR_DR) debug("LSR (%p): data to be read ! :)", lsr);
+			if (lsr & SERIAL_LSR_OE) debug("LSR(%p): data was lost", lsr);
+			if (lsr & SERIAL_LSR_PE) debug("LSR(%p): parity detected an error", lsr);
+			if (lsr & SERIAL_LSR_FE) debug("LSR(%p): framing error (stop bit was missing)", lsr);
+			if (lsr & SERIAL_LSR_BI) debug("LSR(%p): got a break", lsr);
+			if (lsr & SERIAL_LSR_THRE) debug("LSR(%p): transmission buffer empty (we can send data)", lsr);
+			if (lsr & SERIAL_LSR_TEMT) debug("LSR(%p): transmitter is idle", lsr);
 			break;
 		case SERIAL_IIR_INT_FIFO:
 			debug("IIR: interrupt is pending => no receiver FIFO action since 4 words' time but data in RX-FIFO");
@@ -152,25 +157,10 @@ void handleUARTInterrupt(ISR_Params* params){
 		else
 			firstIter = false;
 	} while (iir != SERIAL_IIR_INT_PENDING);
-
-	// else {
-	// 	debug("no interrupt pending, WTH ?");
-	// }
-
-	// Print line status for debug
-	// uint8_t lsr = inb(port+SERIAL_OFFSET_LSR);
-	// debug("LSR=%p", lsr);
-	// if (lsr & SERIAL_LSR_DR) debug("LSR: data to be read ! :)");
-	// if (lsr & SERIAL_LSR_OE) debug("LSR: data was lost");
-	// if (lsr & SERIAL_LSR_PE) debug("LSR: parity detected an error");
-	// if (lsr & SERIAL_LSR_FE) debug("LSR: framing error (stop bit was missing)");
-	// if (lsr & SERIAL_LSR_BI) debug("LSR: got a break");
-	// if (lsr & SERIAL_LSR_THRE) debug("LSR: transmission buffer empty (we can send data)");
-	// if (lsr & SERIAL_LSR_TEMT) debug("LSR: transmitter is idle");
 }
 
 /// @brief Test if a UART chip is connected to a port
-UART detectUART(int port){
+UARTController detectUART(int port){
    	int mcr_save;
 
    	// Check if a UART is present anyway
@@ -198,7 +188,7 @@ UART detectUART(int port){
    	return UART_16550A;
 }
 
-static bool initalizePort(int port){
+static bool initalizeDevice(int port){
 	outb(port+SERIAL_OFFSET_IER, 0x00); // Disable all interrupts
 
 	// Set BAUD rate
@@ -240,28 +230,44 @@ static void enablePortInterrupts(int port){
 }
 
 void Serial_initalize(){
-	// Test all ports
-	for(int i=0 ; i<sizeof(PORTS)/sizeof(int) ; i++){
-		UART uart = detectUART(PORTS[i]);
-		if (uart == UART_NONE) continue;
+	int nDevices = 0;
 
-		bool res = initalizePort(PORTS[i]);
-		if (!res){
-			log(ERROR, MODULE, "Found faulty UART Controller '%s' on COM%d, ignoring", UART_Chips[uart], i+1);
+	// Test all ports
+	for(int i=0 ; i<N_PORTS ; i++){
+		UARTDevice* curDev = m_devices+i;
+
+		curDev->identifier = i+1;
+		curDev->port = PORTS[i];
+		curDev->controller = detectUART(curDev->port);
+		curDev->controllerName = UARTControllersNames[curDev->controller];
+		if (curDev->controller == UART_NONE) continue;
+
+		curDev->present = initalizeDevice(curDev->port);
+		if (!curDev->present){
+			log(ERROR, MODULE, "Found faulty UART Controller '%s' on port %d, ignoring", curDev->controllerName, curDev->identifier);
 			continue;
 		}
 
-		m_portNumber = i;
-		m_UART = uart;
-		log(INFO, MODULE, "Found UART Controller '%s' on COM%d", UART_Chips[m_UART], m_portNumber+1);
-		break; // stop at the first functionning one
+		log(INFO, MODULE, "Found UART Controller '%s' on port %d", curDev->controllerName, curDev->identifier);
+		nDevices++;
+		if (m_defaultDevice < 0) m_defaultDevice = i; // Default device is the first encountered
 	}
 
 	// No valid device / UART found
-	if (m_portNumber == -1){
+	if (nDevices == 0){
 		log(SUCCESS, MODULE, "Initialization found no Serial device");
 		return;
 	}
+
+	IRQ_registerHandler(3, handleUARTInterrupt); // IRQ3: COM2 or COM4 port
+	IRQ_registerHandler(4, handleUARTInterrupt); // IRQ4: COM1 or COM3 port
+	for(int i=0 ; i<N_PORTS ; i++){
+		if (m_devices[i].present){
+			enablePortInterrupts(m_devices[i].port);
+		}
+	}
+	log(SUCCESS, MODULE, "Initialized %d Serial device(s)", nDevices);
+	log(INFO, MODULE, "Driver defaults to Serial device %d", m_defaultDevice+1);
 
 	// Serial_sendByte('h');
 	// Serial_sendByte('e');
@@ -270,30 +276,33 @@ void Serial_initalize(){
 	// Serial_sendByte('o');
 	// Serial_sendByte('\n');
 	// Serial_sendByte('\r');
-
-	IRQ_registerHandler(3, handleUARTInterrupt); // IRQ3: COM2 or COM4 port
-	IRQ_registerHandler(4, handleUARTInterrupt); // IRQ4: COM1 or COM3 port
-	enablePortInterrupts(m_portNumber);
-	log(SUCCESS, MODULE, "Initialized, using device on COM%d", m_portNumber+1);
 }
 
 // Aka can send
 static bool isTransmitterReady(){
-	uint8_t lineStatus = inb(PORTS[m_portNumber] + SERIAL_OFFSET_LSR);
+	if (m_defaultDevice<0) return false;
+
+	uint8_t lineStatus = inb(m_devices[m_defaultDevice].port + SERIAL_OFFSET_LSR);
 	return (lineStatus & SERIAL_LSR_THRE); // bit set: can send
 }
 
 bool isDataPresent(){
-	uint8_t lineStatus = inb(PORTS[m_portNumber] + SERIAL_OFFSET_LSR);
+	if (m_defaultDevice<0) return false;
+
+	uint8_t lineStatus = inb(m_devices[m_defaultDevice].port + SERIAL_OFFSET_LSR);
 	return (lineStatus & SERIAL_LSR_DR); // bit set: there's data to be read
 }
 
 void Serial_sendByte(uint8_t byte){
+	if (m_defaultDevice<0) return;
+
 	while(!isTransmitterReady()); // wait
-	outb(PORTS[m_portNumber]+SERIAL_OFFSET_BUFFER, byte);
+	outb(m_devices[m_defaultDevice].port+SERIAL_OFFSET_BUFFER, byte);
 }
 
 uint8_t Serial_receiveByte(){
+	if (m_defaultDevice<0) return 0;
+
 	while(!isDataPresent()); // wait
-	return inb(PORTS[m_portNumber] + SERIAL_OFFSET_BUFFER);
+	return inb(m_devices[m_defaultDevice].port + SERIAL_OFFSET_BUFFER);
 }
