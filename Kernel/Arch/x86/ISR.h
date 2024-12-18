@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-typedef struct {
+typedef struct s_ISR_Params {
 	uint32_t ds;
 	uint32_t edi, esi, ebp, ignored, ebx, edx, ecx, eax;
 	uint32_t vector, err;

@@ -12,6 +12,7 @@
 
 #define ISR_DIVIDE_BY_ZERO_ERROR	0x00
 #define ISR_DOUBLE_FAULT			0x08
+#define ISR_SEGMENT_NOT_PRESENT		0x0b
 
 // Global array of [un]registered interrupt handlers
 ISR g_ISR[256];
@@ -92,6 +93,34 @@ void ISR_doubleFault(ISR_Params* params){
 	panic();
 }
 
+void ISR_segmentNotPresent(ISR_Params* params){
+	// https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-220.html
+	
+	const char* origin = (params->err & 0x0001) ? "External" : "Internal";
+	uint8_t table = (params->err & 0x0006) >> 1;
+	uint16_t descriptor = (params->err & (0xfffc)) >> 3 ;
+
+	const char* tableName;
+	switch (table){
+	case 0:
+		tableName = "GDT"; break;
+	case 1:
+		tableName = "IDT"; break;
+	case 2:
+		tableName = "LDT"; break;
+	case 3:
+		tableName = "IDT"; break;
+	default:
+		tableName = "None"; // unreachable
+	}
+
+	log(PANIC, MODULE, "%s", g_ExceptionTypes[params->vector]);
+	log(PANIC, MODULE, "%s Exception in %s at descriptor=%p", origin, tableName, descriptor);
+	if (!IDT_isInterruptHandlerEnabled(descriptor))
+		log(PANIC, MODULE, "This was triggered because the IDT entry is disabled");
+	panic();
+}
+
 // ================ Initialize ================
 
 // In ISR_defs.c
@@ -106,8 +135,10 @@ void ISR_initialize(){
 		IDT_enableInterruptHandler(i); // Enable Asm ISR
 		g_ISR[i] = NULL; // Initialize C ISR
 	}
+	IDT_disableInterruptHandler(0x80); // until we implement system calls
 
 	// Register our ISR handlers
 	ISR_registerHandler(ISR_DIVIDE_BY_ZERO_ERROR, ISR_divisionByZeroError);
 	ISR_registerHandler(ISR_DOUBLE_FAULT, ISR_doubleFault);
+	ISR_registerHandler(ISR_SEGMENT_NOT_PRESENT, ISR_segmentNotPresent);
 }
