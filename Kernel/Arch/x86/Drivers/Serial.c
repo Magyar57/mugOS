@@ -1,5 +1,7 @@
 #include <stdbool.h>
+#include "string.h"
 #include "io.h"
+#include "assert.h"
 #include "IRQ.h"
 #include "Logging.h"
 
@@ -8,6 +10,9 @@
 // This is both:
 // - A x86 UART Controller driver (8250, 16450, 16550 and 16550A)
 // - A UART Device interface
+// Note: only the 16550A controller has been tested. Other might work
+// with a few bugs, but modern CPU onboards 16550A and no other
+// so this driver should work with all modern systems
 
 #define MODULE "Serial Port driver"
 
@@ -25,12 +30,16 @@ typedef enum {
 } UARTController;
 const char* UARTControllersNames[] = { "None", "8250", "16450", "16550", "16550A" };
 
+#define UARTDEVICE_EXT_BUFF_SIZE 1024
 typedef struct s_UARTDevice {
 	int identifier; // COM1 on DOS, /dev/ttyS0 on linux ; we simply use the number
 	int present;
 	int port;
 	UARTController controller;
 	const char* controllerName;
+	int internalBufferSize; // Internal FIFO buffer size: 14 on 16550A, 1 otherwise
+	uint8_t externalBuffer[UARTDEVICE_EXT_BUFF_SIZE];
+	unsigned int beginIndex, inBuffer; // externalBuffer FIFO variables
 } UARTDevice;
 
 UARTDevice m_devices[N_PORTS];
@@ -99,65 +108,193 @@ int m_defaultDevice = -1;
 #define BAUD_RATE_DIVISOR_LOW 12 // low byte
 #define BAUD_RATE_DIVISOR_HIGH 0 // high byte
 
-void handleUARTInterrupt(ISR_Params* params){
-	uint8_t iir;
+// ================ External buffer handling ================
 
-	// Determine port
-	int port = PORTS[0]; // TODO how ?
+// Add (push back) the null-terminated string str to be written the device buffer
+// If not enough place in buffer, send
+static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
+	assert(dev && str);
+	if (dev==NULL) return false;
+	if (str==NULL) return true;
+
+	size_t n = strlen((const char*) str);
+	if (n==0) return true;
+
+	// If we were not already writing (buffer empty), after filling the buffer,
+	// we need to trigger the THRE again so that we actually send what we put in the buffer
+	bool shouldTriggerTHRE = (dev->inBuffer == 0);
+
+	size_t availableSpace = UARTDEVICE_EXT_BUFF_SIZE - dev->inBuffer;
+	if (availableSpace < n) return false;
+
+	// Copy the string to the external buffer
+	for(int i=0 ; i<n ; i++){
+		dev->externalBuffer[dev->beginIndex + dev->inBuffer] = str[i];
+		dev->inBuffer++;
+	}
+
+	// Trigger THRE if we were not writing
+	if (shouldTriggerTHRE){
+		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
+		ier |= SERIAL_IER_THRE;
+		outb(dev->port+SERIAL_OFFSET_IER, ier);
+	}
+
+	return true;
+}
+
+// Remove (pop front) a byte from the buffer
+static uint8_t popFrontWriteBuffer(UARTDevice* dev){
+	// n can be passed as an argument,
+	// if we're able to return several char
+	int n = 1;
+	uint8_t res;
+
+	// Clamp
+	if (dev->inBuffer < n) n = dev->inBuffer;
+
+	res = dev->externalBuffer[dev->beginIndex];
+	dev->beginIndex = (dev->beginIndex + n) % UARTDEVICE_EXT_BUFF_SIZE;
+	dev->inBuffer -= n;
+
+	// If nothing more to be written, disable THRE
+	if (dev->inBuffer == 0){
+		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
+		ier &= ~SERIAL_IER_THRE;
+		outb(dev->port+SERIAL_OFFSET_IER, ier);
+	}
+
+	return res;
+}
+
+// ================ Interrupt handling ================
+
+// Process available data interrupts:
+// - DR or trigger level reached
+// - No receiver FIFO action since 4 words' time but data in RX-FIFO
+static void processAvailableData(UARTDevice* dev){
+	// Served "by reading RBR (until under level)"
+	//
+	// Read available data from the internal FIFO buffer, and send it back
+
+	uint8_t temp[15];
+	memset(temp, 0, sizeof(temp));
+
+	// Read the available data
+	for(int i=0 ; i<dev->internalBufferSize ; i++){
+		uint8_t buff = inb(dev->port+SERIAL_OFFSET_BUFFER);
+		if (buff == 0) break; // TODO verify we always get 0 when there's no more data to be read
+		temp[i] = buff;
+	}
+
+	// Send it back
+	pushBackWriteBuffer(dev, temp);
+}
+
+// Process THRE: Transmitter Holding Register Empty interrupt
+static void processTHRE(UARTDevice* dev){
+	// Served "by reading IIR or writing to THR"
+	//
+	// If we have data in the external buffer to be sent,
+	// write it to the controller's internal buffer
+
+	int i = 0;
+	while(i<dev->internalBufferSize && dev->inBuffer>0){
+		char toSend = popFrontWriteBuffer(dev);
+		outb(dev->port+SERIAL_OFFSET_BUFFER, toSend);
+		i++;
+	}
+}
+
+// Process MSR: Modem Service Register bits changed interrupt
+static void processUpdatedMSR(UARTDevice* dev){
+	// Served "by reading MSR"
+	// We need to read it in order to serve the interrupt,
+	// but we don't do anything with it
+
+	// uint8_t msr = inb(dev->port+SERIAL_OFFSET_MSR);	
+	inb(dev->port+SERIAL_OFFSET_MSR);
+}
+
+// Process an updated LSR interrupt
+static void processUpdatedLSR(UARTDevice* dev){
+	// Served "by reading the LSR"
+
+	uint8_t lsr = inb(dev->port+SERIAL_OFFSET_LSR);
+
+	if (lsr & SERIAL_LSR_DR); // Data to be read, ignore (handled by interrupts)
+	if (lsr & SERIAL_LSR_OE) log(ERROR, MODULE, "Device %d: Data was lost", dev->identifier);
+	if (lsr & SERIAL_LSR_PE) log(ERROR, MODULE, "Device %d: Parity error detected", dev->identifier);
+	if (lsr & SERIAL_LSR_FE) log(ERROR, MODULE, "Device %d: Framing error (missing stop bit) detected", dev->identifier);
+	if (lsr & SERIAL_LSR_BI) log(WARNING, MODULE, "Device %d: got a break (this is unsupported)");
+	if (lsr & SERIAL_LSR_THRE); // Transmission buffer empty, ignore (handled by interrupts)
+	if (lsr & SERIAL_LSR_TEMT); // Transmitter is not doing anything, ignore (handled by interrupts)
+	if (lsr & SERIAL_LSR_IE) log(ERROR, MODULE, "Device %d: Error with a word in the input buffer", dev->identifier);
+}
+
+static void handleDeviceInterrupt(UARTDevice* dev){
+	if (!dev->present) return; // interrupt might get triggered by software
+
+	uint8_t iir;
 
 	// Service interrupts while bit 0 is clear
 	do {
 		// Read IRR, only keep interrupt bits (lower 3 bits)
-		iir = inb(port+SERIAL_OFFSET_IIR) & 0b00001111;
+		iir = inb(dev->port+SERIAL_OFFSET_IIR) & 0b00001111;
 
 		switch (iir){
 		case SERIAL_IIR_INT_PENDING:
-			log(WARNING, MODULE, "Got IRQ, but no interrupt is pending");
+			// No more interrupt to handle
 			break;
 		case SERIAL_IIR_INT_MODEM:
-			debug("IRQ => modem status interrupt");
-			uint8_t msr = inb(port+SERIAL_OFFSET_MSR);
-			debug("read MSR: %p", msr);
+			// MSR bits changed interrupt (priority: lowest)
+			processUpdatedMSR(dev);
 			break;
 		case SERIAL_IIR_INT_TRANSMITTER:
-			debug("IRQ => THRE out buff empty");
-			// TODO serve "by reading IIR or writing to THR"
+			// THRE: Transmitter Holding Register Empty (priority: third)
+			processTHRE(dev);
 			break;
 		case SERIAL_IIR_INT_DATA:
-			debug("IRQ => data available");
-			// TODO serve "by reading RBR until under level"
-			msr = inb(port+SERIAL_OFFSET_MSR);
-			debug("msr=%p", msr);
+			// DR or trigger level reached (priority: second)
+			processAvailableData(dev);
 			break;
+
 		case SERIAL_IIR_INT_LINE:
-			debug("IRQ => line status changed");
-			// Served "by reading the LSR"
-			uint8_t lsr = inb(port+SERIAL_OFFSET_LSR);
-			if (lsr & SERIAL_LSR_DR) debug("LSR (%p): data to be read ! :)", lsr);
-			if (lsr & SERIAL_LSR_OE) debug("LSR(%p): data was lost", lsr);
-			if (lsr & SERIAL_LSR_PE) debug("LSR(%p): parity detected an error", lsr);
-			if (lsr & SERIAL_LSR_FE) debug("LSR(%p): framing error (stop bit was missing)", lsr);
-			if (lsr & SERIAL_LSR_BI) debug("LSR(%p): got a break", lsr);
-			if (lsr & SERIAL_LSR_THRE) debug("LSR(%p): transmission buffer empty (we can send data)", lsr);
-			if (lsr & SERIAL_LSR_TEMT) debug("LSR(%p): transmitter is idle", lsr);
+			// OE, PE, FE or BI of the LSR set (priority: highest)
+			processUpdatedLSR(dev);
 			break;
+
 		case SERIAL_IIR_INT_FIFO:
-			// No receiver FIFO action since 4 words' time but data in RX-FIFO
-			// Served "by reading RBR"
-			uint8_t buff = inb(port+SERIAL_OFFSET_BUFFER);
-			debug("Device sent: %p (%c)", buff, buff);
+			// No receiver FIFO action since 4 words' time but data in RX-FIFO (priority: second)
+			processAvailableData(dev);
 			break;
+
 		default:
-			log(WARNING, MODULE, "IRQ: Invalid IRR value");
+			log(WARNING, MODULE, "IRQ: Invalid or unsupported IRR value");
 			break;
 		}
-
-		// Update for next iteration
-		iir = inb(port+SERIAL_OFFSET_IIR) & 0x07;
 	} while (iir != SERIAL_IIR_INT_PENDING);
 }
 
-/// @brief Test if a UART controller is connected to a port
+static void handleInterruptDevice1or3(ISR_Params* params){
+	// Determine which device sent the interrupt
+
+	// TODO how ?
+	UARTDevice* dev = &m_devices[0];
+	handleDeviceInterrupt(dev);
+}
+
+static void handleInterruptDevice2or4(ISR_Params* params){
+	// Determine which device sent the interrupt
+
+	// TODO how ?
+	UARTDevice* dev = &m_devices[1];
+	handleDeviceInterrupt(dev);
+}
+
+// ================ Public API ================
+
+/// @brief Test if a UART controller is present, and return which controller it is
 UARTController detectUARTController(int port){
    	int mcr_save;
 
@@ -222,8 +359,12 @@ static bool initalizeUARTController(int port){
 }
 
 static void enableDeviceInterrupts(int port){
-	// Enable everything
-	uint8_t val = SERIAL_IER_DR|SERIAL_IER_THRE|SERIAL_IER_LINE|SERIAL_IER_MODEM;
+	// Enable everything but SERIAL_IER_THRE
+	// This way, the THRE interrupt will be triggered every time we
+	// set its bit in IER ; we use it to trigger writing to the internal
+	// buffer when we filled the external buffer
+
+	uint8_t val = SERIAL_IER_DR|SERIAL_IER_LINE|SERIAL_IER_MODEM;
 	outb(port+SERIAL_OFFSET_IER, val);
 }
 
@@ -239,6 +380,9 @@ void Serial_initalize(){
 		curDev->controller = detectUARTController(curDev->port);
 		curDev->controllerName = UARTControllersNames[curDev->controller];
 		if (curDev->controller == UART_NONE) continue;
+		curDev->internalBufferSize = (curDev->controller == UART_16550A) ? 14 : 1;
+		curDev->beginIndex = 0;
+		curDev->inBuffer = 0;
 
 		curDev->present = initalizeUARTController(curDev->port);
 		if (!curDev->present){
@@ -257,8 +401,8 @@ void Serial_initalize(){
 		return;
 	}
 
-	IRQ_registerHandler(3, handleUARTInterrupt); // IRQ3: COM2 or COM4 port
-	IRQ_registerHandler(4, handleUARTInterrupt); // IRQ4: COM1 or COM3 port
+	IRQ_registerHandler(3, handleInterruptDevice2or4); // IRQ3: COM2 or COM4 port
+	IRQ_registerHandler(4, handleInterruptDevice1or3); // IRQ4: COM1 or COM3 port
 	for(int i=0 ; i<N_PORTS ; i++){
 		if (m_devices[i].present){
 			enableDeviceInterrupts(m_devices[i].port);
@@ -276,31 +420,15 @@ void Serial_initalize(){
 	// Serial_sendByte('\r');
 }
 
-// Aka can send
-static bool isTransmitterReady(){
-	if (m_defaultDevice<0) return false;
-
-	uint8_t lineStatus = inb(m_devices[m_defaultDevice].port + SERIAL_OFFSET_LSR);
-	return (lineStatus & SERIAL_LSR_THRE); // bit set: can send
-}
-
-bool isDataPresent(){
-	if (m_defaultDevice<0) return false;
-
-	uint8_t lineStatus = inb(m_devices[m_defaultDevice].port + SERIAL_OFFSET_LSR);
-	return (lineStatus & SERIAL_LSR_DR); // bit set: there's data to be read
-}
-
 void Serial_sendByte(uint8_t byte){
-	if (m_defaultDevice<0) return;
+	unsigned char toSend[] = { byte, '\0' };
+	bool res = pushBackWriteBuffer(&m_devices[m_defaultDevice], toSend);
 
-	while(!isTransmitterReady()); // wait
-	outb(m_devices[m_defaultDevice].port+SERIAL_OFFSET_BUFFER, byte);
+	if (!res)
+		log(WARNING, MODULE, "Serial_sendByte: Couldn't send, not enough room in buffer.");
 }
 
 uint8_t Serial_receiveByte(){
-	if (m_defaultDevice<0) return 0;
-
-	while(!isDataPresent()); // wait
-	return inb(m_devices[m_defaultDevice].port + SERIAL_OFFSET_BUFFER);
+	// TODO
+	return 0;
 }
