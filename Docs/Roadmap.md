@@ -16,7 +16,7 @@
 - [X] Double fault handler
 - [X] Text-mode VGA driver
 - [X] Logging subsystem
-- [ ] Serial output driver
+- [X] Serial output driver
 - [ ] Bootloader: abandon Legacy in favor of UEFI
 - [ ] Memory detection
 - [ ] kmalloc
