@@ -246,7 +246,9 @@ static void processAvailableData(UARTDevice* dev){
 	}
 
 	// Put it in the buffer for public access
-	pushBackReadBuffer(dev, temp);
+	if (!pushBackReadBuffer(dev, temp)){
+		log(WARNING, MODULE, "Received data but read buffer is full, data will be discarded. Please read more often !");
+	}
 
 	// Send it back
 	pushBackWriteBuffer(dev, temp);
