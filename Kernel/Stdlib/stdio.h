@@ -1,6 +1,7 @@
 #ifndef __STDIO_H__
 #define __STDIO_H__
 
+#include <stddef.h>
 #include <stdarg.h>
 #include "FILE.h"
 
@@ -35,13 +36,13 @@ int puts(const char *s);
 int printf(const char* restrict format, ...);
 int fprintf(FILE* restrict stream, const char* restrict format, ...);
 int dprintf(int fd, const char* restrict format, ...);
-// int sprintf(char* restrict str, const char* restrict format, ...);
-// int snprintf(char* restrict str, size_t size, const char* restrict format, ...);
+int sprintf(char* restrict str, const char* restrict format, ...);
+int snprintf(char* restrict str, size_t size, const char* restrict format, ...);
 
 int vprintf(const char* restrict format, va_list args);
 int vfprintf(FILE* restrict stream, const char* restrict format, va_list args);
 int vdprintf(int fd, const char* restrict format, va_list args);
-// int vsprintf(char* restrict str, const char* restrict format, va_list args);
-// int vsnprintf(char* restrict str, size_t size, const char* restrict format, va_list args);
+int vsprintf(char* restrict str, const char* restrict format, va_list args);
+int vsnprintf(char* restrict str, size_t size, const char* restrict format, va_list args);
 
 #endif
