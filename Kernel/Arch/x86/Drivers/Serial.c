@@ -44,6 +44,7 @@ typedef struct s_UARTDevice {
 
 UARTDevice m_devices[N_PORTS];
 int m_defaultDevice = -1;
+bool m_enabled = false;
 
 // UART registers. Ports are given as an offset from the device port
 #define SERIAL_OFFSET_BUFFER				0 // - Receive/transmit buffer (read/write)
@@ -113,7 +114,7 @@ int m_defaultDevice = -1;
 // Add (push back) the null-terminated string str to be written the device buffer
 // If not enough place in buffer, send
 static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
-	assert(dev && str);
+	assert(str);
 	if (dev==NULL) return false;
 	if (str==NULL) return true;
 
@@ -402,6 +403,7 @@ void Serial_initalize(){
 	// No valid device / UART found
 	if (nDevices == 0){
 		log(SUCCESS, MODULE, "Initialization found no Serial device");
+		m_enabled = false;
 		return;
 	}
 
@@ -413,17 +415,17 @@ void Serial_initalize(){
 		}
 	}
 
+	m_enabled = true;
 	log(SUCCESS, MODULE, "Initialized %d Serial device(s)", nDevices);
 	log(INFO, MODULE, "Driver defaults to Serial device %d", m_defaultDevice+1);
 }
 
 bool Serial_isEnabled(){
-	// If defaultDevice is not present, no devices are present
-	return m_devices[m_defaultDevice].present;
+	return m_enabled;
 }
 
 void Serial_sendByte(int device, uint8_t byte){
-	if (device<0 || device>=N_PORTS) return;
+	if (!m_enabled || device<=0 || device>N_PORTS) return;
 
 	unsigned char toSend[] = { byte, '\0' };
 	bool res = pushBackWriteBuffer(&m_devices[device-1], toSend);
@@ -433,7 +435,7 @@ void Serial_sendByte(int device, uint8_t byte){
 }
 
 void Serial_sendString(int device, const char* str){
-	if (device<0 || device>=N_PORTS) return;
+	if (!m_enabled || device<=0 || device>N_PORTS) return;
 
 	bool res = pushBackWriteBuffer(&m_devices[device-1], (uint8_t*) str);
 
@@ -442,7 +444,7 @@ void Serial_sendString(int device, const char* str){
 }
 
 uint8_t Serial_receiveByte(int device){
-	if (device<0 || device>=N_PORTS) return 0;
+	if (!m_enabled || device<=0 || device>N_PORTS) return 0;
 
 	// TODO
 	return 0;
