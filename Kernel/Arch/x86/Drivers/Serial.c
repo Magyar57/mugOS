@@ -423,7 +423,7 @@ bool Serial_isEnabled(){
 }
 
 void Serial_sendByte(int device, uint8_t byte){
-	if (device<0 || device>N_PORTS) return;
+	if (device<0 || device>=N_PORTS) return;
 
 	unsigned char toSend[] = { byte, '\0' };
 	bool res = pushBackWriteBuffer(&m_devices[device-1], toSend);
@@ -433,7 +433,7 @@ void Serial_sendByte(int device, uint8_t byte){
 }
 
 void Serial_sendString(int device, const char* str){
-	if (device<0 || device>N_PORTS) return;
+	if (device<0 || device>=N_PORTS) return;
 
 	bool res = pushBackWriteBuffer(&m_devices[device-1], (uint8_t*) str);
 
@@ -442,7 +442,7 @@ void Serial_sendString(int device, const char* str){
 }
 
 uint8_t Serial_receiveByte(int device){
-	if (device<0 || device>N_PORTS) return 0;
+	if (device<0 || device>=N_PORTS) return 0;
 
 	// TODO
 	return 0;
