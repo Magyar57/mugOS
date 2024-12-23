@@ -182,8 +182,12 @@ static void processAvailableData(UARTDevice* dev){
 
 	// Read the available data
 	for(int i=0 ; i<dev->internalBufferSize ; i++){
+		// ONLY read while DR (Data Ready) set
+		uint8_t lsr = inb(dev->port+SERIAL_OFFSET_LSR);
+		if (!(lsr & SERIAL_LSR_DR))
+			break;
+
 		uint8_t buff = inb(dev->port+SERIAL_OFFSET_BUFFER);
-		if (buff == 0) break; // TODO verify we always get 0 when there's no more data to be read
 		temp[i] = buff;
 	}
 
@@ -212,7 +216,7 @@ static void processUpdatedMSR(UARTDevice* dev){
 	// We need to read it in order to serve the interrupt,
 	// but we don't do anything with it
 
-	// uint8_t msr = inb(dev->port+SERIAL_OFFSET_MSR);	
+	// uint8_t msr = inb(dev->port+SERIAL_OFFSET_MSR);
 	inb(dev->port+SERIAL_OFFSET_MSR);
 }
 
@@ -276,26 +280,26 @@ static void handleDeviceInterrupt(UARTDevice* dev){
 	} while (iir != SERIAL_IIR_INT_PENDING);
 }
 
-static void handleInterruptDevice1or3(ISR_Params* params){
+static void handleInterrupt(ISR_Params* params){
 	// Determine which device sent the interrupt
 
-	// TODO how ?
-	UARTDevice* dev = &m_devices[0];
-	handleDeviceInterrupt(dev);
-}
-
-static void handleInterruptDevice2or4(ISR_Params* params){
-	// Determine which device sent the interrupt
-
-	// TODO how ?
-	UARTDevice* dev = &m_devices[1];
-	handleDeviceInterrupt(dev);
+	// For all present devices, test if IRQ is pending (bit clear in IIR)
+	for(int i=0 ; i<N_PORTS ; i++){
+		if (m_devices[i].present){
+			uint8_t iir = inb(m_devices[i].port + SERIAL_OFFSET_IIR);
+			// If int pending
+			if ((iir & SERIAL_IIR_INT_PENDING) == 0){
+				handleDeviceInterrupt(&m_devices[i]);
+				// we could break, but to be sure we don't and loop over all devices
+			}
+		}
+	}
 }
 
 // ================ Public API ================
 
 /// @brief Test if a UART controller is present, and return which controller it is
-UARTController detectUARTController(int port){
+static UARTController detectUARTController(int port){
    	int mcr_save;
 
    	// Check if a UART is present anyway
@@ -401,34 +405,57 @@ void Serial_initalize(){
 		return;
 	}
 
-	IRQ_registerHandler(3, handleInterruptDevice2or4); // IRQ3: COM2 or COM4 port
-	IRQ_registerHandler(4, handleInterruptDevice1or3); // IRQ4: COM1 or COM3 port
+	IRQ_registerHandler(3, handleInterrupt); // IRQ3: COM2 or COM4 port
+	IRQ_registerHandler(4, handleInterrupt); // IRQ4: COM1 or COM3 port
 	for(int i=0 ; i<N_PORTS ; i++){
 		if (m_devices[i].present){
 			enableDeviceInterrupts(m_devices[i].port);
 		}
 	}
+
 	log(SUCCESS, MODULE, "Initialized %d Serial device(s)", nDevices);
 	log(INFO, MODULE, "Driver defaults to Serial device %d", m_defaultDevice+1);
-
-	// Serial_sendByte('h');
-	// Serial_sendByte('e');
-	// Serial_sendByte('l');
-	// Serial_sendByte('l');
-	// Serial_sendByte('o');
-	// Serial_sendByte('\n');
-	// Serial_sendByte('\r');
 }
 
-void Serial_sendByte(uint8_t byte){
+bool Serial_isEnabled(){
+	// If defaultDevice is not present, no devices are present
+	return m_devices[m_defaultDevice].present;
+}
+
+void Serial_sendByte(int device, uint8_t byte){
+	if (device<0 || device>N_PORTS) return;
+
 	unsigned char toSend[] = { byte, '\0' };
-	bool res = pushBackWriteBuffer(&m_devices[m_defaultDevice], toSend);
+	bool res = pushBackWriteBuffer(&m_devices[device-1], toSend);
 
 	if (!res)
-		log(WARNING, MODULE, "Serial_sendByte: Couldn't send, not enough room in buffer.");
+		log(WARNING, MODULE, "Serial_sendByte: Couldn't send, buffer is full");
 }
 
-uint8_t Serial_receiveByte(){
+void Serial_sendString(int device, const char* str){
+	if (device<0 || device>N_PORTS) return;
+
+	bool res = pushBackWriteBuffer(&m_devices[device-1], (uint8_t*) str);
+
+	if (!res)
+		log(WARNING, MODULE, "Serial_sendString: Couldn't send, not enough room in buffer or invalid string");
+}
+
+uint8_t Serial_receiveByte(int device){
+	if (device<0 || device>N_PORTS) return 0;
+
 	// TODO
 	return 0;
+}
+
+void Serial_sendByteDefault(uint8_t byte){
+	Serial_sendByte(m_devices[m_defaultDevice].identifier, byte);
+}
+
+void Serial_sendStringDefault(const char* str){
+	Serial_sendString(m_devices[m_defaultDevice].identifier, str);
+}
+
+uint8_t Serial_receiveByteDefault(){
+	return Serial_receiveByte(m_devices[m_defaultDevice].identifier);
 }
