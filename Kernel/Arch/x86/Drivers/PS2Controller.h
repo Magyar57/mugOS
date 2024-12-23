@@ -5,7 +5,7 @@
 
 #define PS2Controller_initialize i8242_initalize
 
-// Returns weather the controller/driver is initalized and enabled, and which ports are enabled
+// Returns whether the controller/driver is initalized and enabled, and which ports are enabled
 #define PS2Controller_getStatus i8242_getStatus
 
 // Enable the interrupts sent from the devices
