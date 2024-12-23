@@ -38,8 +38,10 @@ typedef struct s_UARTDevice {
 	UARTController controller;
 	const char* controllerName;
 	int internalBufferSize; // Internal FIFO buffer size: 14 on 16550A, 1 otherwise
-	uint8_t externalBuffer[UARTDEVICE_EXT_BUFF_SIZE];
-	unsigned int beginIndex, inBuffer; // externalBuffer FIFO variables
+	uint8_t externalWriteBuffer[UARTDEVICE_EXT_BUFF_SIZE];
+	unsigned int writeBeginIndex, inWriteBuffer; // externalWriteBuffer FIFO variables
+	uint8_t externalReadBuffer[UARTDEVICE_EXT_BUFF_SIZE];
+	unsigned int readBeginIndex, inReadBuffer; // externalWriteBuffer FIFO variables
 } UARTDevice;
 
 UARTDevice m_devices[N_PORTS];
@@ -109,7 +111,9 @@ bool m_enabled = false;
 #define BAUD_RATE_DIVISOR_LOW 12 // low byte
 #define BAUD_RATE_DIVISOR_HIGH 0 // high byte
 
-// ================ External buffer handling ================
+static void processTHRE(UARTDevice* dev);
+
+// ================ External buffers handling ================
 
 // Add (push back) the null-terminated string str to be written the device buffer
 // If not enough place in buffer, send
@@ -123,15 +127,15 @@ static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 
 	// If we were not already writing (buffer empty), after filling the buffer,
 	// we need to trigger the THRE again so that we actually send what we put in the buffer
-	bool shouldTriggerTHRE = (dev->inBuffer == 0);
+	bool shouldTriggerTHRE = (dev->inWriteBuffer == 0);
 
-	size_t availableSpace = UARTDEVICE_EXT_BUFF_SIZE - dev->inBuffer;
+	size_t availableSpace = UARTDEVICE_EXT_BUFF_SIZE - dev->inWriteBuffer;
 	if (availableSpace < n) return false;
 
 	// Copy the string to the external buffer
 	for(int i=0 ; i<n ; i++){
-		dev->externalBuffer[dev->beginIndex + dev->inBuffer] = str[i];
-		dev->inBuffer++;
+		dev->externalWriteBuffer[dev->writeBeginIndex + dev->inWriteBuffer] = str[i];
+		dev->inWriteBuffer++;
 	}
 
 	// Trigger THRE if we were not writing
@@ -139,6 +143,12 @@ static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
 		ier |= SERIAL_IER_THRE;
 		outb(dev->port+SERIAL_OFFSET_IER, ier);
+	}
+
+	// Test if THRE was not triggered, do it manually
+	uint8_t lsr = inb(dev->port + SERIAL_OFFSET_LSR);
+	if (lsr & SERIAL_LSR_TEMT){
+		processTHRE(dev);
 	}
 
 	return true;
@@ -152,14 +162,57 @@ static uint8_t popFrontWriteBuffer(UARTDevice* dev){
 	uint8_t res;
 
 	// Clamp
-	if (dev->inBuffer < n) n = dev->inBuffer;
+	if (dev->inWriteBuffer < n) n = dev->inWriteBuffer;
 
-	res = dev->externalBuffer[dev->beginIndex];
-	dev->beginIndex = (dev->beginIndex + n) % UARTDEVICE_EXT_BUFF_SIZE;
-	dev->inBuffer -= n;
+	res = dev->externalWriteBuffer[dev->writeBeginIndex];
+	dev->writeBeginIndex = (dev->writeBeginIndex + n) % UARTDEVICE_EXT_BUFF_SIZE;
+	dev->inWriteBuffer -= n;
 
 	// If nothing more to be written, disable THRE
-	if (dev->inBuffer == 0){
+	if (dev->inWriteBuffer == 0){
+		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
+		ier &= ~SERIAL_IER_THRE;
+		outb(dev->port+SERIAL_OFFSET_IER, ier);
+	}
+
+	return res;
+}
+
+static bool pushBackReadBuffer(UARTDevice* dev, const uint8_t* str){
+	assert(str);
+	if (dev==NULL) return false;
+	if (str==NULL) return true;
+
+	size_t n = strlen((const char*) str);
+	if (n==0) return true;
+
+	size_t availableSpace = UARTDEVICE_EXT_BUFF_SIZE - dev->inReadBuffer;
+	if (availableSpace < n) return false;
+
+	// Copy the string to the external buffer
+	for(int i=0 ; i<n ; i++){
+		dev->externalReadBuffer[dev->readBeginIndex + dev->inReadBuffer] = str[i];
+		dev->inReadBuffer++;
+	}
+
+	return true;
+}
+
+static uint8_t popFrontReadBuffer(UARTDevice* dev){
+	// n can be passed as an argument,
+	// if we're able to return several char
+	int n = 1;
+	uint8_t res;
+
+	// Clamp
+	if (dev->inReadBuffer < n) n = dev->inReadBuffer;
+
+	res = dev->externalReadBuffer[dev->readBeginIndex];
+	dev->readBeginIndex = (dev->readBeginIndex + n) % UARTDEVICE_EXT_BUFF_SIZE;
+	dev->inReadBuffer -= n;
+
+	// If nothing more to be written, disable THRE
+	if (dev->inReadBuffer == 0){
 		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
 		ier &= ~SERIAL_IER_THRE;
 		outb(dev->port+SERIAL_OFFSET_IER, ier);
@@ -192,6 +245,9 @@ static void processAvailableData(UARTDevice* dev){
 		temp[i] = buff;
 	}
 
+	// Put it in the buffer for public access
+	pushBackReadBuffer(dev, temp);
+
 	// Send it back
 	pushBackWriteBuffer(dev, temp);
 }
@@ -204,7 +260,7 @@ static void processTHRE(UARTDevice* dev){
 	// write it to the controller's internal buffer
 
 	int i = 0;
-	while(i<dev->internalBufferSize && dev->inBuffer>0){
+	while(i<dev->internalBufferSize && dev->inWriteBuffer>0){
 		char toSend = popFrontWriteBuffer(dev);
 		outb(dev->port+SERIAL_OFFSET_BUFFER, toSend);
 		i++;
@@ -386,8 +442,8 @@ void Serial_initalize(){
 		curDev->controllerName = UARTControllersNames[curDev->controller];
 		if (curDev->controller == UART_NONE) continue;
 		curDev->internalBufferSize = (curDev->controller == UART_16550A) ? 14 : 1;
-		curDev->beginIndex = 0;
-		curDev->inBuffer = 0;
+		curDev->writeBeginIndex = 0;
+		curDev->inWriteBuffer = 0;
 
 		curDev->present = initalizeUARTController(curDev->port);
 		if (!curDev->present){
@@ -446,8 +502,7 @@ void Serial_sendString(int device, const char* str){
 uint8_t Serial_receiveByte(int device){
 	if (!m_enabled || device<=0 || device>N_PORTS) return 0;
 
-	// TODO
-	return 0;
+	return popFrontReadBuffer(&m_devices[device-1]);
 }
 
 void Serial_sendByteDefault(uint8_t byte){
