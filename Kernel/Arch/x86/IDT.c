@@ -41,6 +41,10 @@ void IDT_initialize(){
 	setIDT(&g_IDTLocationDescriptor32);
 }
 
+bool IDT_isInterruptHandlerEnabled(uint8_t interrupt){
+	return (g_IDT[interrupt].attributes & IDT_ATTR_PRESENT);
+}
+
 void IDT_enableInterruptHandler(uint8_t interrupt){
 	g_IDT[interrupt].attributes |= IDT_ATTR_PRESENT;
 }

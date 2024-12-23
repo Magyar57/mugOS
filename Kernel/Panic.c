@@ -5,6 +5,6 @@
 #include "Panic.h"
 
 void panic(){
-	log(PANIC, NULL, "halting");
+	log(PANIC, NULL, "Halting");
 	terminate();
 }

@@ -2,6 +2,7 @@
 #define __IDT_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 // Flags values for Gates (= ISR = Interrupt handlers)
 enum IDT_ATTRIBUTES {
@@ -24,6 +25,9 @@ void IDT_initialize();
 
 // Enable the 'interrupt' interrupt handler
 void IDT_enableInterruptHandler(uint8_t interrupt);
+
+// Returns wheather an interrupt handler is enabled
+bool IDT_isInterruptHandlerEnabled(uint8_t interrupt);
 
 // Disable the 'interrupt' interrupt handler
 void IDT_disableInterruptHandler(uint8_t interrupt);
