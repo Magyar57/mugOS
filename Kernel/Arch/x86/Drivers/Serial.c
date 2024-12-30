@@ -2,6 +2,7 @@
 #include "string.h"
 #include "io.h"
 #include "assert.h"
+#include "CPU.h"
 #include "IRQ.h"
 #include "Logging.h"
 
@@ -146,10 +147,14 @@ static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 	}
 
 	// Test if THRE was not triggered, do it manually
+	// Note: we test whether writeBuffer is full because activating THRE
+	// might have triggered the interrupt, possibly emptying the buffer
+	disableInterrupts();
 	uint8_t lsr = inb(dev->port + SERIAL_OFFSET_LSR);
-	if (lsr & SERIAL_LSR_TEMT){
+	if ((lsr & SERIAL_LSR_TEMT) && dev->inWriteBuffer){
 		processTHRE(dev);
 	}
+	enableInterrupts();
 
 	return true;
 }
@@ -267,6 +272,15 @@ static void processTHRE(UARTDevice* dev){
 		outb(dev->port+SERIAL_OFFSET_BUFFER, toSend);
 		i++;
 	}
+
+	// Emptied buffer => Disable THRE interrupt
+	if (dev->inWriteBuffer == 0){
+		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
+		if (ier & SERIAL_IER_THRE){
+			ier &= ~SERIAL_IER_THRE; // clear THRE bit
+			outb(dev->port+SERIAL_OFFSET_IER, ier);
+		}
+	}
 }
 
 // Process MSR: Modem Service Register bits changed interrupt
@@ -342,15 +356,11 @@ static void handleDeviceInterrupt(UARTDevice* dev){
 static void handleInterrupt(ISR_Params* params){
 	// Determine which device sent the interrupt
 
-	// For all present devices, test if IRQ is pending (bit clear in IIR)
+	// For all present devices, trigger IRQ handling
+	// If no IRQ to be reported, the handler just returns
 	for(int i=0 ; i<N_PORTS ; i++){
 		if (m_devices[i].present){
-			uint8_t iir = inb(m_devices[i].port + SERIAL_OFFSET_IIR);
-			// If int pending
-			if ((iir & SERIAL_IIR_INT_PENDING) == 0){
-				handleDeviceInterrupt(&m_devices[i]);
-				// we could break, but to be sure we don't and loop over all devices
-			}
+			handleDeviceInterrupt(&m_devices[i]);
 		}
 	}
 }
