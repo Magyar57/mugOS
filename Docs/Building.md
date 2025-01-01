@@ -25,7 +25,7 @@ you can use the docker build or a Nix-Shell.
 The [Dockerfile](../Environment/Dockerfile) will build an image containing all the dependencies as well, and can be used to build the image without downloading the dependencies on your system. To do so, run the following commands:
 
 - Change current directory to mugOS folder `cd path/to/mugOS`
-- Build the compiler-hosting image: `docker build -t mug-os:2.0 ./Environment`
+- Build the compiler-hosting image: `ln -sf Environment/Dockerfile && docker build -t mug-os:2.0 . ; rm Dockerfile`
 - Compile the OS: `docker run --rm -v .:/srv/mugOS mug-os:2.0 make && sudo chown -R $(whoami):$(whoami) build`
 
 ## Running or debugging mugOS
