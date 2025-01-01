@@ -49,6 +49,54 @@ callInterrupt:
 	ret
 ; END callInterrupt
 
+; bool CPU_supportsCpuid();
+global CPU_supportsCpuid
+CPU_supportsCpuid:
+	enter 0, 0
+
+	; move EFLAGS into eax
+	pushfd
+	pop eax
+
+	; move (EFLAGS xor 'id flag') back to EFLAGS
+	mov ecx, eax		; save eflags for later comparison
+	xor eax, 1<<21		; toggle bit 21 (ID flag)
+	push eax
+	popfd				; eflags = eax
+
+	; re-move EFLAGS into eax, and compare it with the previous value
+	pushfd
+	pop eax
+	xor eax, ecx
+	and eax, 1<<21		; if bit clear, both EFLAGS had the same id flag value (cpuid unsupported)
+	shr eax, 21			; return value is on 8 bits
+
+	leave
+	ret
+; END CPU_supportsCpuid
+
+; void cpuidWrapper(int code, uint32_t* eax, uint32_t* ebx, uint32_t* ecx, uint32_t* edx);
+; This function assumes that the cpuid instruction is supported. To test it, use CPUSupportsCpuid
+global cpuidWrapper
+cpuidWrapper:
+	enter 0, 0
+
+	mov eax, [ebp+8]
+	cpuid
+
+	mov edi, [ebp+12] ; &eax
+	mov [edi], eax
+	mov edi, [ebp+16] ; &ebx
+	mov [edi], ebx
+	mov edi, [ebp+20] ; &ecx
+	mov [edi], ecx
+	mov edi, [ebp+24] ; &edx
+	mov [edi], edx
+
+	leave
+	ret
+; END cpuidWrapper
+
 section .data
 
 callInterrupt_JumpTable:
