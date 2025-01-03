@@ -176,7 +176,7 @@ void PS2_initalizeKeyboard(PS2Keyboard* keyboard){
 	if (buff1 != PS2_KB_RES_ACK) return;
 
 	// Get the keyboard name string
-	keyboard->name = getKeyboardName(keyboard);
+	keyboard->name = getKeyboardName();
 	if (keyboard->name == NULL)	return;
 	keyboard->enabled = true;
 

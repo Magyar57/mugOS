@@ -2,7 +2,7 @@
 # Note: the paths are relative to the root folder (mugOS)
 
 # Compilation for host system
-export CFLAGS:=-std=c99 -g -Wall
+export CFLAGS:=-g -Wall -std=c2x
 export ASMFLAGS:=
 export CC:=gcc
 export CXX:=g++
@@ -16,15 +16,15 @@ export CLEAR_ENV:=CFLAGS= ASMFLAGS= CC= CXX= LD= ASM= LINKFLAGS= LIBS=
 export TARGET:=i686-elf
 export TARGET_ASM:=nasm
 export TARGET_ASMFLAGS:=
-export TARGET_CC:=$(TARGET)-gcc
-export TARGET_CFLAGS:=-std=c99 -g -Wall
-export TARGET_CXX:=$(TARGET)-g++
+export TARGET_CC:=i686-elf-gcc
+export TARGET_CFLAGS:=-g -Wall -std=c2x
+export TARGET_CXX:=i686-elf-g++
 export TARGET_CXXFLAGS:=
-export TARGET_LD:=$(TARGET)-gcc
+export TARGET_LD:=i686-elf-gcc
 export TARGET_LDFLAGS:=
 export TARGET_LIBS:=
 # Architecture to compile mugOS for
-export ARCH:=x86
+export ARCH?=x86
 
 export MAKE_FLAGS:=--no-print-directory
 
