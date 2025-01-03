@@ -36,7 +36,8 @@ enableInterrupts:
 ; void callInterrupt(uint8_t vector);
 global callInterrupt
 callInterrupt:
-	enter 0, 0
+	push ebp
+	mov ebp, esp
 
 	; Call interrupt using the jump table
 	mov eax, [ebp+8]	; interrupt number
@@ -52,7 +53,8 @@ callInterrupt:
 ; bool CPU_supportsCpuid();
 global CPU_supportsCpuid
 CPU_supportsCpuid:
-	enter 0, 0
+	push ebp
+	mov ebp, esp
 
 	; move EFLAGS into eax
 	pushfd
@@ -79,7 +81,8 @@ CPU_supportsCpuid:
 ; This function assumes that the cpuid instruction is supported. To test it, use CPUSupportsCpuid
 global cpuidWrapper
 cpuidWrapper:
-	enter 0, 0
+	push ebp
+	mov ebp, esp
 
 	mov eax, [ebp+8]
 	cpuid
