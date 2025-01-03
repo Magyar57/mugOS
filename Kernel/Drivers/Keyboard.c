@@ -31,14 +31,14 @@ static char getNumpadKey_NoNumluck(Keycode k){
 		case KEY_NUMPAD_8: return KEY_UP;
 		case KEY_NUMPAD_9: return KEY_PAGEUP;
 		case KEY_NUMPAD_4: return KEY_LEFT;
-		case KEY_NUMPAD_5: return 0;
+		case KEY_NUMPAD_5: return (char) 0;
 		case KEY_NUMPAD_6: return KEY_RIGHT;
 		case KEY_NUMPAD_1: return KEY_END;
 		case KEY_NUMPAD_2: return KEY_DOWN;
 		case KEY_NUMPAD_3: return KEY_PAGEDOWN;
 		case KEY_NUMPAD_0: return KEY_INSERT;
 		case KEY_NUMPAD_DOT: return KEY_DELETE;
-		default: return 0;
+		default: return (char) 0;
 	}
 }
 
@@ -61,17 +61,17 @@ static inline bool isNumpadKey(Keycode k){
 
 static char getChar_AZERTY_NoModifier(Keycode k){
 	switch (k){
-		case KEY_RESERVED:			return 0;
+		case KEY_RESERVED:			return (char) 0;
 		case KEY_1:					return '&';
-		case KEY_2:					return 130; // é
+		case KEY_2:					return (char) 130; // é
 		case KEY_3:					return '"';
 		case KEY_4:					return '\'';
 		case KEY_5:					return '(';
 		case KEY_6:					return '-';
-		case KEY_7:					return 138; // è
+		case KEY_7:					return (char) 138; // è
 		case KEY_8:					return '_';
-		case KEY_9:					return 135; // ç
-		case KEY_0:					return 133; // à
+		case KEY_9:					return (char) 135; // ç
+		case KEY_0:					return (char) 133; // à
 		case KEY_MINUS:				return ')';
 		case KEY_EQUAL:				return '=';
 		case KEY_TAB:				return '\t';
@@ -98,8 +98,8 @@ static char getChar_AZERTY_NoModifier(Keycode k){
 		case KEY_K:					return 'k';
 		case KEY_L:					return 'l';
 		case KEY_SEMICOLON:			return 'm';
-		case KEY_QUOTE:				return 163; // ù
-		case KEY_GRAVE:				return 253; // ²
+		case KEY_QUOTE:				return (char) 163; // ù
+		case KEY_GRAVE:				return (char) 253; // ²
 		case KEY_BACKSLASH:			return '*';
 		case KEY_Z:					return 'w';
 		case KEY_X:					return 'x';
@@ -128,23 +128,23 @@ static char getChar_AZERTY_NoModifier(Keycode k){
 		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
 		case KEY_LESSTHAN:			return '<';
 		default:
-			return 0;
+			return (char) 0;
 	}
 }
 
 static char getChar_AZERTY_CapsLock(Keycode k){
 		switch (k){
-		case KEY_RESERVED:			return 0;
+		case KEY_RESERVED:			return (char) 0;
 		case KEY_1:					return '&';
-		case KEY_2:					return 144; // É
+		case KEY_2:					return (char) 144; // É
 		case KEY_3:					return '"';
 		case KEY_4:					return '\'';
 		case KEY_5:					return '(';
 		case KEY_6:					return '-';
-		case KEY_7:					return 138; // È not available so we return 'è'
+		case KEY_7:					return (char) 138; // È not available so we return 'è'
 		case KEY_8:					return '_';
-		case KEY_9:					return 128; // Ç
-		case KEY_0:					return 133; // À not available so we return 'à'
+		case KEY_9:					return (char) 128; // Ç
+		case KEY_0:					return (char) 133; // À not available so we return 'à'
 		case KEY_MINUS:				return ')';
 		case KEY_EQUAL:				return '=';
 		case KEY_TAB:				return '\t';
@@ -171,8 +171,8 @@ static char getChar_AZERTY_CapsLock(Keycode k){
 		case KEY_K:					return 'K';
 		case KEY_L:					return 'L';
 		case KEY_SEMICOLON:			return 'M';
-		case KEY_QUOTE:				return 163; // Ùnot available so we return 'ù'
-		case KEY_GRAVE:				return 253; // 
+		case KEY_QUOTE:				return (char) 163; // Ùnot available so we return 'ù'
+		case KEY_GRAVE:				return (char) 253; // 
 		case KEY_BACKSLASH:			return '*';
 		case KEY_Z:					return 'W';
 		case KEY_X:					return 'X';
@@ -201,62 +201,62 @@ static char getChar_AZERTY_CapsLock(Keycode k){
 		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
 		case KEY_LESSTHAN:			return '<';
 		default:
-			return 0;
+			return (char) 0;
 	}
 }
 
 static char getChar_AZERTY_ShiftAltGr(Keycode k){
 		switch (k){
-		case KEY_RESERVED:			return 0;
-		case KEY_1:					return 173; // ¡
-		case KEY_2:					return 0; // ⅛
-		case KEY_3:					return 156; // £
+		case KEY_RESERVED:			return (char) 0;
+		case KEY_1:					return (char) 173; // ¡
+		case KEY_2:					return (char) 0; // ⅛
+		case KEY_3:					return (char) 156; // £
 		case KEY_4:					return '$';
-		case KEY_5:					return 0; // ⅜
-		case KEY_6:					return 0; // ⅝
-		case KEY_7:					return 0; // ⅞
-		case KEY_8:					return 0; // ™
-		case KEY_9:					return 241; // ±
-		case KEY_0:					return 248; // °
-		case KEY_MINUS:				return 168; // ¿
-		case KEY_EQUAL:				return 0; // ˛
+		case KEY_5:					return (char) 0; // ⅜
+		case KEY_6:					return (char) 0; // ⅝
+		case KEY_7:					return (char) 0; // ⅞
+		case KEY_8:					return (char) 0; // ™
+		case KEY_9:					return (char) 241; // ±
+		case KEY_0:					return (char) 248; // °
+		case KEY_MINUS:				return (char) 168; // ¿
+		case KEY_EQUAL:				return (char) 0; // ˛
 		case KEY_TAB:				return '\t';
-		case KEY_Q:					return 146; // Æ
+		case KEY_Q:					return (char) 146; // Æ
 		case KEY_W:					return '<';
-		case KEY_E:					return 155; // ¢
-		case KEY_R:					return 0; // ®
-		case KEY_T:					return 0; // Ŧ
-		case KEY_Y:					return 157; // ¥
-		case KEY_U:					return 0; // ↑
-		case KEY_I:					return 0; // ı
-		case KEY_O:					return 0; // Ø
-		case KEY_P:					return 0; // Þ
-		case KEY_LBRACKET:			return 248; // °
-		case KEY_RBRACKET:			return 0; // ¯
+		case KEY_E:					return (char) 155; // ¢
+		case KEY_R:					return (char) 0; // ®
+		case KEY_T:					return (char) 0; // Ŧ
+		case KEY_Y:					return (char) 157; // ¥
+		case KEY_U:					return (char) 0; // ↑
+		case KEY_I:					return (char) 0; // ı
+		case KEY_O:					return (char) 0; // Ø
+		case KEY_P:					return (char) 0; // Þ
+		case KEY_LBRACKET:			return (char) 248; // °
+		case KEY_RBRACKET:			return (char) 0; // ¯
 		case KEY_ENTER:				return '\n'; // enter
-		case KEY_A:					return 234; // Ω
-		case KEY_S:					return 0; // ẞ
-		case KEY_D:					return 0; // Ð
-		case KEY_F:					return 0; // ª
-		case KEY_G:					return 0; // Ŋ
-		case KEY_H:					return 0; // Ħ
-		case KEY_J:					return 0;
+		case KEY_A:					return (char) 234; // Ω
+		case KEY_S:					return (char) 0; // ẞ
+		case KEY_D:					return (char) 0; // Ð
+		case KEY_F:					return (char) 0; // ª
+		case KEY_G:					return (char) 0; // Ŋ
+		case KEY_H:					return (char) 0; // Ħ
+		case KEY_J:					return (char) 0;
 		case KEY_K:					return '&';
-		case KEY_L:					return 0; // Ł
-		case KEY_SEMICOLON:			return 248; // º
-		case KEY_QUOTE:				return 0; // ˇ
-		case KEY_GRAVE:				return 170; // ¬
-		case KEY_BACKSLASH:			return 0; // ˘
-		case KEY_Z:					return 0; // Ł
+		case KEY_L:					return (char) 0; // Ł
+		case KEY_SEMICOLON:			return (char) 248; // º
+		case KEY_QUOTE:				return (char) 0; // ˇ
+		case KEY_GRAVE:				return (char) 170; // ¬
+		case KEY_BACKSLASH:			return (char) 0; // ˘
+		case KEY_Z:					return (char) 0; // Ł
 		case KEY_X:					return '>';
-		case KEY_C:					return 0; // ©
-		case KEY_V:					return 0; // ‚
-		case KEY_B:					return 0; // ‘
-		case KEY_N:					return 0; // ’
-		case KEY_M:					return 0; // ˝
-		case KEY_COMMA:				return 0; // ×
-		case KEY_DOT:				return 246; // ÷
-		case KEY_SLASH:				return 0; // ˙
+		case KEY_C:					return (char) 0; // ©
+		case KEY_V:					return (char) 0; // ‚
+		case KEY_B:					return (char) 0; // ‘
+		case KEY_N:					return (char) 0; // ’
+		case KEY_M:					return (char) 0; // ˝
+		case KEY_COMMA:				return (char) 0; // ×
+		case KEY_DOT:				return (char) 246; // ÷
+		case KEY_SLASH:				return (char) 0; // ˙
 		case KEY_NUMPAD_ASTERISK:	return '*';
 		case KEY_SPACE:				return ' ';
 		case KEY_NUMPAD_7:			return '7'; // Keypad 7 OR Home
@@ -272,16 +272,16 @@ static char getChar_AZERTY_ShiftAltGr(Keycode k){
 		case KEY_NUMPAD_3:			return '3'; // Keypad 3 OR Page Down
 		case KEY_NUMPAD_0:			return '0'; // Keypad 0 OR Insert
 		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
-		case KEY_LESSTHAN:			return 0; // ¦
+		case KEY_LESSTHAN:			return (char) 0; // ¦
 		default:
-			return 0;
+			return (char) 0;
 	}
 }
 
 static char getChar_AZERTY_AltGr(Keycode k){
 		switch (k){
-		case KEY_RESERVED:			return 0;
-		case KEY_1:					return 0; // ¹
+		case KEY_RESERVED:			return (char) 0;
+		case KEY_1:					return (char) 0; // ¹
 		case KEY_2:					return '~';
 		case KEY_3:					return '#';
 		case KEY_4:					return '{';
@@ -294,42 +294,42 @@ static char getChar_AZERTY_AltGr(Keycode k){
 		case KEY_MINUS:				return ']';
 		case KEY_EQUAL:				return '}';
 		case KEY_TAB:				return '\t';
-		case KEY_Q:					return 145; // æ
-		case KEY_W:					return 174; // «
-		case KEY_E:					return 0; // €
-		case KEY_R:					return 0; // ¶
-		case KEY_T:					return 0; // ŧ
-		case KEY_Y:					return 0; // ←
-		case KEY_U:					return 0; // ↓
-		case KEY_I:					return 0; // →
-		case KEY_O:					return 0; // ø
-		case KEY_P:					return 0; // þ
-		case KEY_LBRACKET:			return 0; // ¨
-		case KEY_RBRACKET:			return 0; // ¤
+		case KEY_Q:					return (char) 145; // æ
+		case KEY_W:					return (char) 174; // «
+		case KEY_E:					return (char) 0; // €
+		case KEY_R:					return (char) 0; // ¶
+		case KEY_T:					return (char) 0; // ŧ
+		case KEY_Y:					return (char) 0; // ←
+		case KEY_U:					return (char) 0; // ↓
+		case KEY_I:					return (char) 0; // →
+		case KEY_O:					return (char) 0; // ø
+		case KEY_P:					return (char) 0; // þ
+		case KEY_LBRACKET:			return (char) 0; // ¨
+		case KEY_RBRACKET:			return (char) 0; // ¤
 		case KEY_ENTER:				return '\n'; // enter
 		case KEY_A:					return '@';
-		case KEY_S:					return 0; // ß
-		case KEY_D:					return 0; // ð
-		case KEY_F:					return 0; // đ
-		case KEY_G:					return 0; // ŋ
-		case KEY_H:					return 0; // ħ
-		case KEY_J:					return 0; // ̉
-		case KEY_K:					return 0; // ĸ
-		case KEY_L:					return 0; // ł
-		case KEY_SEMICOLON:			return 230; // µ
+		case KEY_S:					return (char) 0; // ß
+		case KEY_D:					return (char) 0; // ð
+		case KEY_F:					return (char) 0; // đ
+		case KEY_G:					return (char) 0; // ŋ
+		case KEY_H:					return (char) 0; // ħ
+		case KEY_J:					return (char) 0; // ̉
+		case KEY_K:					return (char) 0; // ĸ
+		case KEY_L:					return (char) 0; // ł
+		case KEY_SEMICOLON:			return (char) 230; // µ
 		case KEY_QUOTE:				return '^';
-		case KEY_GRAVE:				return 170; // ¬
+		case KEY_GRAVE:				return (char) 170; // ¬
 		case KEY_BACKSLASH:			return '`';
-		case KEY_Z:					return 0; // ł
-		case KEY_X:					return 175; // »
-		case KEY_C:					return 155; // ¢
-		case KEY_V:					return 0; // „
-		case KEY_B:					return 0; // “
-		case KEY_N:					return 0; // ”
-		case KEY_M:					return 0; // ´ (as in ó)
-		case KEY_COMMA:				return 249; // •
-		case KEY_DOT:				return 250; // ·
-		case KEY_SLASH:				return 0;
+		case KEY_Z:					return (char) 0; // ł
+		case KEY_X:					return (char) 175; // »
+		case KEY_C:					return (char) 155; // ¢
+		case KEY_V:					return (char) 0; // „
+		case KEY_B:					return (char) 0; // “
+		case KEY_N:					return (char) 0; // ”
+		case KEY_M:					return (char) 0; // ´ (as in ó)
+		case KEY_COMMA:				return (char) 249; // •
+		case KEY_DOT:				return (char) 250; // ·
+		case KEY_SLASH:				return (char) 0;
 		case KEY_NUMPAD_ASTERISK:	return '*';
 		case KEY_SPACE:				return ' ';
 		case KEY_NUMPAD_7:			return '7'; // Keypad 7 OR Home
@@ -347,13 +347,13 @@ static char getChar_AZERTY_AltGr(Keycode k){
 		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
 		case KEY_LESSTHAN:			return '|';
 		default:
-			return 0;
+			return (char) 0;
 	}
 }
 
 static char getChar_AZERTY_Shift(Keycode k){
 	switch (k){
-		case KEY_RESERVED:			return 0;
+		case KEY_RESERVED:			return (char) 0;
 		case KEY_1:					return '1';
 		case KEY_2:					return '2';
 		case KEY_3:					return '3';
@@ -364,9 +364,9 @@ static char getChar_AZERTY_Shift(Keycode k){
 		case KEY_8:					return '8';
 		case KEY_9:					return '9';
 		case KEY_0:					return '0';
-		case KEY_MINUS:				return 248; // °
+		case KEY_MINUS:				return (char) 248; // °
 		case KEY_EQUAL:				return '+';
-		case KEY_TAB:				return 0;
+		case KEY_TAB:				return (char) 0;
 		case KEY_Q:					return 'A';
 		case KEY_W:					return 'Z';
 		case KEY_E:					return 'E';
@@ -378,7 +378,7 @@ static char getChar_AZERTY_Shift(Keycode k){
 		case KEY_O:					return 'O';
 		case KEY_P:					return 'P';
 		case KEY_LBRACKET:			return '?'; // ¨ not available in ascii
-		case KEY_RBRACKET:			return 156; // £
+		case KEY_RBRACKET:			return (char) 156; // £
 		case KEY_ENTER:				return '\n';
 		case KEY_A:					return 'Q';
 		case KEY_S:					return 'S';
@@ -392,7 +392,7 @@ static char getChar_AZERTY_Shift(Keycode k){
 		case KEY_SEMICOLON:			return 'M';
 		case KEY_QUOTE:				return '%'; // ù
 		case KEY_GRAVE:				return '~'; // ²
-		case KEY_BACKSLASH:			return 230; // µ
+		case KEY_BACKSLASH:			return (char) 230; // µ
 		case KEY_Z:					return 'W';
 		case KEY_X:					return 'X';
 		case KEY_C:					return 'C';
@@ -421,7 +421,7 @@ static char getChar_AZERTY_Shift(Keycode k){
 		case KEY_LESSTHAN:			return '>';
 
 		default:
-			return 0;
+			return (char) 0;
 	}
 }
 

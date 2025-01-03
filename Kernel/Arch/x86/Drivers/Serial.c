@@ -299,13 +299,13 @@ static void processUpdatedLSR(UARTDevice* dev){
 
 	uint8_t lsr = inb(dev->port+SERIAL_OFFSET_LSR);
 
-	if (lsr & SERIAL_LSR_DR); // Data to be read, ignore (handled by interrupts)
+	// if (lsr & SERIAL_LSR_DR); // Data to be read, ignore (handled by interrupts)
 	if (lsr & SERIAL_LSR_OE) log(ERROR, MODULE, "Device %d: Data was lost", dev->identifier);
 	if (lsr & SERIAL_LSR_PE) log(ERROR, MODULE, "Device %d: Parity error detected", dev->identifier);
 	if (lsr & SERIAL_LSR_FE) log(ERROR, MODULE, "Device %d: Framing error (missing stop bit) detected", dev->identifier);
 	if (lsr & SERIAL_LSR_BI) log(WARNING, MODULE, "Device %d: got a break (this is unsupported)");
-	if (lsr & SERIAL_LSR_THRE); // Transmission buffer empty, ignore (handled by interrupts)
-	if (lsr & SERIAL_LSR_TEMT); // Transmitter is not doing anything, ignore (handled by interrupts)
+	// if (lsr & SERIAL_LSR_THRE); // Transmission buffer empty, ignore (handled by interrupts)
+	// if (lsr & SERIAL_LSR_TEMT); // Transmitter is not doing anything, ignore (handled by interrupts)
 	if (lsr & SERIAL_LSR_IE) log(ERROR, MODULE, "Device %d: Error with a word in the input buffer", dev->identifier);
 }
 
