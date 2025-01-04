@@ -1,7 +1,4 @@
-TARGET_ASMFLAGS+=-f elf
-TARGET_CFLAGS+=-ffreestanding -nostdlib -D ARCH_$(ARCH)
-TARGET_LIBS+=-lgcc
-TARGET_LDFLAGS+=-T Linker.map -nostdlib
+TARGET_CFLAGS+=-D ARCH_$(ARCH)
 
 # Includes paths for the kernel
 export CPATH=$(abspath .):$(abspath Stdlib):$(abspath Arch/$(ARCH))
@@ -24,7 +21,7 @@ $(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM) $(BUILD_SUBDIR)/HAL.o Arch/
 	@$(MAKE) -C Stdlib $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
 	@$(MAKE) -C Drivers $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
 	@$(MAKE) -C Arch/$(ARCH) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
-	$(TARGET_LD) $(TARGET_LDFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $(BUILD_SUBDIR)/*.o $(BUILD_SUBDIR)/*.obj $(TARGET_LIBS)
+	$(TARGET_LD) $(TARGET_LDFLAGS) -T Linker.map -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $(BUILD_SUBDIR)/*.{o,obj} $(TARGET_LIBS)
 
 $(BUILD_SUBDIR)/HAL.o: Arch/HAL.c | $(BUILD_SUBDIR)
 	$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<

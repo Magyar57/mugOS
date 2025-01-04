@@ -1,5 +1,4 @@
 ENTRY(kmain)
-OUTPUT_FORMAT("binary")
 physical_address = 0x00100000;
 
 SECTIONS {

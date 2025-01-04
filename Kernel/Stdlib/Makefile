@@ -1,5 +1,4 @@
-TARGET_ASMFLAGS+=
-TARGET_CFLAGS+=
+# Standart library makefile
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))

@@ -1,7 +1,4 @@
-TARGET_ASMFLAGS+=-f elf
-TARGET_CFLAGS+=-ffreestanding -nostdlib
-TARGET_LIBS+=-lgcc
-TARGET_LDFLAGS+=-T Linker.map -nostdlib
+# Second stage bootloader makefile
 
 BUILD_SUBDIR:=$(BUILD_DIR)/second-stage
 
@@ -17,7 +14,7 @@ all: second-stage
 second-stage: $(BUILD_DIR)/bootloader-second-stage.bin
 
 $(BUILD_DIR)/bootloader-second-stage.bin: $(OBJECTS_C) $(OBJECTS_ASM)
-	$(TARGET_LD) $(TARGET_LDFLAGS) -Wl,-Map=$(BUILD_DIR)/bootloader-second-stage.map -o $@ $(BUILD_SUBDIR)/*.o $(BUILD_SUBDIR)/*.obj $(TARGET_LIBS)
+	$(TARGET_LD) $(TARGET_LDFLAGS) -T Linker.map -Wl,-Map=$(BUILD_DIR)/bootloader-second-stage.map -o $@ $(BUILD_SUBDIR)/*.{o,obj} $(TARGET_LIBS)
 
 # Generic object rules
 

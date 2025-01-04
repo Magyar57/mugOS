@@ -1,5 +1,4 @@
 ENTRY(entry)
-OUTPUT_FORMAT("binary")
 physical_address = 0x00000500;
 
 SECTIONS {

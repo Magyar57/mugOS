@@ -1,4 +1,4 @@
-# Makefile - First stage bootloader
+# First stage bootloader makefile
 
 all: first-stage
 
