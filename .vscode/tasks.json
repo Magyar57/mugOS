@@ -5,7 +5,7 @@
             "label": "Native build",
             "type": "shell",
             "command": "make",
-            "args": [],
+            "args": ["-j48"],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
