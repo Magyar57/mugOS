@@ -16,13 +16,15 @@ Build dependencies for each supported operating system:
 - Windows: Not supported. Please use WSL2.
 
 To build the operating system image, run `make` in the root folder.
+If you wish to use a specific compiler or linker, see [Compilers and Linkers](./CompilersAndLinkers.md).
 
 Note: If you don't wish to recompile binutils and gcc, and install the dependencies,
 you can use the docker build or a Nix-Shell.
 
 ## Docker build
 
-The [Dockerfile](../Environment/Dockerfile) will build an image containing all the dependencies as well, and can be used to build the image without downloading the dependencies on your system. To do so, run the following commands:
+The [Dockerfile](../Environment/Dockerfile) will build an image containing all the dependencies as well,
+and can be used to build the image without downloading the dependencies on your system. To do so, run the following commands:
 
 - Change current directory to mugOS folder `cd path/to/mugOS`
 - Build the compiler-hosting image: `ln -sf Environment/Dockerfile && docker build -t mug-os:2.0 . ; rm Dockerfile`
@@ -32,13 +34,13 @@ The [Dockerfile](../Environment/Dockerfile) will build an image containing all t
 
 ### Run
 
-Once the OS is compiled, run it (emulate it) in QEMU, by executing: `qemu-system-i386 -fda build/floppy.img`
+Once the OS is compiled, run it (emulate it) in QEMU, by executing: `qemu-system-i386 -drive", "file=${workspaceFolder}/build/floppy.img,format=raw,if=floppy`
 
 ### Debugging...
 
 #### ... With Bochs
 
-To debug the OS, you can use bochs: `bochs-debugger -f Debuggers/Bochs.cfg`.
+To debug the OS, you can use bochs: `bochs-debugger -f Environment/Bochs.cfg`.
 
 #### ... With gdb
 
