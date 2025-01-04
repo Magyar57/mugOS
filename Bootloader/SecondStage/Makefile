@@ -14,7 +14,7 @@ all: second-stage
 second-stage: $(BUILD_DIR)/bootloader-second-stage.bin
 
 $(BUILD_DIR)/bootloader-second-stage.bin: $(OBJECTS_C) $(OBJECTS_ASM)
-	$(TARGET_LD) $(TARGET_LDFLAGS) -T Linker.map -Wl,-Map=$(BUILD_DIR)/bootloader-second-stage.map -o $@ $(BUILD_SUBDIR)/*.{o,obj} $(TARGET_LIBS)
+	$(TARGET_LD) $(TARGET_LDFLAGS) -T Bootloader.ld -Wl,-Map=$(BUILD_DIR)/bootloader-second-stage.map -o $@ $(BUILD_SUBDIR)/*.{o,obj} $(TARGET_LIBS)
 
 # Generic object rules
 

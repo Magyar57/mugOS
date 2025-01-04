@@ -21,7 +21,7 @@ $(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM) $(BUILD_SUBDIR)/HAL.o Arch/
 	@$(MAKE) -C Stdlib $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
 	@$(MAKE) -C Drivers $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
 	@$(MAKE) -C Arch/$(ARCH) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR)
-	$(TARGET_LD) $(TARGET_LDFLAGS) -T Linker.map -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $(BUILD_SUBDIR)/*.{o,obj} $(TARGET_LIBS)
+	$(TARGET_LD) $(TARGET_LDFLAGS) -T Kernel.ld -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $(BUILD_SUBDIR)/*.{o,obj} $(TARGET_LIBS)
 
 $(BUILD_SUBDIR)/HAL.o: Arch/HAL.c | $(BUILD_SUBDIR)
 	$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
