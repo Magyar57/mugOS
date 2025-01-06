@@ -203,6 +203,7 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 	bool sign = false;
 	int radix = 10;
 	int printed = 0;
+	const char* s; // '%s' pointer
 
 	if (format == NULL) return -1;
 	if (fd < 0) return -2;
@@ -268,7 +269,7 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 						printed++;
 						break;
 					case 's':
-						const char* s = va_arg(args, const char*);
+						s = va_arg(args, const char*);
 						if (s == NULL) {
 							dputs("(null)", fd);
 							printed += 6;
@@ -359,16 +360,17 @@ static bool snprintf_isBoundaryExceeded(size_t size, int i, bool checkSize){
 #define vsnprintf_internal_checkBoundaries(size, i, checkSize) \
 	if (snprintf_isBoundaryExceeded(size, i, checkSize)) {printed=-1; goto end;}
 
-static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, const char* restrict format, va_list args){
+static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize, const char* restrict format, va_list args){
 	int state = PRINTF_STATE_NORMAL;
 	int length = PRINTF_LENGTH_DEFAULT;
 	bool number = false;
 	bool sign = false;
 	int radix = 10;
 	int printed = 0;
-	int i = 0; // index in str
+	int i = 0; // index in fmtStr
+	const char* s; // '%s' pointer
 
-	if (str == NULL) return -2;
+	if (fmtStr == NULL) return -2;
 	if (format == NULL) return -3;
 
 	if (checkSize && size==0) return -1; // cannot write final '\0'
@@ -388,7 +390,7 @@ static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, c
 						break;
 					default:
 						vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
-						str[i] = *format;
+						fmtStr[i] = *format;
 						printed++;
 						i++;
 						break;
@@ -437,26 +439,26 @@ static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, c
 						// Note: we call va_args with int size, and not char, because in 32bits pmode
 						// all arguments pushed onto the stack are rounded to 32 bits
 						vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
-						str[i] = (char) va_arg(args, int);
+						fmtStr[i] = (char) va_arg(args, int);
 						printed++;
 						i++;
 						break;
 					case 's':
-						const char* s = va_arg(args, const char*);
+						s = va_arg(args, const char*);
 						if (s == NULL) {
 							vsnprintf_internal_checkBoundaries(size, i+6, checkSize);
-							str[i++] = '(';
-							str[i++] = 'n';
-							str[i++] = 'u';
-							str[i++] = 'l';
-							str[i++] = 'l';
-							str[i++] = ')';
+							fmtStr[i++] = '(';
+							fmtStr[i++] = 'n';
+							fmtStr[i++] = 'u';
+							fmtStr[i++] = 'l';
+							fmtStr[i++] = 'l';
+							fmtStr[i++] = ')';
 							printed += 6;
 						}
 						else {
 							while(*s){
 								vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
-								str[i] = *s;
+								fmtStr[i] = *s;
 								printed++;
 								i++;
 								s++;
@@ -465,7 +467,7 @@ static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, c
 						break;
 					case '%':
 						vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
-						str[i] = '%';
+						fmtStr[i] = '%';
 						printed++;
 						i++;
 						break;
@@ -484,8 +486,8 @@ static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, c
 					case 'x':
 					case 'p':
 						vsnprintf_internal_checkBoundaries(size, i+2, checkSize);
-						str[i++] = '0';
-						str[i++] = 'x';
+						fmtStr[i++] = '0';
+						fmtStr[i++] = 'x';
 						printed += 2;
 						number = true;
 						sign = false;
@@ -509,14 +511,14 @@ static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, c
 					if (sign) {
 						int numberToPrint = va_arg(args, int);
 						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_signed(str+i, numberToPrint, radix);
+						int written = sprintf_signed(fmtStr+i, numberToPrint, radix);
 						printed += written;
 						i+= written;
 					}
 					else {
 						unsigned int numberToPrint = va_arg(args, unsigned int);
 						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_unsigned(str+i, numberToPrint, radix);
+						int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix);
 						printed += written;
 						i+= written;
 					}
@@ -525,14 +527,14 @@ static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, c
 					if (sign) {
 						long numberToPrint = va_arg(args, long);
 						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_signed(str+i, numberToPrint, radix);
+						int written = sprintf_signed(fmtStr+i, numberToPrint, radix);
 						printed += written;
 						i+= written;
 					}
 					else {
 						unsigned long numberToPrint = va_arg(args, unsigned long);
 						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_unsigned(str+i, numberToPrint, radix);
+						int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix);
 						printed += written;
 						i+= written;
 					}
@@ -541,14 +543,14 @@ static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, c
 					if (sign) {
 						long long numberToPrint = va_arg(args, long long);
 						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_signed(str+i, numberToPrint, radix);
+						int written = sprintf_signed(fmtStr+i, numberToPrint, radix);
 						printed += written;
 						i+= written;
 					}
 					else {
 						unsigned long long numberToPrint = va_arg(args, unsigned long long);
 						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_unsigned(str+i, numberToPrint, radix);
+						int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix);
 						printed += written;
 						i+= written;
 					}
@@ -571,7 +573,7 @@ static int vsnprintf_internal(char* restrict str, size_t size, bool checkSize, c
 	}
 
 	end:
-	str[i] = '\0';
+	fmtStr[i] = '\0';
 	return printed;
 }
 
