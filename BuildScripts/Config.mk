@@ -25,7 +25,7 @@ export CLEAR_ENV:=CFLAGS= ASMFLAGS= CC= CXX= LD= ASM= LINKFLAGS= LIBS=
 # Compilation for target system
 export TARGET:=i686-elf
 export TARGET_ASM:=nasm
-export TARGET_ASMFLAGS:=-f elf32
+export TARGET_ASMFLAGS:=-f elf32 -g -F dwarf
 export TARGET_CC:=clang --target=i386-none-elf
 export TARGET_CFLAGS:=-g -Wall -std=c2x -ffreestanding
 export TARGET_LD:=i686-elf-gcc
