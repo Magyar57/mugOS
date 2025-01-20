@@ -11,10 +11,20 @@
 typedef struct {
 	uint16_t offset_0to15;				// Offset (bit 0-15)
 	uint16_t segment_0to15;				// Segment selector (bit 0-15)
-	uint8_t reserved;					// Unused, set to 0
+	uint8_t reserved0;					// Unused, set to 0
 	uint8_t attributes;					// Gate type, interrupt privilege level, present bit
 	uint16_t offset_16to31;				// Offset (bit 15-31)
 } __attribute__((packed)) IDT_Entry_32;
+
+typedef struct {
+	uint16_t offset_0to15;				// Offset (bit 0-15)
+	uint16_t segment_0to15;				// Segment selector (bit 0-15)
+	uint8_t reserved0;					// Unused, set to 0
+	uint8_t attributes;					// Gate type, interrupt privilege level, present bit
+	uint16_t offset_16to31;				// Offset (bit 15-31)
+	uint32_t offset_32to63;
+	uint32_t reserved1;
+} __attribute__((packed)) IDT_Entry_64;
 
 // =========== Descriptor ===========
 
@@ -24,13 +34,18 @@ typedef struct {
 	uint32_t offset;	// IDT linear address in memory (paging applies)
 } __attribute__((packed)) IDT_LocationDescriptor_32;
 
+typedef struct {
+	uint16_t size;		// IDT size -1
+	uint64_t offset;	// IDT linear address in memory (paging applies)
+} __attribute__((packed)) IDT_LocationDescriptor_64;
+
 // =========== Declare IDT ===========
 
 // Global IDT variable, in (kernel) memory
 IDT_Entry_32 g_IDT[256];
 
 // Global IDT location descriptor, in (kernel) memory
-IDT_LocationDescriptor_32 g_IDTLocationDescriptor32 = { sizeof(g_IDT)-1, (uint32_t) g_IDT };
+IDT_LocationDescriptor_32 g_IDTLocationDescriptor = { sizeof(g_IDT)-1, (uint32_t) g_IDT };
 
 // =========== IDT and ISR manipulations ===========
 
@@ -38,7 +53,7 @@ IDT_LocationDescriptor_32 g_IDTLocationDescriptor32 = { sizeof(g_IDT)-1, (uint32
 void __attribute__((cdecl)) setIDT(IDT_LocationDescriptor_32* descriptor);
 
 void IDT_initialize(){
-	setIDT(&g_IDTLocationDescriptor32);
+	setIDT(&g_IDTLocationDescriptor);
 }
 
 bool IDT_isInterruptHandlerEnabled(uint8_t interrupt){
@@ -59,7 +74,7 @@ void IDT_setInterruptHandler(uint8_t interrupt, void* base, uint16_t segmentDesc
 	uint32_t offset = (uint32_t) base;
 	g_IDT[interrupt].offset_0to15 = (offset & 0xffff);
 	g_IDT[interrupt].segment_0to15 = segmentDescriptor;
-	g_IDT[interrupt].reserved = 0;
+	g_IDT[interrupt].reserved0 = 0;
 	g_IDT[interrupt].attributes = attributes;
 	g_IDT[interrupt].offset_16to31 = ((offset & 0xffff0000) >> 16);
 }

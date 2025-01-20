@@ -108,12 +108,12 @@ GDT_Entry g_GDT[] = {
 };
 
 // Global GDT location descriptor, in (kernel) memory
-GDT_LocationDescriptor_32 g_GDTLocationDescriptor32 = { sizeof(g_GDT)-1, (uint32_t) g_GDT };
+GDT_LocationDescriptor_32 g_GDTLocationDescriptor = { sizeof(g_GDT)-1, (uint32_t) g_GDT };
 
 // setGDT - Defined in GDT.asm
 // Sets the GDT located at 'descriptor' and loads the segments registers accordingly (kcodeSegment & kdataSegment)
 void __attribute__((cdecl)) setGDT(GDT_LocationDescriptor_32* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
 
 void GDT_initialize(){
-	setGDT(&g_GDTLocationDescriptor32, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);
+	setGDT(&g_GDTLocationDescriptor, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);
 }
