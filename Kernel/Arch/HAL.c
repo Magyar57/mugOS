@@ -3,14 +3,14 @@
 
 #include "HAL.h"
 
-// ================ x86 ================
-#ifdef ARCH_x86
+// ================ x86_64 ================
+#ifdef x86_64
 
-#include "Arch/x86/CPU.h"
-#include "Arch/x86/GDT.h"
-#include "Arch/x86/IDT.h"
-#include "Arch/x86/ISR.h"
-#include "Arch/x86/IRQ.h"
+#include "Arch/x86_64/CPU.h"
+#include "Arch/x86_64/GDT.h"
+#include "Arch/x86_64/IDT.h"
+#include "Arch/x86_64/ISR.h"
+#include "Arch/x86_64/IRQ.h"
 
 void HAL_initialize(){
 	disableInterrupts();
@@ -21,15 +21,15 @@ void HAL_initialize(){
 	IRQ_initialize();
 
 	enableInterrupts();
-	log(SUCCESS, "x86 HAL", "Initalization success");
+	log(SUCCESS, "x86_64 HAL", "Initalization success");
 }
 
-#endif // ARCH_x86
+#endif // x86_64
 
 // ================ arm64 ================
-#ifdef ARCH_arm64
+#ifdef arm64
 
 // Example, not yet implemented
 // void HAL_Initialize(){}
 
-#endif // ARCH_arm64
+#endif // arm64

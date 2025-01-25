@@ -42,15 +42,15 @@ typedef struct {
 // =========== Declare IDT ===========
 
 // Global IDT variable, in (kernel) memory
-IDT_Entry_32 g_IDT[256];
+IDT_Entry_64 g_IDT[256];
 
 // Global IDT location descriptor, in (kernel) memory
-IDT_LocationDescriptor_32 g_IDTLocationDescriptor = { sizeof(g_IDT)-1, (uint32_t) g_IDT };
+IDT_LocationDescriptor_64 g_IDTLocationDescriptor = { sizeof(g_IDT)-1, (uint64_t) g_IDT };
 
 // =========== IDT and ISR manipulations ===========
 
 // setIDT (IDT.asm) - Sets the IDT located at 'descriptor'
-void __attribute__((cdecl)) setIDT(IDT_LocationDescriptor_32* descriptor);
+void __attribute__((cdecl)) setIDT(IDT_LocationDescriptor_64* descriptor);
 
 void IDT_initialize(){
 	setIDT(&g_IDTLocationDescriptor);
@@ -71,7 +71,7 @@ void IDT_disableInterruptHandler(uint8_t interrupt){
 }
 
 void IDT_setInterruptHandler(uint8_t interrupt, void* base, uint16_t segmentDescriptor, uint8_t attributes){
-	uint32_t offset = (uint32_t) base;
+	uint64_t offset = (uint64_t) base;
 	g_IDT[interrupt].offset_0to15 = (offset & 0xffff);
 	g_IDT[interrupt].segment_0to15 = segmentDescriptor;
 	g_IDT[interrupt].reserved0 = 0;

@@ -16,6 +16,8 @@ typedef struct {
 	uint8_t accessByte;					// Access byte (see GDT_ACCESS)
 	uint8_t limit_16to19_and_flags;		// Limit (bit 16-19) followed by flags (on 4 bits)
 	uint8_t base_24to31;				// Base (bit 24-31)
+	uint32_t base;						// Base (bit 32-63) (long mode only)
+	uint32_t reserved;					// (long mode only)
 } __attribute__((packed)) GDT_Entry;
 
 // Access bytes, bits:
@@ -88,7 +90,7 @@ typedef struct {
 #define GDT_get_base_24to31(base)						(uint8_t)  ((base >> 24) & 0xff)
 
 #define GDT_get_GDT_Entry(base, limit, access, flags) \
-	{ GDT_get_limit_0to15(limit), GDT_get_base_0to15(base), GDT_get_base_16to23(base), access, GDT_get_limit_16to19_and_flags(limit, flags), GDT_get_base_24to31(base) }
+	{ GDT_get_limit_0to15(limit), GDT_get_base_0to15(base), GDT_get_base_16to23(base), access, GDT_get_limit_16to19_and_flags(limit, flags), GDT_get_base_24to31(base), 0, 0 }
 
 // =========== Declare GDT and assign GDT entries ===========
 
@@ -108,11 +110,11 @@ GDT_Entry g_GDT[] = {
 };
 
 // Global GDT location descriptor, in (kernel) memory
-GDT_LocationDescriptor_32 g_GDTLocationDescriptor = { sizeof(g_GDT)-1, (uint32_t) g_GDT };
+GDT_LocationDescriptor_64 g_GDTLocationDescriptor = { sizeof(g_GDT)-1, (uint64_t) g_GDT };
 
 // setGDT - Defined in GDT.asm
 // Sets the GDT located at 'descriptor' and loads the segments registers accordingly (kcodeSegment & kdataSegment)
-void __attribute__((cdecl)) setGDT(GDT_LocationDescriptor_32* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
+void __attribute__((cdecl)) setGDT(GDT_LocationDescriptor_64* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
 
 void GDT_initialize(){
 	setGDT(&g_GDTLocationDescriptor, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);
