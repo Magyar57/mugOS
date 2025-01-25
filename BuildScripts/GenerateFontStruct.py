@@ -1,11 +1,14 @@
 import sys
 from PIL import Image
 
-# GenerateFontStruct.py: generate the C struct from a given bitmap image
-# The input bitmap should be in the same format as this example
+# GenerateFontStruct.py: generate the C struct from a given input image
+#
+# The input should be in the same format as this example
 # https://github.com/epto/epto-fonts/blob/master/font-images/img/ISO88591-8x16.png
+# This is the default mugOS font (the image has been processed)
+# http://www.mediafire.com/view/23hpqqhkhr22x2x/IBM_VGA_8x16_Font_(PS2_Model_30_BIOS_Original_09-02-86).png
 
-BIMAP_FILEPATH = "roman-8x16.bmp"
+BITMAP_FILEPATH = "IBM-VGA-8x16.bmp"
 
 # Rows and columns of characters
 NCHAR_WIDTH = 16
@@ -17,7 +20,12 @@ CHAR_HEIGHT = 16
 BORDER = 1
 
 if __name__=="__main__":
-	fontImage = Image.open(BIMAP_FILEPATH)
+
+	if len(sys.argv)>1:
+		BITMAP_FILEPATH = sys.argv[1]
+
+	print("Treating image", BITMAP_FILEPATH, file=sys.stderr)
+	fontImage = Image.open(BITMAP_FILEPATH)
 	bitmap = fontImage.load()
 	width, height = fontImage.size
 
@@ -37,13 +45,12 @@ if __name__=="__main__":
 			for j in range(CHAR_HEIGHT):
 				curInt = 0
 				for i in range(CHAR_WIDTH):
-					if bitmap[x*(CHAR_WIDTH+1)+i, y*(CHAR_HEIGHT+1)+j] != (0,0,0):
+					pixel = bitmap[x*(CHAR_WIDTH+BORDER)+i, y*(CHAR_HEIGHT+BORDER)+j]
+					pixel = pixel[:3] # keep only colors(ignore transparency value)
+					if pixel != (0,0,0):
 						# Not black, add the corresponding bit
 						curInt += 2**(7-i)
-					# else:
 				print(format(curInt, "#04x"), end=", " if (j!=15) else " ")
-					# 	print(" ", end="")
-					# print(" ", end="")
 			print("}," if ((y!=NCHAR_HEIGHT-1) or (x!=NCHAR_WIDTH-1)) else "}")
 			x_offset += 1
 		y_offset += 1
