@@ -4,172 +4,184 @@
 
 #include "Font.h"
 
-#define SYSV_ABI __attribute__((sysv_abi))
-
-EFI_GRAPHICS_OUTPUT_PROTOCOL* m_gop = NULL;
-uint32_t* m_framebuffer; // gop->Mode->FrameBufferBase
-
-typedef uint32_t color_t;
+typedef uint32_t gop_color_t;
 #define COLOR_32BPP(r, g, b)	(r<<16 | g<<8 | b)			// r, g, b: 255 values (bounds not checked!)
 #define WHITE					COLOR_32BPP(255,255,255)
 #define LIGHT_GREY				COLOR_32BPP(31,31,31)
 #define DARK_GREY				COLOR_32BPP(24,24,24)
 #define BLACK					COLOR_32BPP(0,0,0)
-color_t m_clearColor = LIGHT_GREY;
-
-#define DRAW_OFFSET_X			4 // We don't want characters to cling to the border of the screen
-#define DRAW_OFFSET_Y			4
 
 #define MAX_TERMINAL_WIDTH		256
 #define MAX_TERMINAL_HEIGHT		512
 #define TERMINAL_SIZE			MAX_TERMINAL_WIDTH*MAX_TERMINAL_HEIGHT
-unsigned char m_terminalText[TERMINAL_SIZE]; // will contain the printed letters
-uint32_t m_cursorX;
-uint32_t m_cursorY;
-uint32_t m_terminalWidth;
-uint32_t m_terminalHeight;
 
 #define TAB_SIZE 4
 
-void GOP_puts_noLF(const char* str);
+typedef struct s_GOPDriver {
+	// Framebuffer and drawing stuff
+	EFI_GRAPHICS_OUTPUT_PROTOCOL* gop;
+	uint32_t* framebuffer;		// gop->Mode->FrameBufferBase TODO handle smaller buffers (less than 32bpp)
+	gop_color_t clearColor;		// Framebufer's background/clear color
+	uint32_t drawOffsetX;		// Character X offset to the border of the screen
+	uint32_t drawOffsetY;		// Character Y offset to the border of the screen	
+	// Character array
+	uint32_t cursorX;			// Cursor X position in terminalText
+	uint32_t cursorY;			// Cursor Y position in terminalText
+	uint32_t terminalWidth;
+	uint32_t terminalHeight;
+	unsigned char terminalText[TERMINAL_SIZE]; // Contains the printed letters
+} GOPDriver;
 
-void GOP_clearTerminal(){
-	for (int i=0 ; i<TERMINAL_SIZE ; i++) m_terminalText[i] = '\0';
+GOPDriver g_gopDriver;
+
+void GOP_puts_noLF(GOPDriver* this, const char* str);
+
+void GOP_clearTerminal(GOPDriver* this){
+	for (int i=0 ; i<TERMINAL_SIZE ; i++) this->terminalText[i] = '\0';
 }
 
-void GOP_clearScreen(uint32_t clearColor){
-	m_clearColor = clearColor;
+void GOP_clearScreen(GOPDriver* this, uint32_t clearColor){
+	this->clearColor = clearColor;
 
-	for(int j=0 ; j<m_gop->Mode->Info->VerticalResolution ; j++){
-		size_t lineOffset = m_gop->Mode->Info->PixelsPerScanLine*j;
-		for (int i=0 ; i<m_gop->Mode->Info->HorizontalResolution ; i++){
-			m_framebuffer[lineOffset + i] = clearColor;
+	for(int j=0 ; j<this->gop->Mode->Info->VerticalResolution ; j++){
+		size_t lineOffset = this->gop->Mode->Info->PixelsPerScanLine*j;
+		for (int i=0 ; i<this->gop->Mode->Info->HorizontalResolution ; i++){
+			this->framebuffer[lineOffset + i] = clearColor;
 		}
 	}
 }
 
-void GOP_drawLetter(unsigned char letter, uint32_t fontColor, int offsetX, int offsetY){
+void GOP_drawLetter(GOPDriver* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY){
 	uint8_t* bitmap = m_defaultFont[letter];
 	int mask; // bit mask, will be shifted right every iteration
 
 	for (int j=0 ; j<BITMAP_CHAR_HEIGHT ; j++){
-		size_t lineOffset = m_gop->Mode->Info->PixelsPerScanLine * (j+offsetY);
+		size_t lineOffset = this->gop->Mode->Info->PixelsPerScanLine * (j+offsetY);
 		mask = 0b10000000;
 		for (int i=0 ; i<BITMAP_CHAR_WIDTH ; i++){
 			if (bitmap[j] & mask)
-				m_framebuffer[lineOffset + i+offsetX] = fontColor;
+				this->framebuffer[lineOffset + i+offsetX] = fontColor;
 			else
-				m_framebuffer[lineOffset + i+offsetX] = m_clearColor;
+				this->framebuffer[lineOffset + i+offsetX] = this->clearColor;
 			mask >>= 1; // next pixel
 		}
 	}
 }
 
-void GOP_drawScreen(){
-	m_cursorX = 0;
-	m_cursorY = 0;
+void GOP_drawScreen(GOPDriver* this){
+	this->cursorX = 0;
+	this->cursorY = 0;
 	for (int i=0 ; i<TERMINAL_SIZE ; i++){
-		char c = m_terminalText[i];
+		char c = this->terminalText[i];
 		if (c == '\n'){
-			m_cursorX = 0;
-			m_cursorY++;
+			this->cursorX = 0;
+			this->cursorY++;
 			continue;
 		}
 		if (c == '\r'){
-			m_cursorX = 0;
+			this->cursorX = 0;
 			continue;
 		}
 		if (c == '\0')
 			continue;
-		GOP_drawLetter(c, WHITE, m_cursorX*BITMAP_CHAR_WIDTH + DRAW_OFFSET_X, m_cursorY*BITMAP_CHAR_HEIGHT + DRAW_OFFSET_Y);
-		m_cursorX = (m_cursorX+1) % m_terminalWidth;
-		if (m_cursorX == 0) m_cursorY++;
+		GOP_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
+		this->cursorX = (this->cursorX+1) % this->terminalWidth;
+		if (this->cursorX == 0) this->cursorY++;
 	}
 }
 
-void GOP_scrollDown(unsigned int n){
+void GOP_scrollDown(GOPDriver* this, unsigned int n){
 	if (n < 0) return;
 
 	// Move lines up
-	for(int y=n ; y<m_terminalHeight ; y++){
-		for(int x=0 ; x<m_terminalWidth ; x++){
-			char c = m_terminalText[m_terminalWidth*y + x];
-			m_terminalText[m_terminalWidth*(y-n) + x] = c;
+	for(int y=n ; y<this->terminalHeight ; y++){
+		for(int x=0 ; x<this->terminalWidth ; x++){
+			char c = this->terminalText[this->terminalWidth*y + x];
+			this->terminalText[this->terminalWidth*(y-n) + x] = c;
 		}
 	}
 
-	for(int y=m_terminalHeight-n ; y<m_terminalHeight ; y++){
-		for (int x=0; x<m_terminalWidth ; x++){
-			m_terminalText[m_terminalWidth*y + x] = '\0';
+	for(int y=this->terminalHeight-n ; y<this->terminalHeight ; y++){
+		for (int x=0; x<this->terminalWidth ; x++){
+			this->terminalText[this->terminalWidth*y + x] = '\0';
 		}
 	}
 
-	m_cursorY -= n;
+	this->cursorY -= n;
 
 	// Redraw everything
-	GOP_clearScreen(m_clearColor);
-	GOP_drawScreen();
+	GOP_clearScreen(this, this->clearColor);
+	GOP_drawScreen(this);
 }
 
-void GOP_putchar(const char c){
-	m_terminalText[m_terminalWidth*m_cursorY + m_cursorX] = c;
+void GOP_putchar(GOPDriver* this, const char c){
+	this->terminalText[this->terminalWidth*this->cursorY + this->cursorX] = c;
 
 	if (c == '\n'){
-		m_cursorX = 0;
-		m_cursorY++;
+		this->cursorX = 0;
+		this->cursorY++;
 		goto end_putc;
 	}
 	if (c == '\r'){
-		m_cursorX = 0;
+		this->cursorX = 0;
 		goto end_putc;
 	}
 	if (c == '\t'){
 		do {
-			GOP_putchar(' '); // recursion is fine, cannot go deeper than one call
-		} while(m_cursorX % TAB_SIZE != 0 && m_cursorX<m_terminalWidth);
+			GOP_putchar(this, ' '); // recursion is fine, cannot go deeper than one call
+		} while(this->cursorX % TAB_SIZE != 0 && this->cursorX<this->terminalWidth);
 		goto end_putc;
 	}
 
-	GOP_drawLetter(c, WHITE, m_cursorX*BITMAP_CHAR_WIDTH + DRAW_OFFSET_X, m_cursorY*BITMAP_CHAR_HEIGHT + DRAW_OFFSET_Y);
+	GOP_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
 
-	m_cursorX = (m_cursorX+1) % m_terminalWidth;
-	if (m_cursorX == 0) m_cursorY++;
+	this->cursorX = (this->cursorX+1) % this->terminalWidth;
+	if (this->cursorX == 0) this->cursorY++;
 
 	end_putc:
-	if (m_cursorY >= m_terminalHeight) GOP_scrollDown(1);
+	if (this->cursorY >= this->terminalHeight) GOP_scrollDown(this, 1);
 }
 
-void GOP_puts_noLF(const char* str){
+void GOP_puts_noLF(GOPDriver* this, const char* str){
 	while(*str){
-		GOP_putchar(*str);
+		GOP_putchar(this, *str);
 		str++;
 	}
 }
 
-void GOP_puts(const char* str){
-	GOP_puts_noLF(str);
-	GOP_putchar('\n');
+void GOP_puts(GOPDriver* this, const char* str){
+	GOP_puts_noLF(this, str);
+	GOP_putchar(this, '\n');
 }
 
-SYSV_ABI __attribute__((section(".entry")))
+void GOP_initialize(EFI_GRAPHICS_OUTPUT_PROTOCOL* gop){
+	g_gopDriver.gop = gop;
+	g_gopDriver.framebuffer = (uint32_t*) gop->Mode->FrameBufferBase;
+
+	g_gopDriver.drawOffsetX = 4;
+	g_gopDriver.drawOffsetY = 4;
+
+	uint64_t maxHorizontalChar = (gop->Mode->Info->HorizontalResolution - 2*g_gopDriver.drawOffsetX) / BITMAP_CHAR_WIDTH;
+	uint64_t maxVerticalChar = (gop->Mode->Info->VerticalResolution - 2*g_gopDriver.drawOffsetY) / BITMAP_CHAR_HEIGHT;
+	g_gopDriver.terminalWidth = (maxHorizontalChar > MAX_TERMINAL_WIDTH) ? MAX_TERMINAL_WIDTH : maxHorizontalChar;
+	g_gopDriver.terminalHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
+
+	g_gopDriver.cursorX = 0;
+	g_gopDriver.cursorY = 0;
+}
+
+__attribute__((section(".entry")))
 void kmain(EFI_GRAPHICS_OUTPUT_PROTOCOL* gop){
-	m_gop = gop;
-	m_framebuffer = (uint32_t*) gop->Mode->FrameBufferBase;
 
-	m_cursorX = 0;
-	m_cursorY = 0;
-	uint64_t maxHorizontalChar = (gop->Mode->Info->HorizontalResolution - 2*DRAW_OFFSET_X) / BITMAP_CHAR_WIDTH;
-	uint64_t maxVerticalChar = (gop->Mode->Info->VerticalResolution - 2*DRAW_OFFSET_Y) / BITMAP_CHAR_HEIGHT;
-	m_terminalWidth = (maxHorizontalChar > MAX_TERMINAL_WIDTH) ? MAX_TERMINAL_WIDTH : maxHorizontalChar;
-	m_terminalHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
-	GOP_clearTerminal();
-	GOP_clearScreen(COLOR_32BPP(31, 31, 31));
+	GOP_initialize(gop);
+	GOP_clearTerminal(&g_gopDriver);
+	GOP_clearScreen(&g_gopDriver, COLOR_32BPP(31, 31, 31));
 
-	GOP_puts("Supposons que je sois dans votre kernel !\n");
+	GOP_puts(&g_gopDriver, "Supposons que je sois dans votre kernel !\n");
 
-	GOP_puts("Testing character set:");
+	GOP_puts(&g_gopDriver, "Testing character set:");
 	for (int letter=0 ; letter<256 ; letter++)
-		GOP_putchar(letter);
+		GOP_putchar(&g_gopDriver, letter);
 
 	while(true){
 		__asm__ volatile("cli; hlt");

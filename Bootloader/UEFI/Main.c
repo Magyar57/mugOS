@@ -8,7 +8,7 @@
 #define PAGE_SIZE		4096 // 4KiB
 
 #define SYSV_ABI		__attribute__((sysv_abi))
-#define KERNEL_FILE		L"mugOS.bin"
+#define KERNEL_FILE		L"kernel.bin"
 typedef void (SYSV_ABI *kmain_t)(EFI_GRAPHICS_OUTPUT_PROTOCOL*);
 // typedef void (SYSV_ABI *kmain_t)(EFI_GRAPHICS_OUTPUT_PROTOCOL*, EFI_SYSTEM_TABLE*);
 
@@ -275,7 +275,7 @@ EFI_STATUS bmain(IN EFI_HANDLE imageHandle, IN EFI_SYSTEM_TABLE* st){
 	kmain_t kmain = loadKernel();
 	puts(L"");
 
-	puts(L"About to quit BootServices, get memory map, and jump to the kernel");
+	puts(L"Quitting BootServices, get memory map, and jump to the kernel.");
 	// waitKey();
 
 	// Get the memory map...
