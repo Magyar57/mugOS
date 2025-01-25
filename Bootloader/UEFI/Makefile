@@ -1,53 +1,35 @@
-all: build
-.PHONY: build run clean
+# UEFI bootloader makefile
 
-IMAGE:=disk.img
+TARGET_CFLAGS+=-fshort-wchar # add "-D $(ARCH)" ?
+
+# Include path for the UEFI bootloader
+export CPATH=$(abspath .):$(abspath EFI/Arch/$(ARCH))
+
+BUILD_SUBDIR:=$(BUILD_DIR)/bootloader/uefi
 
 SOURCES_C=$(wildcard *.c)
-OBJECTS_C=$(patsubst %.c, %.o, $(SOURCES_C))
+OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
 
-export CPATH=$(abspath .):$(abspath EFI/Arch/$(ARCH))
-CFLAGS=-g -Wall -ffreestanding -fshort-wchar -mno-red-zone -O0
-LDFLAGS=-nostdlib -Wl,-entry:bmain,-subsystem:efi_application,/MAP:bootloader.map -fuse-ld=lld-link
+all: bootloader
 
-ARCH?=x86_64
+.PHONY: bootloader clean run
 
-# Architecture dependent stuff
-ifeq ($(ARCH), x86_64)
-TARGET=x86_64-none-windows
-EFI_EXEC=BOOTX64.EFI
-FIRMWARE=/usr/share/edk2/x64/OVMF.4m.fd
-else ifeq ($(ARCH), IA32)
-TARGET=i386-none-windows
-EFI_EXEC=BOOTX32.EFI
-FIRMWARE=/usr/share/edk2/ia32/OVMF.4m.fd
-endif
+bootloader: $(BUILD_DIR)/BOOTX64.EFI
 
-build: $(IMAGE)
+# TODO incorporate $(TARGET_LDFLAGS) and $(TARGET_LD)
+$(BUILD_DIR)/BOOTX64.EFI: $(OBJECTS_C)
+	clang --target=x86_64-none-windows -nostdlib -Wl,-entry:bmain,-subsystem:efi_application,/MAP:$(BUILD_DIR)/uefi-bootloader.map -fuse-ld=lld-link -o $@ $(BUILD_SUBDIR)/*.o
 
-$(IMAGE): $(EFI_EXEC) kernel.bin
-	dd if=/dev/zero of=$@ bs=1k count=1440 status=none
-	mformat -i $@ -f 1440 ::
-	mmd -i $@ ::/EFI ::/EFI/BOOT
-	mcopy -i $@ $(EFI_EXEC) ::/EFI/BOOT
-	mcopy -i $@ *.bin ::/
+.PHONY: kernel.bin
+kernel.bin:
+	cp ../../build/kernel.bin .
 
-$(EFI_EXEC): $(OBJECTS_C)
-	clang --target=$(TARGET) $(LDFLAGS) -o $(EFI_EXEC) Main.o stdlib.o
+# Generic object rules
 
-kernel.bin: Kernel.c
-	clang --target=x86_64-none-elf -g -Wall -std=c2x -ffreestanding -mno-red-zone -fPIC -fPIE -O0 -c Kernel.c -o Kernel.o
-	# ld.lld -e kmain -nostdlib -pie -T Kernel.ld -Map=kernel.map --oformat binary Kernel.o -o $@ # fucked, it outputs a header for some reasons
-	ld -e kmain -nostdlib -pie -pic -T Kernel.ld -Map=kernel.map --oformat binary Kernel.o -o $@
+$(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIR)
+	clang --target=x86_64-none-windows -g -Wall -ffreestanding -fshort-wchar -mno-red-zone -O0 -c $< -o $@
 
-%.o: %.c
-	clang --target=$(TARGET) $(CFLAGS) -c $< -o $@
+# Build dirs
 
-run:
-	qemu-system-x86_64 -drive if=pflash,file=$(FIRMWARE),format=raw,readonly=on -drive if=ide,media=disk,file=$(IMAGE),format=raw
-
-# 32 bits:
-# qemu-system-i386   -drive if=pflash,file=/usr/share/edk2/ia32/OVMF.4m.fd,format=raw,readonly=on -drive if=ide,media=disk,file=$(IMAGE),format=raw
-
-clean:
-	rm -rf *.o kernel.bin *.elf *.EFI *.img *.map
+$(BUILD_SUBDIR):
+	@mkdir -p $@

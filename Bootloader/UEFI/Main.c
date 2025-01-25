@@ -10,7 +10,6 @@
 #define SYSV_ABI		__attribute__((sysv_abi))
 #define KERNEL_FILE		L"kernel.bin"
 typedef void (SYSV_ABI *kmain_t)(EFI_GRAPHICS_OUTPUT_PROTOCOL*);
-// typedef void (SYSV_ABI *kmain_t)(EFI_GRAPHICS_OUTPUT_PROTOCOL*, EFI_SYSTEM_TABLE*);
 
 EFI_HANDLE g_imageHandle = NULL;
 EFI_SYSTEM_TABLE* g_st = NULL;

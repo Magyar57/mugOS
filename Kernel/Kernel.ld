@@ -1,9 +1,6 @@
 ENTRY(kmain)
-physical_address = 0x00100000;
 
 SECTIONS {
-	. = physical_address;
-
 	.entry :	{ __entry_start = .; *(.entry) }
 	.text :		{ __text_start = .; *(.text) }
 	.data :		{ __data_start = .; *(.data) }

@@ -9,18 +9,21 @@
 			"type": "cppdbg",
 			"preLaunchTask": "Native build",
 			"request": "launch",
-			"program": "qemu-system-i386",
-			"args": ["-drive", "file=${workspaceFolder}/build/floppy.img,format=raw,if=floppy"],
+			"program": "qemu-system-x86_64",
+			"args": [
+				"-drive", "if=pflash,file=/usr/share/edk2/x64/OVMF.4m.fd,format=raw,readonly=on", 
+				"-drive", "if=ide,media=disk,file=${workspaceFolder}/build/floppy.img,format=raw"
+			],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
 			"externalConsole": false,
 			"MIMode": "gdb",
 			"linux": {
-				"program": "/usr/bin/qemu-system-i386",
+				"program": "/usr/bin/qemu-system-x86_64",
 			},
 			"osx": {
-				"program": "/opt/homebrew/bin/qemu-system-i386",
+				"program": "/opt/homebrew/bin/qemu-system-x86_64",
 				"MIMode": "lldb",
 			},
 		},
