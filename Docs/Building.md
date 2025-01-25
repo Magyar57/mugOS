@@ -8,10 +8,9 @@ The depedencies listed below, before wget, are necessary for cross-compilation.
 What comes after wget is needed for the mugOS compilation.
 
 Build dependencies for each supported operating system:
-- Debian and derivatives: `sudo apt install build-essential bison flex libgmp3-dev libmpc-dev libmpfr-dev texinfo wget nasm mtools dosfstools libguestfs-tools qemu-system-x86`
-- Fedora and derivatives: `sudo dnf install gcc gcc-c++ make bison flex gmp-devel libmpc-devel mpfr-devel texinfo wget nasm mtools dosfstools guestfs-tools qemu-system-x86`
-- Arch Linux: `pacman -Syu base-devel gcc bison flex gmp libmpc mpfr texinfo wget nasm mtools dosfstools qemu`
-- NixOS: use the provided environement: `nix-shell Environment/Shell.nix`
+- Arch Linux: `pacman -Syu base-devel gcc clang ldd bison flex gmp libmpc mpfr texinfo wget nasm mtools dosfstools qemu edk2-ovmf`
+- Fedora and derivatives: `sudo dnf install gcc gcc-c++ clang make bison flex gmp-devel libmpc-devel mpfr-devel texinfo wget nasm mtools dosfstools guestfs-tools qemu-system-x86`
+- NixOS: use the provided environment: `nix-shell Environment/Shell.nix`
 - macOS: `brew install bison flex gmp libmpc mpfr texinfo wget nasm mtools qemu`
 - Windows: Not supported. Please use WSL2.
 

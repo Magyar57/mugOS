@@ -9,6 +9,7 @@ pkgs.mkShell {
 	buildInputs = [
 		pkgs.file
 		pkgs.gcc
+		pkgs.clang-tools
 		pkgs.gnumake
 		pkgs.bison
 		pkgs.flex
@@ -23,6 +24,7 @@ pkgs.mkShell {
 		pkgs.guestfs-tools
 		pkgs.qemu
 		pkgs.bochs
+		pkgs.ovmf
 	];
 
 	# Shell parameters
