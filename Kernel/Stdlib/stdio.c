@@ -1,8 +1,10 @@
 #include "unistd.h"
+#include "string.h"
 
 #include "stdio.h"
 
 int fileno(FILE* stream){
+	return 1; // TODO remove when relocations works
 	if (stream == NULL) return -1;
 
 	return stream->fd;
@@ -13,9 +15,10 @@ int fputc(int c, FILE* stream){
 	if (fd==-1) return EOF;
 
 	char to_write = (unsigned char) c;
-	ssize_t res = write(fd, &to_write, 1);
+	ssize_t written = write(fd, &to_write, 1);
 
-	return (res == 1) ? to_write : EOF;
+	if (written != 1) return EOF;
+	return to_write;
 }
 
 int putc(int c, FILE* stream){
@@ -23,19 +26,19 @@ int putc(int c, FILE* stream){
 }
 
 int putchar(int c){
-	return putc(c, stdout);
+	return fputc(c, stdout);
 }
 
 int fputs(const char* restrict s, FILE* restrict stream){
 	if (s==NULL) return EOF;
+	int fd = fileno(stream);
+	if (fd==-1) return EOF;
 
-	while(*s){
-		int res = fputc(*s, stream);
-		if (res == EOF) return EOF;
-		s++;
-	}
+	size_t size = strlen(s);
+	ssize_t written = write(fd, s, size);
 
-	return 1;
+	if (written != size) return EOF;
+	return written;
 }
 
 int puts(const char *s){
