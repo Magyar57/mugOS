@@ -155,6 +155,100 @@ static VOID* loadKernel(){
 	return buffer;
 }
 
+const CHAR16* getMemoryTypeName(UINTN memoryType){
+	switch (memoryType){
+	case EfiReservedMemoryType:
+		return L"EfiReservedMemoryType";
+	case EfiLoaderCode:
+		return L"EfiLoaderCode";
+	case EfiLoaderData:
+		return L"EfiLoaderData";
+	case EfiBootServicesCode:
+		return L"EfiBootServicesCode";
+	case EfiBootServicesData:
+		return L"EfiBootServicesData";
+	case EfiRuntimeServicesCode:
+		return L"EfiRuntimeServicesCode";
+	case EfiRuntimeServicesData:
+		return L"EfiRuntimeServicesData";
+	case EfiConventionalMemory:
+		return L"EfiConventionalMemory";
+	case EfiUnusableMemory:
+		return L"EfiUnusableMemory";
+	case EfiACPIReclaimMemory:
+		return L"EfiACPIReclaimMemory";
+	case EfiACPIMemoryNVS:
+		return L"EfiACPIMemoryNVS";
+	case EfiMemoryMappedIO:
+		return L"EfiMemoryMappedIO";
+	case EfiMemoryMappedIOPortSpace:
+		return L"EfiMemoryMappedIOPortSpace";
+	case EfiPalCode:
+		return L"EfiPalCode";
+	case EfiPersistentMemory:
+		return L"EfiPersistentMemory";
+	case EfiUnacceptedMemoryType:
+		return L"EfiUnacceptedMemoryType";
+	default:
+		return L"UnknownMemoryType";
+	}
+}
+
+const CHAR16* getMemoryAttributeName(UINT64 attribute){
+	switch (attribute){
+	case EFI_MEMORY_UC:
+		return L"EFI_MEMORY_UC";
+	case EFI_MEMORY_WC:
+		return L"EFI_MEMORY_WC";
+	case EFI_MEMORY_WT:
+		return L"EFI_MEMORY_WT";
+	case EFI_MEMORY_WB:
+		return L"EFI_MEMORY_WB";
+	case EFI_MEMORY_UCE:
+		return L"EFI_MEMORY_UCE";
+	case EFI_MEMORY_WP:
+		return L"EFI_MEMORY_WP";
+	case EFI_MEMORY_RP:
+		return L"EFI_MEMORY_RP";
+	case EFI_MEMORY_XP:
+		return L"EFI_MEMORY_XP";
+	case EFI_MEMORY_NV:
+		return L"EFI_MEMORY_NV";
+	case EFI_MEMORY_MORE_RELIABLE:
+		return L"EFI_MEMORY_MORE_RELIABLE";
+	case EFI_MEMORY_RO:
+		return L"EFI_MEMORY_RO";
+	case EFI_MEMORY_SP:
+		return L"EFI_MEMORY_SP";
+	case EFI_MEMORY_CPU_CRYPTO:
+		return L"EFI_MEMORY_CPU_CRYPTO";
+	case EFI_MEMORY_HOT_PLUGGABLE:
+		return L"EFI_MEMORY_HOT_PLUGGABLE";
+	case EFI_MEMORY_RUNTIME:
+		return L"EFI_MEMORY_RUNTIME";
+	case EFI_MEMORY_ISA_VALID:
+		return L"EFI_MEMORY_ISA_VALID";
+	case EFI_MEMORY_ISA_MASK:
+		return L"EFI_MEMORY_ISA_MASK";
+	default:
+		return L"INVALID_ATTRIBUTE";
+	}
+}
+
+void printMemoryMap(EFI_MEMORY_DESCRIPTOR* memoryMap, UINTN memoryMapSize, UINTN descriptorSize){
+	const int n_descriptor = memoryMapSize / descriptorSize;
+	for (int i=0 ; i<n_descriptor ; i++){
+		puts_noCRLF((CHAR16*) getMemoryTypeName(memoryMap[i].Type));
+		puts_noCRLF(L" from=");
+		putNumberUnsigned_noCRLF(memoryMap[i].PhysicalStart, 16);
+		puts_noCRLF(L" size=");
+		putNumberUnsigned_noCRLF(memoryMap[i].NumberOfPages, 10);
+		puts_noCRLF(L" pages, attributes: ");
+		putNumberUnsigned_noCRLF(memoryMap[i].Attribute, 16);
+		puts(L"");
+	}
+}
+
 static void loadMemoryMap(UINTN* memoryMapSize, EFI_MEMORY_DESCRIPTOR** memoryMap, UINTN* mapKey, UINTN* descriptorSize, UINT32* descriptorVersion){
 	EFI_STATUS res;
 	bool memoryMapValid = false;
@@ -193,6 +287,10 @@ static void loadMemoryMap(UINTN* memoryMapSize, EFI_MEMORY_DESCRIPTOR** memoryMa
 			exit(res);
 		}
 	}
+
+	// Careful ! Printing the memory map calls boot services,
+	// which makes the call to ExitBootServices fail
+	// printMemoryMap(*memoryMap, *memoryMapSize, *descriptorSize);
 
 	if (!memoryMapValid){
 		puts(L"Couldn't read memory map in iteration limit (GetMemoryMap kept asking for more memory)");
