@@ -7,4 +7,4 @@ all: first-stage
 first-stage: $(BUILD_DIR)/legacy-bootloader-first-stage.bin
 
 $(BUILD_DIR)/legacy-bootloader-first-stage.bin: Boot.asm
-	$(ASM) $< -f bin -o $@
+	$(TARGET_ASM) $< -f bin -o $@

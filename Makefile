@@ -64,13 +64,13 @@ tools: tools_fat
 tools_fat: $(BUILD_TOOLS_FAT_DIR)/tests $(BUILD_TOOLS_FAT_DIR)/cli
 
 $(BUILD_TOOLS_FAT_DIR)/tests: $(BUILD_TOOLS_FAT_DIR)/Tests.o $(BUILD_TOOLS_FAT_DIR)/Fat.o | $(BUILD_TOOLS_FAT_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	gcc -g -Wall -std=c2x $^ -o $@
 
 $(BUILD_TOOLS_FAT_DIR)/cli: $(BUILD_TOOLS_FAT_DIR)/FatCLI.o $(BUILD_TOOLS_FAT_DIR)/Fat.o | $(BUILD_TOOLS_FAT_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
+	gcc -g -Wall -std=c2x $^ -o $@
 
 $(BUILD_TOOLS_FAT_DIR)/%.o : Tools/FAT/%.c | $(BUILD_TOOLS_FAT_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	gcc -g -Wall -std=c2x -c $< -o $@
 
 #
 # Build directories
