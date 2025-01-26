@@ -18,6 +18,8 @@
 - [X] Logging subsystem
 - [X] Serial output driver
 - [ ] Bootloader: abandon Legacy in favor of UEFI
+- [X] GOP Driver
+- [ ] MBP: mugOS Boot Protocol
 - [ ] Memory detection
 - [ ] kmalloc
 - [ ] Userland
@@ -35,4 +37,4 @@ These are modifications to be done, that are dependent on other techs to be impl
 - [ ] With proper executable and lib support, remove callbacks from the keyboard driver when its owner exits
 
 Notes:
-- Current PS/2 implementation purposely does not support hot-plug (as it was not designed for it originally...)
+- Current PS/2 implementation purposely does not support hot-plug (as the PS/2 was not designed for it originally...)

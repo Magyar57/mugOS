@@ -1,39 +1,34 @@
 # General documentation
 
-This section aims to explain the general concepts needed to understand the code of the operating system.
+This is a general description of the mugOS operating system.
 
-## Booting modes
+The OS is written for the Intel x86_64 / AMD64 architecture. There are no plans to add support for other CPUs yet,
+but the OS is designed in a way that makes adding architectures relatively easy.
 
-As this day, there are two booting modes possible:
+## Features
 
-Legacy booting:
-- BIOS loads first sector of each bootable device into memory (at location 0x7c00)
-- BIOS checks for signature (the 1st sector's 2 last bytes are expected to be 0xaa55)
-- If found, it starts executing code
+By design, the mugOS uses the MBP: mugOS Boot Protocol. It only supports UEFI booting, as legacy BIOS was
+[deprecated by Intel](https://www.intel.com/content/www/us/en/support/articles/000057401/intel-nuc.html) themselves.
+See the corresponding section below for more information.
 
-EFI:
-- BIOS looks into special EFI partitions
-- OS must be compiled as an EFI program
+To this day, the kernel supports the following features:
+- A custom bootloader
+- Interrupt and IRQ support (see the [Interrupts documentation](./Interrupts.md))
+- Filesystem support: none for now
+- IO support: PS/2 mouse and keyboard, Serial support
+- Graphical support: VGA, GOP
+- Subsystems for: Graphics, mouse & keyboard support, logging.
 
-For simplicity reasons, we chose to work with the legacy mode.
+Note: subsystems are a way to abstract hardware and expose functionnality of the underlying drivers to the
+rest of the kernel, and eventually to userspace.
 
-## Filesystems
+To see planned features, see the [Roadmap](./Roadmap.md).
 
-FAT12: see online documentation https://wiki.osdev.org/FAT12
+### MBP: mugOS Boot Protocol
 
-## Disks organization
+Note: this is a plan and is not yet implemented.
 
-CHS scheme: Cylinders - Heads - Sectors
-Describes how (old) disks (floppy, hard drives...) are organized
-2 constants:
-- number of sectors per cylinder (on a single side)
-- number of heads per cylinder
-
-LBA scheme: Logical Block Addressing
-Logical abstraction to make accessing a disk easier
-We address the disk with an unique sector number, a sector often being 512 bytes
-
-LBA to CHS conversion:
-sector 	= (LBA % sectors per track) + 1
-head 		= (LBA / sectors per track) % heads
-cylinder 	= (LBA / sectors per track) / heads
+The MBP will support:
+- Setting a display resolution a boot time
+- Using a framebuffer at runtime
+- Getting a memory map of the system
