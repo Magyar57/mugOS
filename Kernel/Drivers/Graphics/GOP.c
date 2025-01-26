@@ -1,12 +1,28 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "EFI/Protocols/GraphicsOutputProtocol.h" // TODO replace by an internal structure and make the bootloader fill it
+#include "EFI/Protocols/GraphicsOutputProtocol.h"
 #include "Drivers/Graphics/Font.h"
 
 #include "Drivers/Graphics/GOP.h"
 
 void GOP_clearTerminal(GOPDriver* this){
 	for (int i=0 ; i<TERMINAL_SIZE ; i++) this->terminalText[i] = '\0';
+}
+
+void GOP_setZoom(GOPDriver* this, uint32_t zoom){
+	if (zoom == 0)
+		zoom = 1;
+
+	// Recompute what's needed
+
+	this->zoom = zoom;
+	this->charWidth = zoom * BITMAP_CHAR_WIDTH;
+	this->charHeight = zoom * BITMAP_CHAR_HEIGHT;
+
+	uint64_t maxHorizontalChar = (((EFI_GRAPHICS_OUTPUT_PROTOCOL*) this->gop)->Mode->Info->HorizontalResolution - 2*this->drawOffsetX*this->zoom) / (BITMAP_CHAR_WIDTH*this->zoom);
+	uint64_t maxVerticalChar = (((EFI_GRAPHICS_OUTPUT_PROTOCOL*) this->gop)->Mode->Info->VerticalResolution - 2*this->drawOffsetY*this->zoom) / (BITMAP_CHAR_HEIGHT*this->zoom);
+	this->terminalWidth = (maxHorizontalChar > MAX_TERMINAL_WIDTH) ? MAX_TERMINAL_WIDTH : maxHorizontalChar;
+	this->terminalHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
 }
 
 void GOP_setClearColor(GOPDriver* this, uint32_t clearColor){
@@ -28,16 +44,34 @@ void GOP_drawLetter(GOPDriver* this, unsigned char letter, uint32_t fontColor, i
 	uint8_t* bitmap = m_defaultFont[letter];
 	int mask; // bit mask, will be shifted right every iteration
 	EFI_GRAPHICS_OUTPUT_PROTOCOL* gop = (EFI_GRAPHICS_OUTPUT_PROTOCOL*) this->gop;
+	gop_color_t colorToDraw;
 
+	// Cache as many things as possible, since this is a critical section (performance-wise)
+	uint64_t pixelsPerScanLine = gop->Mode->Info->PixelsPerScanLine;
+	uint64_t zoom = this->zoom;
+	uint64_t zoomedOffsetX = zoom * offsetX;
+
+	// i, j: indexes in the bitmap character
 	for (int j=0 ; j<BITMAP_CHAR_HEIGHT ; j++){
-		size_t lineOffset = gop->Mode->Info->PixelsPerScanLine * (j+offsetY);
+		
+		uint64_t baseLineOffset = pixelsPerScanLine * zoom * (j+offsetY);
+
 		mask = 0b10000000;
 		for (int i=0 ; i<BITMAP_CHAR_WIDTH ; i++){
-			if (bitmap[j] & mask)
-				this->framebuffer[lineOffset + i+offsetX] = fontColor;
-			else
-				this->framebuffer[lineOffset + i+offsetX] = this->clearColor;
-			mask >>= 1; // next pixel
+			// Draw pixel if the bit is set in the bitmap
+			colorToDraw = (bitmap[j] & mask) ? fontColor : this->clearColor;
+			// More cache
+			uint64_t horizontalOffset = zoom*i + zoomedOffsetX;
+
+			// ii, jj: pixel indexes in the framebuffer
+			for (int jj=0 ; jj<zoom ; jj++){
+				uint64_t iterationLineOffset = baseLineOffset + jj*pixelsPerScanLine;
+				for (int ii=0 ; ii<zoom ; ii++){
+					this->framebuffer[iterationLineOffset + horizontalOffset+ii] = colorToDraw;
+				}
+			}
+
+			mask >>= 1; // next bitmap pixel
 		}
 	}
 }
@@ -135,11 +169,8 @@ void GOP_initialize(GOPDriver* this, void* gop){
 	this->drawOffsetX = 4;
 	this->drawOffsetY = 4;
 	GOP_setClearColor(this, LIGHT_GREY);
+	GOP_setZoom(this, 1); // setZoom recomputes some internal variables, so we don't need to set those
 
-	uint64_t maxHorizontalChar = (((EFI_GRAPHICS_OUTPUT_PROTOCOL*) gop)->Mode->Info->HorizontalResolution - 2*this->drawOffsetX) / BITMAP_CHAR_WIDTH;
-	uint64_t maxVerticalChar = (((EFI_GRAPHICS_OUTPUT_PROTOCOL*) gop)->Mode->Info->VerticalResolution - 2*this->drawOffsetY) / BITMAP_CHAR_HEIGHT;
-	this->terminalWidth = (maxHorizontalChar > MAX_TERMINAL_WIDTH) ? MAX_TERMINAL_WIDTH : maxHorizontalChar;
-	this->terminalHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
 	GOP_clearTerminal(this);
 	GOP_clearScreen(this);
 

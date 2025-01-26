@@ -22,7 +22,7 @@ void kmain(EFI_GRAPHICS_OUTPUT_PROTOCOL* gop){
 	Graphics_initialize(gop);
 	Graphics_clearScreen();
 	puts("Supposons que je sois dans votre kernel !");
-	puts("TODO TODO TODO TODO remove hardcoded fd=1 in fileno (stdio.c)");
+	// puts("TODO remove hardcoded fd=1 in fileno (stdio.c) when we have working relocations");
 
 	// HAL_initialize();
 	// Serial_initalize();

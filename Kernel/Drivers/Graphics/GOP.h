@@ -22,7 +22,10 @@ typedef struct s_GOPDriver {
 	uint32_t* framebuffer;		// gop->Mode->FrameBufferBase TODO handle smaller buffers (less than 32bpp)
 	gop_color_t clearColor;		// Framebufer's background/clear color
 	uint32_t drawOffsetX;		// Character X offset to the border of the screen
-	uint32_t drawOffsetY;		// Character Y offset to the border of the screen	
+	uint32_t drawOffsetY;		// Character Y offset to the border of the screen
+	uint32_t zoom;				// Font zoom level (multiplier)
+	uint32_t charWidth;			// The width of a character on screen, in pixels (accounts for zoom)
+	uint32_t charHeight;		// The height of a character on screen, in pixels (accounts for zoom)
 	// Character array
 	uint32_t cursorX;			// Cursor X position in terminalText
 	uint32_t cursorY;			// Cursor Y position in terminalText
@@ -33,6 +36,7 @@ typedef struct s_GOPDriver {
 
 void GOP_clearTerminal(GOPDriver* this);
 void GOP_setClearColor(GOPDriver* this, uint32_t clearColor);
+void GOP_setZoom(GOPDriver* this, uint32_t zoom);
 void GOP_clearScreen(GOPDriver* this);
 void GOP_drawLetter(GOPDriver* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY);
 void GOP_drawScreen(GOPDriver* this);
