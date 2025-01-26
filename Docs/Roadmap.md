@@ -19,16 +19,21 @@
 - [X] Serial output driver
 - [ ] Bootloader: abandon Legacy in favor of UEFI
 - [X] GOP Driver
+- [ ] UEFI Bootloader: add kernel ELF support
 - [ ] MBP: mugOS Boot Protocol
 - [ ] Memory detection
 - [ ] kmalloc
-- [ ] Userland
 - [ ] Kernel FAT driver
-- [ ] Virtual filesystem (VFS)
-- [ ] ELF binary support
-- [ ] Add gdb support
+- [ ] Kernel filesystem
+- [ ] ELF binary loading
+- [ ] Userland
+- [ ] Init process
+- [ ] Add kernel debugging support (gdb)
 
 ## Modifications
+
+- Add a way to download OVMF (in a makefile target ?) and update documentation (README)
+- Improve GOP driver: video mode selection (max resolution ?, detect VM), bpp support (can it have variable size ?)
 
 These are modifications to be done, that are dependent on other techs to be implemented first.
 
