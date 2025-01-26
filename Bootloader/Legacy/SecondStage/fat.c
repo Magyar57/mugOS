@@ -163,7 +163,7 @@ bool __FAT_findFile(DISK* disk, FAT_File* file, const char* name, FAT_DirectoryE
 	return false;
 }
 
-bool FAT_initalize(DISK* disk){
+bool FAT_initialize(DISK* disk){
 	g_data = (__FAT_Data*) MEMORY_FAT_ADDR;
 
 	// Read disk's boot sector

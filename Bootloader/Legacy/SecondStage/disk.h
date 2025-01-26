@@ -10,8 +10,8 @@ typedef struct s_DISK {
 	uint16_t heads;
 } DISK;
 
-// Initalize a DISK structure to the parameters of the disk referenced by driveNumber
-bool DISK_initalize(DISK* disk, uint8_t driveNumber);
+// Initialize a DISK structure to the parameters of the disk referenced by driveNumber
+bool DISK_initialize(DISK* disk, uint8_t driveNumber);
 
 // Read "n_sectors" sectors located at the lba "lba", on the disk "disk", into "dataOut" (dataOut MUST BE in the lower memory, aka < 1MB)
 bool DISK_readSectors(DISK* disk, uint32_t lba, uint8_t n_sectors, uint8_t* dataOut);

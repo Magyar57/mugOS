@@ -6,9 +6,9 @@
 
 // Intel 8242 PS/2 controller driver
 
-// Initalize the i8242 PS/2 controller
-// (Note: if using USB, initalize and disable USB Legacy support first)
-void i8242_initalize();
+// Initialize the i8242 PS/2 controller
+// (Note: if using USB, initialize and disable USB Legacy support first)
+void i8242_initialize();
 
 void i8242_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out);
 void i8242_enableDevicesInterrupts();

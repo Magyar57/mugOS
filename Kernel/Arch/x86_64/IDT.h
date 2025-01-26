@@ -20,7 +20,7 @@ enum IDT_ATTRIBUTES {
 	IDT_ATTR_PRESENT =			0b10000000 // Gate is enabled (disabled if flag not present)
 };
 
-// Initalize the IDT (after this call, all interrupt handlers are invalid!)
+// Initialize the IDT (after this call, all interrupt handlers are invalid!)
 void IDT_initialize();
 
 // Enable the 'interrupt' interrupt handler

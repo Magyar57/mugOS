@@ -22,7 +22,7 @@ void __attribute__((cdecl)) start(uint32_t bootDrive){
 	puts("Loading bootloader stage 2...\n");
 
 	DISK disk;
-	bool res = DISK_initalize(&disk, bootDrive);
+	bool res = DISK_initialize(&disk, bootDrive);
 	if(!res){
 		puts("Error initalizing disk ; aborting.");
 		end();
@@ -30,7 +30,7 @@ void __attribute__((cdecl)) start(uint32_t bootDrive){
 	printf("bootDrive: %d\n", bootDrive);
 	printf("Disk: id=%d cylinders=%d heads=%d sectors=%d\n\n", disk.id, disk.cylinders, disk.heads, disk.sectors);
 
-	res = FAT_initalize(&disk);
+	res = FAT_initialize(&disk);
 	if (!res){
 		printf("Error initalizing FAT driver from disk (id=%i)\n", disk.id);
 		end();

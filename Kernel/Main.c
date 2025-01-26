@@ -16,7 +16,7 @@ extern uint8_t __end;
 // the binary when linking (see the ld map Linker.map)
 __attribute__((sysv_abi)) __attribute__((section(".entry")))
 void kmain(EFI_GRAPHICS_OUTPUT_PROTOCOL* gop){
-	// Clear uninitalized data
+	// Clear uninitialized data
 	// memset(&__bss_start, 0, (&__end) - (&__bss_start)); // TODO put back when we have working relocations
 
 	Graphics_initialize(gop);
@@ -25,9 +25,9 @@ void kmain(EFI_GRAPHICS_OUTPUT_PROTOCOL* gop){
 	// puts("TODO remove hardcoded fd=1 in fileno (stdio.c) when we have working relocations");
 
 	// HAL_initialize();
-	// Serial_initalize();
-	// PS2_initalize(); // Initialize PS/2 driver
-	// Keyboard_initalize(); // Initialize keyboard driver/subsystem
+	// Serial_initialize();
+	// PS2_initialize(); // Initialize PS/2 driver
+	// Keyboard_initialize(); // Initialize keyboard driver/subsystem
 
 	// Infinite loop: whenever an interrupts fire, handle it ; then stop again.
 	while(true) halt();

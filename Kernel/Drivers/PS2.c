@@ -78,7 +78,7 @@ static PS2Mouse g_PS2Mouse;
 static void setLEDs(uint8_t leds);
 static uint8_t g_leds = 0; // The low 3 bits represent each led's status
 
-#pragma region PS/2 Initalize
+#pragma region PS/2 Initialize
 
 // Send a byte to device 1, and resends (max 3 times) if response is Resend
 // Returns: response on success, PS2_KB_RES_RESEND on failure
@@ -167,7 +167,7 @@ static PS2MouseType getMouseType(){
 }
 
 // Note: check that port 1 is available and populated before calling this method
-void PS2_initalizeKeyboard(PS2Keyboard* keyboard){
+void PS2_initializeKeyboard(PS2Keyboard* keyboard){
 	uint8_t buff1, buff2;
 	keyboard->enabled = false;
 
@@ -203,7 +203,7 @@ void PS2_initalizeKeyboard(PS2Keyboard* keyboard){
 }
 
 // Note: check that port 2 is available and populated before calling this method
-void PS2_initalizeMouse(PS2Mouse* mouse){
+void PS2_initializeMouse(PS2Mouse* mouse){
 	mouse->enabled = false;
 
 	mouse->type = getMouseType();
@@ -253,7 +253,7 @@ void PS2_initalizeMouse(PS2Mouse* mouse){
 			mouse->packetSize = 4;
 			break;
 		default:
-			Logging_log(INFO, MODULE, "Couldn't initalize PS/2 mouse (invalid mouse id)");
+			Logging_log(INFO, MODULE, "Couldn't initialize PS/2 mouse (invalid mouse id)");
 			return;
 	}
 
@@ -261,7 +261,7 @@ void PS2_initalizeMouse(PS2Mouse* mouse){
 	Logging_log(INFO, MODULE, "Identified mouse as '%s'", mouse->name);
 }
 
-void PS2_initalize(){
+void PS2_initialize(){
 	PS2Controller_initialize();
 	PS2Controller_disableDevicesInterrupts();
 
@@ -276,8 +276,8 @@ void PS2_initalize(){
 	}
 
 	g_enabled = true;
-	if (port1_enabled) PS2_initalizeKeyboard(&g_PS2Keyboard);
-	if (port2_enabled) PS2_initalizeMouse(&g_PS2Mouse);
+	if (port1_enabled) PS2_initializeKeyboard(&g_PS2Keyboard);
+	if (port2_enabled) PS2_initializeMouse(&g_PS2Mouse);
 
 	// After intialization, we can re-enable scanning
 	uint8_t buff;
@@ -294,7 +294,7 @@ void PS2_initalize(){
 	Logging_log(SUCCESS, MODULE, "Initialization success");
 }
 
-#pragma endregion PS/2 Initalize
+#pragma endregion PS/2 Initialize
 
 #pragma region PS/2 Keyboard
 

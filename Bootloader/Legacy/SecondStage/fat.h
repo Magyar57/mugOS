@@ -39,8 +39,8 @@ typedef struct {
 	uint32_t size;
 }  __attribute__((packed)) FAT_File;
 
-// Initalizes a FAT formatted disk
-bool FAT_initalize(DISK* disk);
+// Initializes a FAT formatted disk
+bool FAT_initialize(DISK* disk);
 
 // Open a file (given its file 'filepath')
 FAT_File* FAT_open(DISK* disk, const char* filepath);

@@ -5,7 +5,7 @@
 
 #include "disk.h"
 
-bool DISK_initalize(DISK* disk, uint8_t driveNumber){
+bool DISK_initialize(DISK* disk, uint8_t driveNumber){
 	if (disk == NULL) return false;
 	
 	uint8_t driveType;

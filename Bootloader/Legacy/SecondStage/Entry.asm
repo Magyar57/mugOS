@@ -141,7 +141,7 @@ entry:
 	x86_EnterProtectedMode	; enter protected mode !
 	[bits 32]
 
-	; Clear bss (uninitalized data)
+	; Clear bss (uninitialized data)
 	mov edi, __bss_start
 	mov ecx, __end
 	sub ecx, edi

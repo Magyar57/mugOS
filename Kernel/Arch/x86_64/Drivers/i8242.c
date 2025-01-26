@@ -117,7 +117,7 @@ static bool i8242_resetDevice(int device){
 	return true;
 }
 
-void i8242_initalize(){
+void i8242_initialize(){
 	uint8_t buff;
 
 	// 1. Disable Legacy USB (see USB driver, if present)

@@ -38,7 +38,7 @@ bool Keyboard_registerKeyCallback(KeyCallback callback);
 void Keyboard_unregisterKeyCallback(KeyCallback callback);
 
 // Internal use
-void Keyboard_initalize();
+void Keyboard_initialize();
 void Keyboard_notifyReleased(Keycode keycode);
 void Keyboard_notifyPressed(Keycode keycode);
 void Keyboard_NotifySysRq(); // Notify SysRq key pressed (special case)

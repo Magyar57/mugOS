@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void Serial_initalize();
+void Serial_initialize();
 bool Serial_isEnabled();
 
 void Serial_sendByte(int device, uint8_t byte);

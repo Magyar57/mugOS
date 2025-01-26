@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-// Initalize/configure (remap) the PIC. Offsets must be divisable by 8 !!
+// Initialize/configure (remap) the PIC. Offsets must be divisable by 8 !!
 void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC);
 
 // Disables (masks) a given IRQ

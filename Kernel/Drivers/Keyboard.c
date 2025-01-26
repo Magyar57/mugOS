@@ -487,7 +487,7 @@ void Keyboard_unregisterKeyCallback(KeyCallback callback){
 	}
 }
 
-void Keyboard_initalize(){
+void Keyboard_initialize(){
 	g_modifierKeys = 0;
 	g_leftShiftPressed = false;
 	g_rightShiftPressed = false;

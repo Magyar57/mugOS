@@ -396,7 +396,7 @@ static UARTController detectUARTController(int port){
    	return UART_16550A;
 }
 
-static bool initalizeUARTController(int port){
+static bool initializeUARTController(int port){
 	outb(port+SERIAL_OFFSET_IER, 0x00); // Disable all interrupts
 
 	// Set BAUD rate
@@ -441,7 +441,7 @@ static void enableDeviceInterrupts(int port){
 	outb(port+SERIAL_OFFSET_IER, val);
 }
 
-void Serial_initalize(){
+void Serial_initialize(){
 	int nDevices = 0;
 
 	// Initialize UART Controllers, Serial Devices (if present), and set m_devices accordingly
@@ -457,7 +457,7 @@ void Serial_initalize(){
 		curDev->writeBeginIndex = 0;
 		curDev->inWriteBuffer = 0;
 
-		curDev->present = initalizeUARTController(curDev->port);
+		curDev->present = initializeUARTController(curDev->port);
 		if (!curDev->present){
 			log(ERROR, MODULE, "Found faulty UART Controller '%s' on port %d, ignoring", curDev->controllerName, curDev->identifier);
 			continue;

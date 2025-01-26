@@ -138,7 +138,7 @@ static inline void printf_signed(long long number, int radix){
 }
 
 void printf(const char* formatted_string, ...){
-	// Variadic argument initalizer
+	// Variadic argument initializer
 	va_list args;
 	va_start(args, formatted_string);
 
