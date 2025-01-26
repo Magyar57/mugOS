@@ -32,7 +32,8 @@
 #define PS2_KB_CMD_RESEND				0xfe // Resend last byte
 #define PS2_KB_CMD_RESET				0xff
 #define PS2_MOUSE_CMD_SET_SAMPLERATE	0xf3
-#define PS2_MOUSE_CMD_REQUEST_PACKET	0xf3 // Request the current packet, as a complete one
+#define PS2_MOUSE_CMD_ENABLE_STREAMING	0xf4 // Automatic packets
+#define PS2_MOUSE_CMD_DISABLE_STREAMING	0xf5 // Automatic packets
 #define PS2_MOUSE_CMD_SET_RESOLUTION	0xe8
 // Commands data byte
 #define PS2_KB_DATA_SCANCODE_GET		0x00
@@ -235,8 +236,7 @@ void PS2_initializeMouse(PS2Mouse* mouse){
 	sendByteToDevice2_HandleResend(0x03); // 8 count/mm
 
 	// Enable packets
-	// TODO
-	sendByteToDevice2_HandleResend(0xf4);
+	sendByteToDevice2_HandleResend(PS2_MOUSE_CMD_ENABLE_STREAMING);
 
 	// Set the mouse name
 	switch (mouse->type){
