@@ -17,10 +17,10 @@
 - [X] Text-mode VGA driver
 - [X] Logging subsystem
 - [X] Serial output driver
-- [ ] Bootloader: abandon Legacy in favor of UEFI
-- [X] GOP Driver
-- [ ] UEFI Bootloader: add kernel ELF support
-- [ ] MBP: mugOS Boot Protocol
+- [X] Bootloader: abandon Legacy in favor of UEFI
+- [X] Framebuffer Driver
+- [X] Bootloader: switch to Limine
+- [X] Add kernel step by step debugging support (gdb)
 - [ ] Memory detection
 - [ ] kmalloc
 - [ ] Kernel FAT driver
@@ -28,12 +28,11 @@
 - [ ] ELF binary loading
 - [ ] Userland
 - [ ] Init process
-- [ ] Add kernel debugging support (gdb)
 
 ## Modifications
 
-- Add a way to download OVMF (in a makefile target ?) and update documentation (README)
-- Improve GOP driver: video mode selection (max resolution ?, detect VM), bpp support (can it have variable size ?)
+- Serial driver: fix synchronization bug (internal buffer order messed up) (interrupt related ?) & in pushBackWriteBuffer
+  check if we need to remove enable/disableInterrupts (if we're in an interrupt gate already, they are masked, and restored by the iret)
 
 These are modifications to be done, that are dependent on other techs to be implemented first.
 
@@ -43,3 +42,4 @@ These are modifications to be done, that are dependent on other techs to be impl
 
 Notes:
 - Current PS/2 implementation purposely does not support hot-plug (as the PS/2 was not designed for it originally...)
+- The framebuffer driver only supports 32 bpp framebuffers
