@@ -1,15 +1,17 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "EFI/Protocols/GraphicsOutputProtocol.h"
+#include "Logging.h"
 #include "Drivers/Graphics/Font.h"
 
-#include "Drivers/Graphics/GOP.h"
+#include "Drivers/Graphics/Framebuffer.h"
 
-void GOP_clearTerminal(GOPDriver* this){
+#define MODULE "Framebuffer"
+
+void Framebuffer_clearTerminal(Framebuffer* this){
 	for (int i=0 ; i<TERMINAL_SIZE ; i++) this->terminalText[i] = '\0';
 }
 
-void GOP_setZoom(GOPDriver* this, uint32_t zoom){
+void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom){
 	if (zoom == 0)
 		zoom = 1;
 
@@ -19,35 +21,32 @@ void GOP_setZoom(GOPDriver* this, uint32_t zoom){
 	this->charWidth = zoom * BITMAP_CHAR_WIDTH;
 	this->charHeight = zoom * BITMAP_CHAR_HEIGHT;
 
-	uint64_t maxHorizontalChar = (((EFI_GRAPHICS_OUTPUT_PROTOCOL*) this->gop)->Mode->Info->HorizontalResolution - 2*this->drawOffsetX*this->zoom) / (BITMAP_CHAR_WIDTH*this->zoom);
-	uint64_t maxVerticalChar = (((EFI_GRAPHICS_OUTPUT_PROTOCOL*) this->gop)->Mode->Info->VerticalResolution - 2*this->drawOffsetY*this->zoom) / (BITMAP_CHAR_HEIGHT*this->zoom);
+	uint64_t maxHorizontalChar = (this->width - 2*this->drawOffsetX*this->zoom) / (BITMAP_CHAR_WIDTH*this->zoom);
+	uint64_t maxVerticalChar = (this->height - 2*this->drawOffsetY*this->zoom) / (BITMAP_CHAR_HEIGHT*this->zoom);
 	this->terminalWidth = (maxHorizontalChar > MAX_TERMINAL_WIDTH) ? MAX_TERMINAL_WIDTH : maxHorizontalChar;
 	this->terminalHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
 }
 
-void GOP_setClearColor(GOPDriver* this, uint32_t clearColor){
+void Framebuffer_setClearColor(Framebuffer* this, uint32_t clearColor){
 	this->clearColor = clearColor;
 }
 
-void GOP_clearScreen(GOPDriver* this){
-	EFI_GRAPHICS_OUTPUT_PROTOCOL* gop = (EFI_GRAPHICS_OUTPUT_PROTOCOL*) this->gop;
-
-	for(int j=0 ; j<gop->Mode->Info->VerticalResolution ; j++){
-		size_t lineOffset = gop->Mode->Info->PixelsPerScanLine*j;
-		for (int i=0 ; i<gop->Mode->Info->HorizontalResolution ; i++){
-			this->framebuffer[lineOffset + i] = this->clearColor;
+void Framebuffer_clearScreen(Framebuffer* this){
+	for(int j=0 ; j<this->height ; j++){
+		size_t lineOffset = this->width*j;
+		for (int i=0 ; i<this->width ; i++){
+			this->address[lineOffset + i] = this->clearColor;
 		}
 	}
 }
 
-void GOP_drawLetter(GOPDriver* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY){
+void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY){
 	uint8_t* bitmap = m_defaultFont[letter];
 	int mask; // bit mask, will be shifted right every iteration
-	EFI_GRAPHICS_OUTPUT_PROTOCOL* gop = (EFI_GRAPHICS_OUTPUT_PROTOCOL*) this->gop;
 	gop_color_t colorToDraw;
 
 	// Cache as many things as possible, since this is a critical section (performance-wise)
-	uint64_t pixelsPerScanLine = gop->Mode->Info->PixelsPerScanLine;
+	uint64_t pixelsPerScanLine = this->width; // TODO CHECK
 	uint64_t zoom = this->zoom;
 	uint64_t zoomedOffsetX = zoom * offsetX;
 
@@ -67,7 +66,7 @@ void GOP_drawLetter(GOPDriver* this, unsigned char letter, uint32_t fontColor, i
 			for (int jj=0 ; jj<zoom ; jj++){
 				uint64_t iterationLineOffset = baseLineOffset + jj*pixelsPerScanLine;
 				for (int ii=0 ; ii<zoom ; ii++){
-					this->framebuffer[iterationLineOffset + horizontalOffset+ii] = colorToDraw;
+					this->address[iterationLineOffset + horizontalOffset+ii] = colorToDraw;
 				}
 			}
 
@@ -76,7 +75,7 @@ void GOP_drawLetter(GOPDriver* this, unsigned char letter, uint32_t fontColor, i
 	}
 }
 
-void GOP_drawScreen(GOPDriver* this){
+void Framebuffer_drawScreen(Framebuffer* this){
 	this->cursorX = 0;
 	this->cursorY = 0;
 	for (int i=0 ; i<TERMINAL_SIZE ; i++){
@@ -92,13 +91,13 @@ void GOP_drawScreen(GOPDriver* this){
 		}
 		if (c == '\0')
 			continue;
-		GOP_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
+		Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
 		this->cursorX = (this->cursorX+1) % this->terminalWidth;
 		if (this->cursorX == 0) this->cursorY++;
 	}
 }
 
-void GOP_scrollDown(GOPDriver* this, unsigned int n){
+void Framebuffer_scrollDown(Framebuffer* this, unsigned int n){
 	if (n < 0) return;
 
 	// Move lines up
@@ -118,11 +117,11 @@ void GOP_scrollDown(GOPDriver* this, unsigned int n){
 	this->cursorY -= n;
 
 	// Redraw everything
-	GOP_clearScreen(this);
-	GOP_drawScreen(this);
+	Framebuffer_clearScreen(this);
+	Framebuffer_drawScreen(this);
 }
 
-void GOP_putchar(GOPDriver* this, const char c){
+void Framebuffer_putchar(Framebuffer* this, const char c){
 	this->terminalText[this->terminalWidth*this->cursorY + this->cursorX] = c;
 
 	if (c == '\n'){
@@ -136,44 +135,52 @@ void GOP_putchar(GOPDriver* this, const char c){
 	}
 	if (c == '\t'){
 		do {
-			GOP_putchar(this, ' '); // recursion is fine, cannot go deeper than one call
+			Framebuffer_putchar(this, ' '); // recursion is fine, cannot go deeper than one call
 		} while(this->cursorX % TAB_SIZE != 0 && this->cursorX<this->terminalWidth);
 		goto end_putc;
 	}
 
-	GOP_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
+	Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
 
 	this->cursorX = (this->cursorX+1) % this->terminalWidth;
 	if (this->cursorX == 0) this->cursorY++;
 
 	end_putc:
-	if (this->cursorY >= this->terminalHeight) GOP_scrollDown(this, 1);
+	if (this->cursorY >= this->terminalHeight) Framebuffer_scrollDown(this, 1);
 }
 
-void GOP_puts_noLF(GOPDriver* this, const char* str){
+void Framebuffer_puts_noLF(Framebuffer* this, const char* str){
 	while(*str){
-		GOP_putchar(this, *str);
+		Framebuffer_putchar(this, *str);
 		str++;
 	}
 }
 
-void GOP_puts(GOPDriver* this, const char* str){
-	GOP_puts_noLF(this, str);
-	GOP_putchar(this, '\n');
+void Framebuffer_puts(Framebuffer* this, const char* str){
+	Framebuffer_puts_noLF(this, str);
+	Framebuffer_putchar(this, '\n');
 }
 
-void GOP_initialize(GOPDriver* this, void* gop){
-	this->gop = (void*) gop;
-	this->framebuffer = (uint32_t*) ((EFI_GRAPHICS_OUTPUT_PROTOCOL*) gop)->Mode->FrameBufferBase;
+bool Framebuffer_initialize(Framebuffer* this){
+	// Sanitize check the needed variables were intialized correctly beforehand
+	if (this->address == NULL || this->width==0 || this->height==0 || this->pitch==0 || this->bpp==0)
+		return false;
+
+	if (this->bpp != 32){
+		log(ERROR, MODULE, "A value of %d for bpp (Bits per pixel) is unsupported (only 32 is supported)", this->bpp);
+		return false;
+	}
 
 	this->drawOffsetX = 4;
 	this->drawOffsetY = 4;
-	GOP_setClearColor(this, LIGHT_GREY);
-	GOP_setZoom(this, 1); // setZoom recomputes some internal variables, so we don't need to set those
+	Framebuffer_setClearColor(this, LIGHT_GREY);
+	Framebuffer_setZoom(this, 1); // setZoom recomputes some internal variables, so we don't need to set those
 
-	GOP_clearTerminal(this);
-	GOP_clearScreen(this);
+	Framebuffer_clearTerminal(this);
+	Framebuffer_clearScreen(this);
 
 	this->cursorX = 0;
 	this->cursorY = 0;
+
+	return true;
 }
