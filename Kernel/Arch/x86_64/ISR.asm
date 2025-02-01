@@ -86,7 +86,6 @@ ISR_asmPrehandler:
 	pop rdi
 	pop rsi
 	pop rbp
-	pop rsp
 	pop rbx
 	pop rdx
 	pop rcx

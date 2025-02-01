@@ -3,8 +3,9 @@ section .text
 ; void x86_outb(uint16_t port, uint8_t value);
 global outb
 outb:
-	mov dx, [rsp + 4]
-	mov al, [rsp + 8]
+	mov rdx, rdi ; dx = port
+	mov rax, rsi ; al = value
+
 	out dx, al
 	ret
 ; END outb
@@ -12,7 +13,8 @@ outb:
 ; uint8_t inb(uint16_t port);
 global inb
 inb:
-	mov dx, [esp + 4]
+	mov rdx, rdi ; dx = port
+
 	xor rax, rax
 	in al, dx
 	ret
@@ -21,9 +23,8 @@ inb:
 ; void io_wait();
 global io_wait
 io_wait:
-	push 0
-	push 0x80	; 0x80 is an unused port
-	call outb
-	add rsp, 8
+	mov rdi, 0x80	; 0x80 is an unused port
+	mov rsi, 0
+	call outb		; outb(0x80, 0)
 	ret
 ; END io_wait

@@ -18,7 +18,7 @@ void HAL_initialize(){
 	GDT_initialize();
 	IDT_initialize();
 	ISR_initialize();
-	// IRQ_initialize();
+	IRQ_initialize();
 
 	enableInterrupts();
 	log(SUCCESS, "x86_64 HAL", "Initalization success");

@@ -21,9 +21,9 @@ void kmain(){
 	puts("Supposons que je sois dans votre kernel !");
 
 	HAL_initialize();
-	// Serial_initialize();
-	// PS2_initialize(); // Initialize PS/2 driver
-	// Keyboard_initialize(); // Initialize keyboard driver/subsystem
+	Serial_initialize();
+	PS2_initialize(); // Initialize PS/2 driver
+	Keyboard_initialize(); // Initialize keyboard driver/subsystem
 
 	// Infinite loop: whenever an interrupts fire, handle it ; then stop again.
 	while(true) halt();
