@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+// TODO modify for 64 bits
 typedef struct s_ISR_Params {
 	uint32_t ds;
 	uint32_t edi, esi, ebp, ignored, ebx, edx, ecx, eax;

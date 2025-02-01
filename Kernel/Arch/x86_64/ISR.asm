@@ -1,5 +1,3 @@
-bits 32
-
 section .data
 
 fmt_vector_message:
@@ -24,7 +22,7 @@ ISR_%1:
 %macro ISR_IRQ_OR_SYSCALL_HANDLER 1
 global ISR_%1:
 ISR_%1:
-	push 0xffffffff				; push dummy/placeholder error code
+	push 0xffffffffffffffff				; push dummy/placeholder error code
 	push %1						; push interrupt number
 	jmp ISR_asmPrehandler		; jump to common handler code
 %endmacro
@@ -32,14 +30,31 @@ ISR_%1:
 %include "ISR_defs.s"
 
 ISR_asmPrehandler:
-	; CPU pushed 
+	; CPU pushed
 	; caller pushed [dummy] error code
 	; caller pushed interrupt number
-	pushad			; push eax, ecx, edx, ebx, esp, ebp, esi, edi
-	mov ebp, esp
-	xor eax, eax	; push ds
+	; pushad			; push eax, ecx, edx, ebx, esp, ebp, esi, edi
+	push rax
+	push rcx
+	push rdx
+	push rbx
+	push rsp
+	push rbp
+	push rsi
+	push rdi
+	; push r8
+	; push r9
+	; push r10
+	; push r11
+	; push r12 ; TODO ???
+	; push r13
+	; push r14
+	; push r15
+	mov rbp, rsp
+
+	xor rax, rax	; push ds
 	mov ax, ds		; push ds
-	push eax		; push ds
+	push rax		; push ds
 	mov ax, 0x10	; assure that we're using kdata segment
 	mov ds, ax
 	mov es, ax
@@ -47,9 +62,9 @@ ISR_asmPrehandler:
 	mov gs, ax
 
 	; Call our global pre-handler in C
-	push esp
+	push rsp
 	call ISR_C_prehandler
-	add esp, 4
+	add rsp, 8 ; or 8 in long mode ?
 
 	; Call printf from assembly
 	; mov eax, [ebp+36] ; err
@@ -60,20 +75,30 @@ ISR_asmPrehandler:
 	; call printf
 	; add esp, 12
 
-	; Halt if vector=13 (memory segfault)
-	; mov eax, [ebp+32]
-	; cmp eax, 0x0d
-	; jne .after 
-	; hlt
-	; .after:
-
 	; restore old segment
-	pop eax
+	pop rax
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
 	mov gs, ax
-	popad ; restore registers
-	add esp, 8 ; remove error code and IV
+
+	; restore registers
+	; push r15
+	; push r14
+	; push r13
+	; push r12 ; TODO ???
+	; push r11
+	; push r10
+	; push r9
+	; push r8
+	push rdi
+	push rsi
+	push rbp
+	push rsp
+	push rbx
+	push rdx
+	push rcx
+	push rax
+	add rsp, 16 ; remove error code and IV
 	iret
 ; END ISR_asmPrehandler
