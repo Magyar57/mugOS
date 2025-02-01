@@ -1,12 +1,12 @@
 section .data
 
-fmt_vector_message:
-	db 'Interrupt handler: vector=%p err=%p', 0x0d, 0x0a, 0
+isr_message:
+	db 'ISR occurred', 0
 
 section .text
 
 ; Tell the assembler about our C functions
-extern printf
+extern puts
 extern ISR_C_prehandler
 
 ; ISR Trap Handler (we have an error code)
@@ -30,26 +30,24 @@ ISR_%1:
 %include "ISR_defs.s"
 
 ISR_asmPrehandler:
-	; CPU pushed
+	; CPU pushed SS:RSP, RFLAGS, cs, rip
 	; caller pushed [dummy] error code
-	; caller pushed interrupt number
-	; pushad			; push eax, ecx, edx, ebx, esp, ebp, esi, edi
+	; caller pushed interrupt number (vector)
 	push rax
 	push rcx
 	push rdx
 	push rbx
-	push rsp
 	push rbp
 	push rsi
 	push rdi
-	; push r8
-	; push r9
-	; push r10
-	; push r11
-	; push r12 ; TODO ???
-	; push r13
-	; push r14
-	; push r15
+	push r8
+	push r9
+	push r10
+	push r11
+	push r12
+	push r13
+	push r14
+	push r15
 	mov rbp, rsp
 
 	xor rax, rax	; push ds
@@ -62,18 +60,12 @@ ISR_asmPrehandler:
 	mov gs, ax
 
 	; Call our global pre-handler in C
-	push rsp
+	mov rdi, rsp ; first (only) argument: ISR_Params* params
 	call ISR_C_prehandler
-	add rsp, 8 ; or 8 in long mode ?
 
-	; Call printf from assembly
-	; mov eax, [ebp+36] ; err
-	; push eax
-	; mov eax, [ebp+32] ; vector
-	; push eax
-	; push fmt_vector_message
-	; call printf
-	; add esp, 12
+	; Call puts
+	; lea rdi, [rel isr_message]
+	; call puts
 
 	; restore old segment
 	pop rax
@@ -83,22 +75,22 @@ ISR_asmPrehandler:
 	mov gs, ax
 
 	; restore registers
-	; push r15
-	; push r14
-	; push r13
-	; push r12 ; TODO ???
-	; push r11
-	; push r10
-	; push r9
-	; push r8
-	push rdi
-	push rsi
-	push rbp
-	push rsp
-	push rbx
-	push rdx
-	push rcx
-	push rax
+	pop r15
+	pop r14
+	pop r13
+	pop r12
+	pop r11
+	pop r10
+	pop r9
+	pop r8
+	pop rdi
+	pop rsi
+	pop rbp
+	pop rsp
+	pop rbx
+	pop rdx
+	pop rcx
+	pop rax
 	add rsp, 16 ; remove error code and IV
-	iret
+	iretq
 ; END ISR_asmPrehandler

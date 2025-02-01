@@ -64,7 +64,7 @@ void ISR_deregisterHandler(uint8_t vector){
 // ================ ISR Handlers ================
 
 // All ISR lead to a common ISR_Asm_Prehandler function, which calls this function
-void __attribute__((cdecl)) ISR_C_prehandler(ISR_Params* params){
+void ISR_C_prehandler(ISR_Params* params){
 
 	// If we have a handler to call, we call it, and 'alles gut'
 	if (g_ISR[params->vector] != NULL){
@@ -85,11 +85,13 @@ void ISR_divisionByZeroError(ISR_Params* params){
 
 void ISR_doubleFault(ISR_Params* params){
 	log(PANIC, NULL, "Double fault !!");
-	log(PANIC, NULL, "-> vector=%p eflags=%p err=%p", params->vector, params->eflags, params->err);
-	log(PANIC, NULL, "-> eax=%p ebx=%p ecx=%p edx=%p", params->eax, params->ebx, params->ecx, params->edx);
-	log(PANIC, NULL, "-> esi=%p edi=%p", params->esi, params->edi);
-	log(PANIC, NULL, "-> eip=%p esp=%p ebp=%p", params->eip, params->esp, params->ebp);
-	log(PANIC, NULL, "-> cs=%p ds=%p ss=%p", params->cs, params->ds, params->ss);
+	log(PANIC, NULL, "vector=%p rflags=%p err=%p", params->vector, params->rflags, params->err);
+	log(PANIC, NULL, "\trax=%p rbx=%p rcx=%p rdx=%p", params->rax, params->rbx, params->rcx, params->rdx);
+	log(PANIC, NULL, "\trsi=%p rdi=%p", params->rsi, params->rdi);
+	log(PANIC, NULL, "\tr15=%p r14=%p r13=%p r12=%p r11=%p r10=%p r9=%p r8=%p", 
+		params->r15, params->r14, params->r13, params->r12, params->r11, params->r10, params->r9, params->r8);
+	log(PANIC, NULL, "\trip=%p rsp=%p rbp=%p", params->rip, params->rsp, params->rbp);
+	log(PANIC, NULL, "\tcs=%p ds=%p ss=%p", params->cs, params->ds, params->ss);
 	panic();
 }
 

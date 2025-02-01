@@ -17,16 +17,16 @@ typedef struct z_CPU {
 } CPU;
 
 // Halt (stops until next interrupt) the processor
-void __attribute__((cdecl)) halt();
+void halt();
 
 // Stops DEFINITELY the processor (interrupts are masked)
-void __attribute__((cdecl)) terminate();
+void terminate();
 
 // Disable interrupts (cli)
-void __attribute__((cdecl)) disableInterrupts();
+void disableInterrupts();
 
 // Enable interrupts (sti)
-void __attribute__((cdecl)) enableInterrupts();
+void enableInterrupts();
 
 /// @returns Whether the cpu supports the cpuid instruction
 extern bool CPU_supportsCpuid();

@@ -104,7 +104,7 @@ GDTLocationDescriptor g_GDTLocationDescriptor = { sizeof(g_GDT)-1, (uint64_t) g_
 
 // setGDT - Defined in GDT.asm
 // Sets the GDT located at 'descriptor' and loads the segments registers accordingly (kcodeSegment & kdataSegment)
-void __attribute__((cdecl)) setGDT(GDTLocationDescriptor* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
+void setGDT(GDTLocationDescriptor* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
 
 void GDT_initialize(){
 	setGDT(&g_GDTLocationDescriptor, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);

@@ -71,6 +71,7 @@ void IRQ_prehandler(ISR_Params* params){
 
 void IRQ_timer(ISR_Params* params){
 	// Nothing to do yet
+	debug("Timer");
 }
 
 void IRQ_keyboard(ISR_Params* params){

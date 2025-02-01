@@ -20,7 +20,7 @@ void kmain(){
 	Graphics_clearScreen();
 	puts("Supposons que je sois dans votre kernel !");
 
-	// HAL_initialize();
+	HAL_initialize();
 	// Serial_initialize();
 	// PS2_initialize(); // Initialize PS/2 driver
 	// Keyboard_initialize(); // Initialize keyboard driver/subsystem

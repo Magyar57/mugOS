@@ -30,7 +30,7 @@ export PATH:=$(PATH):$(TARGET_TOOLCHAIN)/bin
 export TARGET_ASM:=nasm
 export TARGET_ASMFLAGS:=-f elf64 -g -F dwarf
 export TARGET_CC:=clang --target=x86_64-none-elf
-export TARGET_CFLAGS:=-g -Wall -std=c23 -O0 -ffreestanding -mno-red-zone -mcmodel=kernel
+export TARGET_CFLAGS:=-g -Wall -std=c23 -O0 -ffreestanding -mno-red-zone -mcmodel=kernel -mno-sse -mno-avx
 export TARGET_LD:=ld.lld
 export TARGET_LDFLAGS:=-nostdlib -static
 export TARGET_LIBS:=

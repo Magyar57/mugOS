@@ -5,10 +5,11 @@
 
 // TODO modify for 64 bits
 typedef struct s_ISR_Params {
-	uint32_t ds;
-	uint32_t edi, esi, ebp, ignored, ebx, edx, ecx, eax;
-	uint32_t vector, err;
-	uint32_t eip, cs, eflags, esp, ss;
+	uint64_t ds;
+	uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
+	uint64_t rdi, rsi, rbp, rbx, rdx, rcx, rax;
+	uint64_t vector, err;
+	uint64_t rip, cs, rflags, rsp, ss;
 } __attribute__((packed)) ISR_Params;
 
 typedef void (*ISR)(ISR_Params*);
