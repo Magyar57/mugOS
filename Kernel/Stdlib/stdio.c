@@ -4,7 +4,6 @@
 #include "stdio.h"
 
 int fileno(FILE* stream){
-	return 1; // TODO remove when relocations works
 	if (stream == NULL) return -1;
 
 	return stream->fd;
