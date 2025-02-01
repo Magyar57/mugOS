@@ -1,15 +1,19 @@
 # Toolchain.mk: makefile for the toolchain compilation
 # Note: you need to have the build dependencies installed. See the README for more informations.
 
-TOOLCHAIN_PREFIX:=$(TOOLCHAIN_PATH)/$(TARGET)
-export PATH:=$(PATH):$(TOOLCHAIN_PREFIX)/bin
+TOOLCHAIN_PREFIX=$(TARGET_TOOLCHAIN)
 
 all: toolchain
-toolchain: toolchain_binutils toolchain_gcc
-toolchain_binutils: | $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-ld
-toolchain_gcc: | $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-gcc
+toolchain: limine toolchain_binutils toolchain_gcc
+limine:				| $(TOOLCHAIN_PREFIX)/bin/limine
+toolchain_binutils:	| $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-ld
+toolchain_gcc:		| $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-gcc
 
-.PHONY: toolchain clean-toolchain remove-toolchain
+.PHONY: toolchain limine clean-toolchain toolchain_binutils toolchain_gcc clean-toolchain remove-toolchain
+
+$(TOOLCHAIN_PREFIX)/bin/limine:
+	if [ ! -d "$(TOOLCHAIN_PATH)/limine" ]; then git clone https://github.com/limine-bootloader/limine.git $(TOOLCHAIN_PATH)/limine --branch=v8.x-binary --depth=1; fi
+	$(MAKE) -C $(TOOLCHAIN_PATH)/limine install PREFIX=$(TOOLCHAIN_PREFIX)
 
 $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-ld: | $(TOOLCHAIN_PATH)
 	if [ ! -f "$(TOOLCHAIN_PATH)/binutils.tar.xz" ]; then wget $(BINUTILS_URL) -O $(TOOLCHAIN_PATH)/binutils.tar.xz; fi
@@ -40,6 +44,7 @@ $(TOOLCHAIN_PATH):
 clean-toolchain:
 	rm -rf $(TOOLCHAIN_PATH)/binutils.tar.xz $(TOOLCHAIN_PATH)/binutils-src $(TOOLCHAIN_PATH)/binutils-build
 	rm -rf $(TOOLCHAIN_PATH)/gcc.tar.gz $(TOOLCHAIN_PATH)/gcc-src $(TOOLCHAIN_PATH)/gcc-build
+	rm -rf $(TOOLCHAIN_PATH)/limine
 
 remove-toolchain:
 	rm -rf $(TOOLCHAIN_PATH)

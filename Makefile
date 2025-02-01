@@ -1,33 +1,21 @@
 include BuildScripts/Config.mk
 include BuildScripts/Toolchain.mk
 
-all: floppy tools
+all: image
 
-.PHONY: all clean
-.PHONY: floppy bootloader kernel
+.PHONY: all image bootloader kernel run clean
 .PHONY: tools tools_fat
 
 #
-# Floppy image
+# Disk (hard drive) image
 #
-floppy: $(BUILD_DIR)/floppy.img
-FLOPPY_FILES:=$(BUILD_DIR)/BOOTX64.EFI
-FLOPPY_FILES+=$(BUILD_DIR)/legacy-bootloader-first-stage.bin
-FLOPPY_FILES+=$(BUILD_DIR)/legacy-bootloader-second-stage.bin
-FLOPPY_FILES+=$(BUILD_DIR)/kernel.bin
-FLOPPY_FILES+=$(BUILD_DIR)/test.txt
-FLOPPY_FILES+=$(BUILD_DIR)/test_sub.txt
+image: $(BUILD_DIR)/disk.img
+IMAGE_FILES:=$(BUILD_DIR)/kernel.elf
+# IMAGE_FILES+=$(BUILD_DIR)/test.txt
+# IMAGE_FILES+=$(BUILD_DIR)/test_sub.txt
 
-$(BUILD_DIR)/floppy.img: $(FLOPPY_FILES) | $(BUILD_DIR)
-	dd if=/dev/zero of=$@ bs=512 count=2880 status=none
-	# mkfs.fat -F 12 -n "MUGOS" $@
-	mformat -i $@ -f 2880 ::
-	dd if=$(BUILD_DIR)/legacy-bootloader-first-stage.bin of=$@ conv=notrunc status=none
-	mcopy -i $@ $(BUILD_DIR)/kernel.bin $(BUILD_DIR)/test.txt ::
-	mcopy -i $@ $(BUILD_DIR)/legacy-bootloader-second-stage.bin ::2ndStage.bin
-	mmd -i $@ ::dir ::/EFI ::/EFI/BOOT
-	mcopy -i $@ $(BUILD_DIR)/BOOTX64.EFI ::/EFI/BOOT
-	mcopy -i $@ $(BUILD_DIR)/test_sub.txt ::
+$(BUILD_DIR)/disk.img: $(IMAGE_FILES) | $(LIMINE_EFI_EXEC) $(LIMINE_BIOS_EXEC)
+	./BuildScripts/CreateImage.sh $@ >/dev/null 2>&1
 
 $(BUILD_DIR)/test.txt:
 	printf "This is a test file :D\n" >$@
@@ -36,26 +24,18 @@ $(BUILD_DIR)/test_sub.txt:
 	printf "This is a test file, in a subdirectory !\n" >$@
 
 #
-# Bootloader
-#
-bootloader: $(BUILD_DIR)/BOOTX64.EFI $(BUILD_DIR)/legacy-bootloader-first-stage.bin $(BUILD_DIR)/legacy-bootloader-second-stage.bin
-
-$(BUILD_DIR)/BOOTX64.EFI: $(shell find Bootloader/UEFI/** -type f) | $(BUILD_DIR)
-	@$(MAKE) -C Bootloader/UEFI $(MAKE_FLAGS)
-
-$(BUILD_DIR)/legacy-bootloader-first-stage.bin: $(shell find Bootloader/Legacy/FirstStage/** -type f) | $(BUILD_DIR)
-	@$(MAKE) -C Bootloader/Legacy/FirstStage $(MAKE_FLAGS)
-
-$(BUILD_DIR)/legacy-bootloader-second-stage.bin: $(shell find Bootloader/Legacy/SecondStage/** -type f) | $(BUILD_DIR)
-	@$(MAKE) -C Bootloader/Legacy/SecondStage $(MAKE_FLAGS)
-
-#
 # Kernel
 #
-kernel: $(BUILD_DIR)/kernel.bin
+kernel: $(BUILD_DIR)/kernel.elf
 
-$(BUILD_DIR)/kernel.bin: $(shell find Kernel/** -type f) | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.elf: $(shell find Kernel/** -type f) | $(BUILD_DIR)
 	@$(MAKE) -C Kernel $(MAKE_FLAGS)
+
+#
+# Bootloader
+#
+LIMINE_EFI_EXEC:=$(TARGET_TOOLCHAIN)/share/limine/BOOTX64.EFI
+LIMINE_BIOS_EXEC:=$(TARGET_TOOLCHAIN)/share/limine/limine-bios.sys
 
 #
 # Tools
@@ -73,26 +53,28 @@ $(BUILD_TOOLS_FAT_DIR)/%.o : Tools/FAT/%.c | $(BUILD_TOOLS_FAT_DIR)
 	gcc -g -Wall -std=c2x -c $< -o $@
 
 #
+# Run (if needed, add arguments using `make run -E QEMU_ARGS="arg1 arg2"`)
+#
+run:
+	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
+		-drive if=pflash,file=/usr/share/edk2/x64/OVMF.4m.fd,format=raw,readonly=on \
+		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
+
+#
 # Build directories
 #
 
 $(BUILD_DIR):
 	@mkdir -p $@
 
-$(BUILD_TOOLS_DIR): | $(BUILD_DIR)
-	@mkdir -p $@
-
-$(BUILD_TOOLS_FAT_DIR): | $(BUILD_TOOLS_DIR)
+$(BUILD_TOOLS_FAT_DIR): | $(BUILD_DIR)
 	@mkdir -p $@
 
 #
-# Clean (bclean: bootloader clean, kclean: kernel clean)
+# Clean (kclean: clean kernel only)
 #
 clean:
 	rm -rf $(BUILD_DIR)
 
-bclean:
-	rm -rf $(BUILD_DIR)/second-stage $(BUILD_DIR)/bootloader*
-
 kclean:
-	rm -rf $(BUILD_DIR)/kernel $(BUILD_DIR)/kernel.bin
+	rm -rf $(BUILD_DIR)/kernel $(BUILD_DIR)/kernel.*

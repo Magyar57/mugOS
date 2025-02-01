@@ -28,9 +28,6 @@ void __attribute__((cdecl)) disableInterrupts();
 // Enable interrupts (sti)
 void __attribute__((cdecl)) enableInterrupts();
 
-// Call a given interrupt (`int` instruction)
-void __attribute__((cdecl)) callInterrupt(uint8_t vector);
-
 /// @returns Whether the cpu supports the cpuid instruction
 extern bool CPU_supportsCpuid();
 

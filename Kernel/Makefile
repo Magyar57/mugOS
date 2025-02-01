@@ -3,7 +3,7 @@
 TARGET_CFLAGS+=-D $(ARCH)
 
 # Includes paths for the kernel
-export CPATH=$(abspath .):$(abspath Stdlib):$(abspath Arch/$(ARCH)):$(abspath ../Bootloader/UEFI):$(abspath ../Bootloader/UEFI/EFI/Arch/$(ARCH))
+export CPATH=$(abspath .):$(abspath Stdlib):$(abspath Arch/$(ARCH)):$(abspath $(TARGET_TOOLCHAIN)/include)
 
 BUILD_SUBDIR:=$(BUILD_DIR)/kernel
 
@@ -17,9 +17,9 @@ all: kernel
 
 .PHONY: all kernel
 
-kernel: $(BUILD_DIR)/kernel.bin
+kernel: $(BUILD_DIR)/kernel.elf
 
-$(BUILD_DIR)/kernel.bin: $(OBJECTS_C) $(OBJECTS_ASM) $(BUILD_SUBDIR)/HAL.o Arch/HAL.h $(ARCH_SOURCES) $(SUB_SOURCES)
+$(BUILD_DIR)/kernel.elf: $(OBJECTS_C) $(OBJECTS_ASM) $(BUILD_SUBDIR)/HAL.o Arch/HAL.h $(ARCH_SOURCES) $(SUB_SOURCES)
 	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Stdlib
 	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Drivers
 	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Drivers/Graphics
@@ -37,7 +37,7 @@ $(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIR)
 $(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIR)
 	$(TARGET_ASM) $(TARGET_ASMFLAGS) $< -o $@
 
-# Build dirs
+# Build dir
 
 $(BUILD_SUBDIR):
 	@mkdir -p $@

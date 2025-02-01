@@ -1,10 +1,10 @@
-bits 32
+section .text
 
 ; void x86_outb(uint16_t port, uint8_t value);
 global outb
 outb:
-	mov dx, [esp + 4]
-	mov al, [esp + 8]
+	mov dx, [rsp + 4]
+	mov al, [rsp + 8]
 	out dx, al
 	ret
 ; END outb
@@ -13,7 +13,7 @@ outb:
 global inb
 inb:
 	mov dx, [esp + 4]
-	xor eax, eax
+	xor rax, rax
 	in al, dx
 	ret
 ; END inb
@@ -24,6 +24,6 @@ io_wait:
 	push 0
 	push 0x80	; 0x80 is an unused port
 	call outb
-	add esp, 8
+	add rsp, 8
 	ret
 ; END io_wait

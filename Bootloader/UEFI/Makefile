@@ -1,6 +1,12 @@
 # UEFI bootloader makefile
 
-TARGET_CFLAGS+=-fshort-wchar # add "-D $(ARCH)" ?
+# Compilation for target system (UEFI bootloader: needs PE & Microsoft ABI)
+# This has been moved here from Config.mk, since this bootlaoder was deprecated in favor of Limine
+export UEFI_CC:=clang --target=x86_64-none-windows
+export UEFI_CFLAGS:=-g -Wall -std=c2x -O0 -ffreestanding -mno-red-zone -fshort-wchar
+export UEFI_LD:=clang --target=x86_64-none-windows
+export UEFI_LDFLAGS:=-nostdlib -fuse-ld=lld-link -Wl,-entry:bmain,-subsystem:efi_application
+export UEFI_LIBS:=
 
 # Include path for the UEFI bootloader
 export CPATH=$(abspath .):$(abspath EFI/Arch/$(ARCH))
