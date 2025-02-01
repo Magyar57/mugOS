@@ -5,46 +5,38 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "QEMU",
+			"name": "QEMU Run",
 			"type": "cppdbg",
 			"preLaunchTask": "Native build",
 			"request": "launch",
-			"program": "qemu-system-x86_64",
-			"args": [
-				"-drive", "if=pflash,file=/usr/share/edk2/x64/OVMF.4m.fd,format=raw,readonly=on", 
-				"-drive", "if=ide,media=disk,file=${workspaceFolder}/build/floppy.img,format=raw"
-			],
+			"program": "make",
+			"args": ["run", "-E", "QEMU_ARGS="],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
 			"externalConsole": false,
 			"MIMode": "gdb",
 			"linux": {
-				"program": "/usr/bin/qemu-system-x86_64",
+				"program": "/usr/bin/make",
 			},
 			"osx": {
-				"program": "/opt/homebrew/bin/qemu-system-x86_64",
+				"program": "/usr/bin/make",
 				"MIMode": "lldb",
 			},
 		},
 		{
-			"name": "Bochs",
+			"name": "QEMU Debug",
 			"type": "cppdbg",
-			"preLaunchTask": "Native build",
+			"preLaunchTask": "QEMU gdb",
 			"request": "launch",
-			"program": "bochs",
-			"args": ["-f", "${workspaceFolder}/Environment/Bochs.cfg", "-q"],
+			"program": "${workspaceFolder}/build/kernel.elf",
+			"args": [],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
 			"externalConsole": false,
-			"linux": {
-				"program": "/usr/bin/bochs",
-			},
-			"osx": {
-				"program": "/opt/homebrew/bin/bochs",
-				"MIMode": "lldb",
-			},
+			"MIMode": "gdb",
+			"miDebuggerServerAddress": "localhost:1234",
 		},
 	]
 }
