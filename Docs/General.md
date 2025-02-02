@@ -14,7 +14,7 @@ Once past the booting part, the code is only redundant between the bootloader an
 was taken to switch to the Limine bootloader, to be able to focus on the unique kernel functionnalities.
 
 To this day, the kernel supports the following features:
-- A custom bootloader
+- The Limine protocol
 - Interrupt and IRQ support (see the [Interrupts documentation](./Interrupts.md))
 - Filesystem support: none for now
 - IO support: PS/2 mouse and keyboard, Serial support
