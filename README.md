@@ -2,7 +2,7 @@
 
 This is a custom operating system, written for learning and experimentation purposes during my free time.
 
-The [General documentation](./Docs/General.md) documents the OS capabilities, and the [roadmap](./Docs/Roadmap.md) is available.
+The [General documentation](./Docs/General.md) documents the OS capabilities, and a [roadmap](./Docs/Roadmap.md) is available.
 
 ## Try it yourself !
 
