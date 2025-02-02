@@ -1,7 +1,12 @@
 # Toolchain.mk: makefile for the toolchain compilation
 # Note: you need to have the build dependencies installed. See the README for more informations.
 
+# Where to install the files
 TOOLCHAIN_PREFIX=$(TOOLCHAIN_PATH)/$(TARGET)
+export PATH:=$(PATH):$(TOOLCHAIN_PREFIX)/bin
+
+# This is needed only if these variables are defined in the environment
+CLEAR_ENV:=ASM= ASMFLAGS= CC= CFLAGS= CXX= LD= LDFLAGS= LINKFLAGS= LIBS=
 
 all: limine
 toolchain: toolchain_binutils toolchain_gcc
