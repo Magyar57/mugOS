@@ -2,12 +2,10 @@
 
 ## Native build
 
-The native build first compiles binutils and gcc for cross-compilation.
-Then it compiles the code into a bootloader image, kernel image, and finally a disk image.
-The depedencies listed below, before wget, are necessary for cross-compilation.
-What comes after wget is needed for the mugOS compilation.
+If you wish to use a specific compiler or linker, see [Compilers and Linkers](./CompilersAndLinkers.md).
 
-Build dependencies for each supported operating system:
+Build dependencies for each tested operating system:
+
 - Arch Linux: `pacman -Syu base-devel gcc clang ldd bison flex gmp libmpc mpfr texinfo wget nasm mtools dosfstools qemu edk2-ovmf`
 - Fedora and derivatives: `sudo dnf install gcc gcc-c++ clang make bison flex gmp-devel libmpc-devel mpfr-devel texinfo wget nasm mtools dosfstools guestfs-tools qemu-system-x86`
 - NixOS: use the provided environment: `nix-shell Environment/Shell.nix`
@@ -15,10 +13,8 @@ Build dependencies for each supported operating system:
 - Windows: Not supported. Please use WSL2.
 
 To build the operating system image, run `make` in the root folder.
-If you wish to use a specific compiler or linker, see [Compilers and Linkers](./CompilersAndLinkers.md).
-
-Note: If you don't wish to recompile binutils and gcc, and install the dependencies,
-you can use the docker build or a Nix-Shell.
+By default, it will build for the x86_64 architecture. If you wish to build for another architecture,
+(e.g. arm64) add the `make toolchain -E ARCH=arm64` option.
 
 ## Docker build
 
@@ -33,15 +29,26 @@ and can be used to build the image without downloading the dependencies on your 
 
 ### Run
 
-Once the OS is compiled, run it (emulate it) in QEMU, by executing: `qemu-system-i386 -drive", "file=${workspaceFolder}/build/floppy.img,format=raw,if=floppy`
+The `make run` command will run the OS with the default architecture/booting mode.
+
+Alternatively, if you wish to choose the architecure and booting mode, you can choose from the followings:
+
+- x86_64 UEFI: `qemu-system-x86_64 -drive if=pflash,file=/usr/share/edk2/x64/OVMF.4m.fd,format=raw,readonly=on -drive if=ide,media=disk,file=build/disk.img,format=raw`
+- x86_64 Legacy BIOS: `qemu-system-x86_64 -drive -drive if=ide,media=disk,file=build/disk.img,format=raw`
 
 ### Debugging...
+
+#### ... With gdb
+
+- Run the system that you wish to debug (see the Run section), and add the `-s -S` QEMU flags to make it wait for a gdb connection
+- The launch the debugger: `gdb`. Now connect to the remote QEMU server and set it up:
+  - target remote localhost:1234
+  - symbol-file build/kernel.elf
+  - break kmain
+  - layout src
+  - continue
 
 #### ... With Bochs
 
 To debug the OS, you can use bochs: `bochs-debugger -f Environment/Bochs.cfg`.
-
-#### ... With gdb
-
-You can attach to QEMU with gdb, by making QEMU wait for a gdb connection first.
-This will be supported more throughly later.
+This does NOT support UEFI booting, as bochs doesn't support OVMF.

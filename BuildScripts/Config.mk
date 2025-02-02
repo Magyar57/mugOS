@@ -10,10 +10,8 @@ ifeq ($(ARCH), $(filter $(ARCH),x86_64 amd64))
 export ARCH:=x86_64
 export TARGET:=x86_64-elf
 QEMU_ARCH:=x86_64
-else ifeq ($(ARCH), $(filter $(ARCH),x86 ia32 IA32 i386 i686))
-export ARCH:=x86_64
-export TARGET:=i686-elf
-QEMU_ARCH=i386
+else ifeq ($(ARCH), $(filter $(ARCH),arm ARM arm64 ARM64))
+$(error Sorry, the ARM architecture is unsupported yet)
 else
 $(error Unknown or unsupported architecture '$(ARCH)', please specify a valid one)
 endif
@@ -30,7 +28,7 @@ export PATH:=$(PATH):$(TARGET_TOOLCHAIN)/bin
 export TARGET_ASM:=nasm
 export TARGET_ASMFLAGS:=-f elf64 -g -F dwarf
 export TARGET_CC:=clang --target=x86_64-none-elf
-export TARGET_CFLAGS:=-g -Wall -std=c23 -O0 -ffreestanding -mno-red-zone -mcmodel=kernel -mno-sse -mno-avx
+export TARGET_CFLAGS:=-g -Wall -std=c23 -O0 -ffreestanding -mno-red-zone -mcmodel=kernel -mgeneral-regs-only
 export TARGET_LD:=ld.lld
 export TARGET_LDFLAGS:=-nostdlib -static
 export TARGET_LIBS:=

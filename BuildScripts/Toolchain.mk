@@ -3,8 +3,8 @@
 
 TOOLCHAIN_PREFIX=$(TARGET_TOOLCHAIN)
 
-all: toolchain
-toolchain: limine toolchain_binutils toolchain_gcc
+all: limine
+toolchain: toolchain_binutils toolchain_gcc
 limine:				| $(TOOLCHAIN_PREFIX)/bin/limine
 toolchain_binutils:	| $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-ld
 toolchain_gcc:		| $(TOOLCHAIN_PREFIX)/bin/$(TARGET)-gcc
