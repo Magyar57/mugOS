@@ -1,7 +1,7 @@
 # Toolchain.mk: makefile for the toolchain compilation
 # Note: you need to have the build dependencies installed. See the README for more informations.
 
-TOOLCHAIN_PREFIX=$(TARGET_TOOLCHAIN)
+TOOLCHAIN_PREFIX=$(TOOLCHAIN_PATH)/$(TARGET)
 
 all: limine
 toolchain: toolchain_binutils toolchain_gcc

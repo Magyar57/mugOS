@@ -3,7 +3,7 @@
 TARGET_CFLAGS+=-D $(ARCH)
 
 # Includes paths for the kernel
-export CPATH=$(abspath .):$(abspath Stdlib):$(abspath Arch/$(ARCH)):$(abspath $(TARGET_TOOLCHAIN)/include)
+export CPATH=$(abspath .):$(abspath Stdlib):$(abspath Arch/$(ARCH)):$(abspath $(TOOLCHAIN_PATH)/$(TARGET)/include)
 
 BUILD_SUBDIR:=$(BUILD_DIR)/kernel
 

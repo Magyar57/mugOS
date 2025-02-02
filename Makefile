@@ -3,54 +3,44 @@ include BuildScripts/Toolchain.mk
 
 all: image
 
-.PHONY: all image bootloader kernel run clean
-.PHONY: tools tools_fat
+.PHONY: all image kernel run clean kclean
 
 #
-# Disk (hard drive) image
+# Disk image
 #
-image: $(BUILD_DIR)/disk.img
-IMAGE_FILES:=$(BUILD_DIR)/kernel.elf
-# IMAGE_FILES+=$(BUILD_DIR)/test.txt
-# IMAGE_FILES+=$(BUILD_DIR)/test_sub.txt
+image: $(IMAGE)
 
-$(BUILD_DIR)/disk.img: $(IMAGE_FILES) | $(LIMINE_EFI_EXEC) $(LIMINE_BIOS_EXEC)
-	./BuildScripts/CreateImage.sh $@ >/dev/null 2>&1
+$(IMAGE): $(IMAGE_FILES) | $(TEMP_IMAGE) $(TEMP_PARTITION1)
+	mcopy -i $(TEMP_PARTITION1) -o $^ ::boot
+	@if [ ! -f $@ ]; then cp $(TEMP_IMAGE) $@ ; fi
+	@dd if=$(TEMP_PARTITION1) of=$@ bs=512 seek=$(PARTITION1_OFFSET) status=none
 
-$(BUILD_DIR)/test.txt:
-	printf "This is a test file :D\n" >$@
+$(TEMP_IMAGE):
+	@dd if=/dev/zero of=$@ bs=1M count=20 status=none
+	sgdisk $@ --clear --new 1:2048 --type 1:ef00 >/dev/null
+	@limine bios-install $@ >/dev/null 2>&1
 
-$(BUILD_DIR)/test_sub.txt:
-	printf "This is a test file, in a subdirectory !\n" >$@
+$(TEMP_PARTITION1): | $(TEMP_IMAGE) $(LIMINE_UEFI_EXEC) $(LIMINE_BIOS_EXEC)
+	@dd if=$(TEMP_IMAGE) of=$@ bs=512 skip=$(PARTITION1_OFFSET) status=none
+	@mkfs.fat $@ -F 12 -n "MUGOS" >/dev/null
+	@mmd -i $@ ::boot ::EFI ::EFI/BOOT
+	@mcopy -i $@ $(LIMINE_BIOS_EXEC) Bootloader/limine.conf ::boot
+	@mcopy -i $@ $(LIMINE_UEFI_EXEC) ::EFI/BOOT
 
 #
 # Kernel
 #
 kernel: $(BUILD_DIR)/kernel.elf
 
-$(BUILD_DIR)/kernel.elf: $(shell find Kernel/** -type f) | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.map: $(shell find Kernel/** -type f) | $(BUILD_DIR)
 	@$(MAKE) -C Kernel $(MAKE_FLAGS)
-
-#
-# Bootloader
-#
-LIMINE_EFI_EXEC:=$(TARGET_TOOLCHAIN)/share/limine/BOOTX64.EFI
-LIMINE_BIOS_EXEC:=$(TARGET_TOOLCHAIN)/share/limine/limine-bios.sys
 
 #
 # Tools
 #
-tools: tools_fat
-tools_fat: $(BUILD_TOOLS_FAT_DIR)/tests $(BUILD_TOOLS_FAT_DIR)/cli
-
-$(BUILD_TOOLS_FAT_DIR)/tests: $(BUILD_TOOLS_FAT_DIR)/Tests.o $(BUILD_TOOLS_FAT_DIR)/Fat.o | $(BUILD_TOOLS_FAT_DIR)
-	gcc -g -Wall -std=c2x $^ -o $@
-
-$(BUILD_TOOLS_FAT_DIR)/cli: $(BUILD_TOOLS_FAT_DIR)/FatCLI.o $(BUILD_TOOLS_FAT_DIR)/Fat.o | $(BUILD_TOOLS_FAT_DIR)
-	gcc -g -Wall -std=c2x $^ -o $@
-
-$(BUILD_TOOLS_FAT_DIR)/%.o : Tools/FAT/%.c | $(BUILD_TOOLS_FAT_DIR)
-	gcc -g -Wall -std=c2x -c $< -o $@
+.PHONY: tools
+tools:
+	@$(MAKE) -C Tools/FAT $(MAKE_FLAGS)
 
 #
 # Run (if needed, add arguments using `make run -E QEMU_ARGS="arg1 arg2"`)
@@ -61,20 +51,16 @@ run:
 		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
 
 #
-# Build directories
+# Build directory
 #
-
 $(BUILD_DIR):
 	@mkdir -p $@
 
-$(BUILD_TOOLS_FAT_DIR): | $(BUILD_DIR)
-	@mkdir -p $@
-
 #
-# Clean (kclean: clean kernel only)
+# Clean (kclean: cleans kernel only)
 #
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(TEMP_IMAGE) $(TEMP_PARTITION1)
 
 kclean:
 	rm -rf $(BUILD_DIR)/kernel $(BUILD_DIR)/kernel.*
