@@ -8,23 +8,31 @@ pkgs.mkShell {
 	# Dependencies
 	buildInputs = [
 		pkgs.file
+		# Run
+		pkgs.qemu
+		pkgs.ovmf
+		# Debug
+		pkgs.gdb
+		pkgs.bochs
+		# Building
+		pkgs.gnumake
+		pkgs.nasm
 		pkgs.gcc
 		pkgs.clang-tools
-		pkgs.gnumake
+		pkgs.lld
+		pkgs.git
+		pkgs.gptfdisk
+		pkgs.mtools
+		pkgs.dosfstools
+		pkgs.guestfs-tools
+		# Toolchain
+		pkgs.wget
+		pkgs.texinfo
 		pkgs.bison
 		pkgs.flex
 		pkgs.gmp
 		pkgs.mpfr
 		pkgs.libmpc
-		pkgs.texinfo
-		pkgs.wget
-		pkgs.nasm
-		pkgs.mtools
-		pkgs.dosfstools
-		pkgs.guestfs-tools
-		pkgs.qemu
-		pkgs.bochs
-		pkgs.ovmf
 	];
 
 	# Shell parameters
