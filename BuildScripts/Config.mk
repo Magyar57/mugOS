@@ -4,6 +4,7 @@
 # Output folders
 export BUILD_DIR:=$(abspath build)
 export TOOLCHAIN_PATH:=$(abspath toolchain)
+export PATH:=$(PATH):$(TOOLCHAIN_PATH)/bin
 
 # Architecture to compile mugOS for
 # Can be overriden here, or from the command line: `make -E ARCH=arm64`
