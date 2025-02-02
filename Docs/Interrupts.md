@@ -1,8 +1,8 @@
 # Interrupts
 
-## x86
+## x86_64
 
-In mugOS and on the x86 plateform, interrupts are implemented as follows:
+In mugOS and on the x86_64 plateform, interrupts are implemented as follows:
 
 - IDT [0-255] => All point to `ISR_Asm_prehandler` => `ISR_C_prehandler`
 - `ISR_C_prehandler`: checks in ISR list (this list is a module maintained variable)

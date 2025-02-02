@@ -1,8 +1,8 @@
 # Compilers and linkers
 
-Building the OS, as of any program, takes two steps: compilation and link.
+Building the OS, as of any program, takes two steps: compilation and linking.
 
-Both gcc, clang, ld and lld are supported. The default is the llvm toolchain, as it support
+Both gcc, clang, ld and lld are supported. The default is the LLVM toolchain, as it support
 cross-compilation by default. If you wish to use gcc, you will need to recompile it. And if you wish
 to use ld, you will need to recompile binutils. This is handled automatically by the
 `BuildScripts/Toolchain.mk` makefile: run `make toolchain` **at the top** of the projet directory tree.

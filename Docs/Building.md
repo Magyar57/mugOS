@@ -27,7 +27,7 @@ and can be used to build the image without downloading the dependencies on your 
 
 ## Running or debugging mugOS
 
-### Run
+### Running
 
 The `make run` command will run the OS with the default architecture/booting mode.
 
@@ -36,7 +36,7 @@ Alternatively, if you wish to choose the architecure and booting mode, you can c
 - x86_64 UEFI: `qemu-system-x86_64 -drive if=pflash,file=/usr/share/edk2/x64/OVMF.4m.fd,format=raw,readonly=on -drive if=ide,media=disk,file=build/disk.img,format=raw`
 - x86_64 Legacy BIOS: `qemu-system-x86_64 -drive -drive if=ide,media=disk,file=build/disk.img,format=raw`
 
-### Debugging...
+### Debugging
 
 #### ... With gdb
 
