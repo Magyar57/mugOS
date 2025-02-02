@@ -29,13 +29,11 @@ $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc: | $(TOOLCHAIN_PATH)
 	if [ ! -f "$(TOOLCHAIN_PATH)/gcc.tar.gz" ]; then wget $(GCC_URL) -O $(TOOLCHAIN_PATH)/gcc.tar.gz; fi
 	mkdir -p $(TOOLCHAIN_PATH)/gcc-src
 	tar -xf $(TOOLCHAIN_PATH)/gcc.tar.gz -C $(TOOLCHAIN_PATH)/gcc-src --strip-components 1
-	cd $(TOOLCHAIN_PATH)/gcc-src && ./contrib/download_prerequisites
+	if [ "$(uname)" = "Darwin" ]; then cd $(TOOLCHAIN_PATH)/gcc-src && ./contrib/download_prerequisites; fi
 	rm -rf $(TOOLCHAIN_PATH)/gcc-build && mkdir -p $(TOOLCHAIN_PATH)/gcc-build && cd $(TOOLCHAIN_PATH)/gcc-build && \
 	$(CLEAR_ENV) ../gcc-src/configure --target=$(TARGET) --prefix=$(TOOLCHAIN_PATH) --disable-nls --enable-languages=c,c++ --without-headers
-	$(MAKE) -C $(TOOLCHAIN_PATH)/gcc-build all-gcc
-	$(MAKE) -C $(TOOLCHAIN_PATH)/gcc-build all-target-libgcc
-	$(MAKE) -C $(TOOLCHAIN_PATH)/gcc-build install-gcc
-	$(MAKE) -C $(TOOLCHAIN_PATH)/gcc-build install-target-libgcc
+	$(MAKE) -C $(TOOLCHAIN_PATH)/gcc-build all-gcc all-target-libgcc
+	$(MAKE) -C $(TOOLCHAIN_PATH)/gcc-build install-gcc install-target-libgcc
 
 $(TOOLCHAIN_PATH):
 	mkdir -p $@
