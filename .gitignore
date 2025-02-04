@@ -2,6 +2,11 @@
 build/
 *.o
 *.obj
+*.bin
+*.elf
+*.EFI
+*.img
+*.map
 
 # Compiled libraries and (cross)-compilers
 toolchain*

@@ -1,93 +1,66 @@
 include BuildScripts/Config.mk
 include BuildScripts/Toolchain.mk
 
-all: floppy tools
+all: image
 
-.PHONY: all clean
-.PHONY: floppy bootloader kernel
-.PHONY: tools tools_fat
+.PHONY: all image kernel run clean kclean
 
 #
-# Floppy image
+# Disk image
 #
-floppy: $(BUILD_DIR)/floppy.img
-FLOPPY_FILES:=$(BUILD_DIR)/bootloader-first-stage.bin
-FLOPPY_FILES+=$(BUILD_DIR)/bootloader-second-stage.bin
-FLOPPY_FILES+=$(BUILD_DIR)/kernel.bin
-FLOPPY_FILES+=$(BUILD_DIR)/test.txt
-FLOPPY_FILES+=$(BUILD_DIR)/test_sub.txt
+image: $(IMAGE)
 
-$(BUILD_DIR)/floppy.img: $(FLOPPY_FILES) | $(BUILD_DIR)
-	dd if=/dev/zero of=$@ bs=512 count=2880 status=none
-	mkfs.fat -F 12 -n "MUGOS" $@
-	dd if=$(BUILD_DIR)/bootloader-first-stage.bin of=$@ conv=notrunc status=none
-	mcopy -i $@ $(BUILD_DIR)/bootloader-second-stage.bin "::2ndStage.bin"
-	mcopy -i $@ $(BUILD_DIR)/kernel.bin "::kernel.bin"
-	mcopy -i $@ $(BUILD_DIR)/test.txt "::test.txt"
-	mmd -i $@ "::dir"
-	mcopy -i $@ $(BUILD_DIR)/test_sub.txt "::dir/test_sub.txt"
+$(IMAGE): $(IMAGE_FILES) | $(TEMP_IMAGE) $(TEMP_PARTITION1)
+	mcopy -i $(TEMP_PARTITION1) -o $^ ::boot
+	@if [ ! -f $@ ]; then cp $(TEMP_IMAGE) $@ ; fi
+	@dd if=$(TEMP_PARTITION1) of=$@ bs=512 seek=$(PARTITION1_OFFSET) status=none
 
-$(BUILD_DIR)/test.txt:
-	printf "This is a test file :D\n" >$@
+$(TEMP_IMAGE):
+	@dd if=/dev/zero of=$@ bs=1M count=20 status=none
+	sgdisk $@ --clear --new 1:2048 --type 1:ef00 >/dev/null
+	@limine bios-install $@ >/dev/null 2>&1
 
-$(BUILD_DIR)/test_sub.txt:
-	printf "This is a test file, in a subdirectory !\n" >$@
-
-#
-# Bootloader
-#
-bootloader: $(BUILD_DIR)/bootloader-first-stage.bin $(BUILD_DIR)/bootloader-second-stage.bin
-
-$(BUILD_DIR)/bootloader-first-stage.bin: $(shell find Bootloader/FirstStage/** -type f) | $(BUILD_DIR)
-	@$(MAKE) -C Bootloader/FirstStage $(MAKE_FLAGS)
-
-$(BUILD_DIR)/bootloader-second-stage.bin: $(shell find Bootloader/SecondStage/** -type f) | $(BUILD_DIR)
-	@$(MAKE) -C Bootloader/SecondStage $(MAKE_FLAGS)
+$(TEMP_PARTITION1): | $(TEMP_IMAGE) $(LIMINE_UEFI_EXEC) $(LIMINE_BIOS_EXEC)
+	@dd if=$(TEMP_IMAGE) of=$@ bs=512 skip=$(PARTITION1_OFFSET) status=none
+	@mkfs.fat $@ -F 12 -n "MUGOS" >/dev/null
+	@mmd -i $@ ::boot ::EFI ::EFI/BOOT
+	@mcopy -i $@ $(LIMINE_BIOS_EXEC) Bootloader/limine.conf ::boot
+	@mcopy -i $@ $(LIMINE_UEFI_EXEC) ::EFI/BOOT
 
 #
 # Kernel
 #
-kernel: $(BUILD_DIR)/kernel.bin
+kernel: $(BUILD_DIR)/kernel.elf
 
-$(BUILD_DIR)/kernel.bin: $(shell find Kernel/** -type f) | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.map: $(shell find Kernel/** -type f) | $(BUILD_DIR)
 	@$(MAKE) -C Kernel $(MAKE_FLAGS)
 
 #
 # Tools
 #
-tools: tools_fat
-tools_fat: $(BUILD_TOOLS_FAT_DIR)/tests $(BUILD_TOOLS_FAT_DIR)/cli
-
-$(BUILD_TOOLS_FAT_DIR)/tests: $(BUILD_TOOLS_FAT_DIR)/Tests.o $(BUILD_TOOLS_FAT_DIR)/Fat.o | $(BUILD_TOOLS_FAT_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
-
-$(BUILD_TOOLS_FAT_DIR)/cli: $(BUILD_TOOLS_FAT_DIR)/FatCLI.o $(BUILD_TOOLS_FAT_DIR)/Fat.o | $(BUILD_TOOLS_FAT_DIR)
-	$(CC) $(CFLAGS) $^ -o $@
-
-$(BUILD_TOOLS_FAT_DIR)/%.o : Tools/FAT/%.c | $(BUILD_TOOLS_FAT_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+.PHONY: tools
+tools:
+	@$(MAKE) -C Tools/FAT $(MAKE_FLAGS)
 
 #
-# Build directories
+# Run (if needed, add arguments using `make run -E QEMU_ARGS="arg1 arg2"`)
 #
+run:
+	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
+		-drive if=pflash,file=/usr/share/edk2/x64/OVMF.4m.fd,format=raw,readonly=on \
+		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
 
+#
+# Build directory
+#
 $(BUILD_DIR):
 	@mkdir -p $@
 
-$(BUILD_TOOLS_DIR): | $(BUILD_DIR)
-	@mkdir -p $@
-
-$(BUILD_TOOLS_FAT_DIR): | $(BUILD_TOOLS_DIR)
-	@mkdir -p $@
-
 #
-# Clean (bclean: bootloader clean, kclean: kernel clean)
+# Clean (kclean: cleans kernel only)
 #
 clean:
-	rm -rf $(BUILD_DIR)
-
-bclean:
-	rm -rf $(BUILD_DIR)/second-stage $(BUILD_DIR)/bootloader*
+	rm -rf $(BUILD_DIR) $(TEMP_IMAGE) $(TEMP_PARTITION1)
 
 kclean:
-	rm -rf $(BUILD_DIR)/kernel $(BUILD_DIR)/kernel.bin
+	rm -rf $(BUILD_DIR)/kernel $(BUILD_DIR)/kernel.*

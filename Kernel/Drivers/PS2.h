@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
-// Initalize the PS/2 device driver
-void PS2_initalize();
+// Initialize the PS/2 device driver
+void PS2_initialize();
 
 // Notify the PS/2 driver that the keyboard needs attention
 void PS2_notifyKeyboard();

@@ -17,16 +17,22 @@
 - [X] Text-mode VGA driver
 - [X] Logging subsystem
 - [X] Serial output driver
-- [ ] Bootloader: abandon Legacy in favor of UEFI
+- [X] Bootloader: abandon Legacy in favor of UEFI
+- [X] Framebuffer Driver
+- [X] Bootloader: switch to Limine
+- [X] Add kernel step by step debugging support (gdb)
 - [ ] Memory detection
 - [ ] kmalloc
-- [ ] Userland
 - [ ] Kernel FAT driver
-- [ ] Virtual filesystem (VFS)
-- [ ] ELF binary support
-- [ ] Add gdb support
+- [ ] Kernel filesystem
+- [ ] ELF binary loading
+- [ ] Userland
+- [ ] Init process
 
 ## Modifications
+
+- Serial driver: fix synchronization bug (internal buffer order messed up) (interrupt related ?) & in pushBackWriteBuffer
+  check if we need to remove enable/disableInterrupts (if we're in an interrupt gate already, they are masked, and restored by the iret)
 
 These are modifications to be done, that are dependent on other techs to be implemented first.
 
@@ -35,4 +41,5 @@ These are modifications to be done, that are dependent on other techs to be impl
 - [ ] With proper executable and lib support, remove callbacks from the keyboard driver when its owner exits
 
 Notes:
-- Current PS/2 implementation purposely does not support hot-plug (as it was not designed for it originally...)
+- Current PS/2 implementation purposely does not support hot-plug (as the PS/2 was not designed for it originally...)
+- The framebuffer driver only supports 32 bpp framebuffers

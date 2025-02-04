@@ -1,17 +1,19 @@
 {
     "configurations": [
 		{
-            "name": "x86",
+            "name": "x86_64",
             "includePath": [
-                "${workspaceFolder}/**",
-				"${workspaceFolder}/toolchain/i686-elf/lib/gcc/i686-elf/14.1.0/include"
+                // "${workspaceFolder}/Bootloader/**",
+                "${workspaceFolder}/Kernel/**",
+				"${workspaceFolder}/toolchain/**"
             ],
-            "defines": ["ARCH_x86="],
-            "compilerPath": "${workspaceFolder}/toolchain/i686-elf/bin/i686-elf-gcc",
+            "defines": ["x86_64="],
+            "compilerPath": "/usr/bin/clang",
             "cStandard": "c23",
             "cppStandard": "c++23",
-            "intelliSenseMode": "linux-gcc-x86",
-			"compilerArgs": ["-std=c99", "-ffreestanding", "-nostdlib"]
+            "intelliSenseMode": "linux-clang-x64",
+			// Note: we use c17 since c23 is currently bugged in the extension
+			"compilerArgs": ["-std=c17", "-ffreestanding", "-nostdlib"]
         }
     ],
     "version": 4

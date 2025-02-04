@@ -1,40 +1,37 @@
 # Config.mk: configurations variables
 # Note: the paths are relative to the root folder (mugOS)
 
-# Architecture to compile mugOS for
-# Can be overriden from the command line: `make -e ARCH=arm64`
-export ARCH?=x86
+# Output folders
+export BUILD_DIR:=$(abspath build)
+export TOOLCHAIN_PATH:=$(abspath toolchain)
+export PATH:=$(PATH):$(TOOLCHAIN_PATH)/bin
 
-# Toolchain (paths and links to download and compile)
+# Architecture to compile mugOS for
+# Can be overriden here, or from the command line: `make -E ARCH=arm64`
+# (Do not edit Arch.mk if you wish to change the architecture!)
+export ARCH?=x86_64
+include BuildScripts/Arch.mk
+
+# Toolchain
 # Get the latest versions: https://ftp.gnu.org/gnu/binutils/ and https://gcc.gnu.org/releases.html
 BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz
 GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-14.1.0/gcc-14.1.0.tar.gz
-export TOOLCHAIN_PATH:=$(abspath toolchain)
-
-# Compilation for host system
-export CFLAGS:=-g -Wall -std=c2x
-export ASMFLAGS:=
-export CC:=gcc
-export CXX:=g++
-export LD:=gcc
-export ASM:=nasm
-export LINKFLAGS:=
-export LIBS:=
-export CLEAR_ENV:=CFLAGS= ASMFLAGS= CC= CXX= LD= ASM= LINKFLAGS= LIBS=
 
 # Compilation for target system
-export TARGET:=i686-elf
 export TARGET_ASM:=nasm
-export TARGET_ASMFLAGS:=-f elf32 -g -F dwarf
-export TARGET_CC:=clang --target=i386-none-elf
-export TARGET_CFLAGS:=-g -Wall -std=c2x -ffreestanding
-export TARGET_LD:=i686-elf-gcc
-export TARGET_LDFLAGS:=-Wl,--oformat,binary -nostdlib
-export TARGET_LIBS:=-lgcc
+export TARGET_ASMFLAGS:=-f elf64 -g -F dwarf
+export TARGET_CC:=clang --target=x86_64-none-elf
+export TARGET_CFLAGS:=-g -Wall -std=c2x -O0 -ffreestanding -mno-red-zone -mcmodel=kernel -mgeneral-regs-only
+export TARGET_LD:=ld.lld
+export TARGET_LDFLAGS:=-nostdlib -static
+export TARGET_LIBS:=
+export MAKE_FLAGS:=--no-print-directory ARCH=$(ARCH)
 
-export MAKE_FLAGS:=--no-print-directory
+# Output files & configurations
+IMAGE:=$(BUILD_DIR)/disk.img
+IMAGE_FILES:=$(BUILD_DIR)/kernel.elf
+PARTITION1_OFFSET=2048
 
-# Output folders
-export BUILD_DIR:=$(abspath build)
-export BUILD_TOOLS_DIR:=$(BUILD_DIR)/tools
-export BUILD_TOOLS_FAT_DIR:=$(BUILD_TOOLS_DIR)/fat
+# Temporary (intermediate) output files
+TEMP_IMAGE:=/tmp/disk.img
+TEMP_PARTITION1:=/tmp/partition1.img
