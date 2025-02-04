@@ -5,7 +5,7 @@
 
 #include "CPU.h"
 
-extern void cpuidWrapper(unsigned int code, uint32_t* rax, uint32_t* rbx, uint32_t* rcx, uint32_t* rdx); // CPU.asm
+extern void cpuidWrapper(unsigned int code, uint64_t* rax, uint64_t* rbx, uint64_t* rcx, uint64_t* rdx); // CPU.asm
 
 // CPU_identify usage example:
 // CPU cpu;
@@ -67,7 +67,7 @@ bool CPU_identify(CPU* cpu){
 	}
 
 	// Extended CPUID informations
-	uint32_t maxExtendedInformationValue;
+	uint64_t maxExtendedInformationValue;
 
 	// cpuid.rax = 0x80000000: max input value for extended cpuid informations
 	cpuidWrapper(0x80000000, &maxExtendedInformationValue, &rbx, &rcx, &rdx);
