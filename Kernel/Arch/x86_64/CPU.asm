@@ -42,7 +42,7 @@ CPU_supportsCpuid:
 	pop rax
 
 	; move (EFLAGS xor 'id flag') back to EFLAGS
-	mov rcx, rax		; save eflags for later comparison
+	mov rcx, rax		; save EFLAGS for later comparison
 	xor rax, 1<<21		; toggle bit 21 (ID flag)
 	push rax
 	popfq				; eflags = eax
@@ -58,25 +58,35 @@ CPU_supportsCpuid:
 	ret
 ; END CPU_supportsCpuid
 
-; void cpuidWrapper(int code, uint32_t* eax, uint32_t* ebx, uint32_t* ecx, uint32_t* edx);
+; void cpuidWrapper(int code, uint32_t* rax, uint32_t* rbx, uint32_t* rcx, uint32_t* rdx);
 ; This function assumes that the cpuid instruction is supported. To test it, use CPUSupportsCpuid
 global cpuidWrapper
 cpuidWrapper:
 	push rbp
 	mov rbp, rsp
+	push rbx
 
-	mov rax, [rbp+8]
+	; preserve args for later
+	push rsi
+	push rdx
+	push rcx
+	push r8
+
+	mov rax, rdi
 	cpuid
 
-	mov rdi, [rbp+12] ; &eax
-	mov [rdi], rax
-	mov rdi, [rbp+16] ; &ebx
-	mov [rdi], rbx
-	mov rdi, [rbp+20] ; &ecx
-	mov [rdi], rcx
-	mov rdi, [rbp+24] ; &edx
-	mov [rdi], rdx
+	; write results
 
+	pop rdi			; rdi = &rdx
+	mov [rdi], rdx
+	pop rdi			; rdi = &rcx
+	mov [rdi], rcx
+	pop rdi			; rdi = &rbx
+	mov [rdi], rbx
+	pop rdi			; rdi = &rax
+	mov [rdi], rax
+
+	pop rbx
 	leave
 	ret
 ; END cpuidWrapper

@@ -5,7 +5,7 @@
 
 #include "CPU.h"
 
-extern void cpuidWrapper(unsigned int code, uint32_t* eax, uint32_t* ebx, uint32_t* ecx, uint32_t* edx); // CPU.asm
+extern void cpuidWrapper(unsigned int code, uint32_t* rax, uint32_t* rbx, uint32_t* rcx, uint32_t* rdx); // CPU.asm
 
 // CPU_identify usage example:
 // CPU cpu;
@@ -16,19 +16,20 @@ extern void cpuidWrapper(unsigned int code, uint32_t* eax, uint32_t* ebx, uint32
 // log(INFO, "MAIN", "cpu features: %p %p", cpu.features0, cpu.features1);
 
 bool CPU_identify(CPU* cpu){
-	uint32_t eax, ebx, ecx, edx;
+	uint64_t rax, rbx, rcx, rdx;
 
 	if (!CPU_supportsCpuid()) return false;
 
 	// Basic CPUID Informations
-	uint32_t maxReturnValue;
+	uint64_t maxReturnValue;
 
-	// cpuid.eax = 0x00: max input value for basic cpuid informations, and vendor string
-	cpuidWrapper(0, &maxReturnValue, &ebx, &ecx, &edx);
+	// cpuid.rax = 0x00: max input value for basic cpuid informations, and vendor string
+	cpuidWrapper(0, &maxReturnValue, &rbx, &rcx, &rdx);
 
-	memcpy(cpu->vendor, &ebx, 4);
-	memcpy(cpu->vendor+4, &edx, 4);
-	memcpy(cpu->vendor+8, &ecx, 4);
+	// The CPU vendor string is contained in rbx, rdx and rcx ; copy it into the structure
+	memcpy(cpu->vendor, &rbx, 4);
+	memcpy(cpu->vendor+4, &rdx, 4);
+	memcpy(cpu->vendor+8, &rcx, 4);
 	cpu->vendor[12] = '\0';
 
 	switch (maxReturnValue){
@@ -38,29 +39,29 @@ bool CPU_identify(CPU* cpu){
 		case 2:
 			// 2: Cache and TLB informations
 			// Not implemented
-			// cpuidWrapper(2, &eax, &ebx, &ecx, &edx);
+			// cpuidWrapper(2, &rax, &rbx, &rcx, &rdx);
 		case 1:
 			// 1: version information
-			cpuidWrapper(1, &eax, &ebx, &ecx, &edx);
+			cpuidWrapper(1, &rax, &rbx, &rcx, &rdx);
 			// EAX
-			cpu->stepping = (eax & 0x0000000f);
-			cpu->model = (eax & 0x000000f0) >> 4;
-			cpu->family = (eax & 0x00000f00) >> 8;
+			cpu->stepping = (rax & 0x0000000f);
+			cpu->model = (rax & 0x000000f0) >> 4;
+			cpu->family = (rax & 0x00000f00) >> 8;
 			if ((cpu->family == 0x6) || (cpu->family == 0xf)){
-				cpu->model += ((eax & 0x000f0000) >> 12);
+				cpu->model += ((rax & 0x000f0000) >> 12);
 			}
 			if (cpu->family == 0xf){
-				cpu->family += (eax & 0x0ff00000 >> 20);
+				cpu->family += (rax & 0x0ff00000 >> 20);
 			}
-			cpu->type = (eax & 0x00003000) >> 12;
+			cpu->type = (rax & 0x00003000) >> 12;
 			// EBX
-			cpu->brandIndex = (ebx & 0x000000ff);
-			cpu->cflushLineSize = (ebx & 0x0000ff00) >> 8;
-			cpu->maxAddressableCpuIds = (ebx & 0x00ff0000) >> 16;
-			// cpu->localCpuApicId = (ebx & 0xff000000) >> 24; // current CPU specific
+			cpu->brandIndex = (rbx & 0x000000ff);
+			cpu->cflushLineSize = (rbx & 0x0000ff00) >> 8;
+			cpu->maxAddressableCpuIds = (rbx & 0x00ff0000) >> 16;
+			// cpu->localCpuApicId = (rbx & 0xff000000) >> 24; // current CPU specific
 			// EDX & EXC
-			cpu->features0 = edx;
-			cpu->features1 = ecx;
+			cpu->features0 = rdx;
+			cpu->features1 = rcx;
 		case 0:
 			break;
 	}
@@ -68,8 +69,8 @@ bool CPU_identify(CPU* cpu){
 	// Extended CPUID informations
 	uint32_t maxExtendedInformationValue;
 
-	// cpuid.eax = 0x80000000: max input value for extended cpuid informations
-	cpuidWrapper(0x80000000, &maxExtendedInformationValue, &ebx, &ecx, &edx);
+	// cpuid.rax = 0x80000000: max input value for extended cpuid informations
+	cpuidWrapper(0x80000000, &maxExtendedInformationValue, &rbx, &rcx, &rdx);
 
 	// Unimplemented
 	switch (maxExtendedInformationValue){
