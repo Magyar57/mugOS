@@ -3,12 +3,11 @@
 #include "assert.h"
 #include "io.h"
 
-#include "i8242.h"
+#include "i8042.h"
 
-#define MODULE "PS/2 Controller driver"
+#define MODULE "i8042 PS/2 Controller driver"
 
-// Intel 8242 PS/2 Controller driver
-// https://wiki.osdev.org/%228042%22_PS/2_Controller
+// Intel 8042 PS/2 Controller driver
 
 // Ports
 #define PS2C_PORT_DATA						0x60 // Read/Write
@@ -90,34 +89,34 @@ static inline void writeControllerConfigurationByte(uint8_t byte){
 	sendToPort(PS2C_PORT_DATA, byte);
 }
 
-static bool i8242_resetDevice(int device){
+static bool i8042_resetDevice(int device){
 	assert(device == 1 || device == 2);
 	uint8_t buff;
 
 	(device == 1) ?
-		i8242_sendByteToDevice1(PS2C_DEV_CMD_RESET) : i8242_sendByteToDevice2(PS2C_DEV_CMD_RESET);
+		i8042_sendByteToDevice1(PS2C_DEV_CMD_RESET) : i8042_sendByteToDevice2(PS2C_DEV_CMD_RESET);
 
 	// Byte 1: ACK or TEST_PASSED
-	if (!i8242_receiveDeviceByte(&buff) && buff!=PS2C_DEV_RES_ACK && buff!=PS2C_DEV_RES_SELF_TEST_PASSED){
+	if (!i8042_receiveDeviceByte(&buff) && buff!=PS2C_DEV_RES_ACK && buff!=PS2C_DEV_RES_SELF_TEST_PASSED){
 		return false;
 	}
 	// Byte 2: ACK or TEST_PASSED
-	if (!i8242_receiveDeviceByte(&buff) && (buff!=PS2C_DEV_RES_ACK) && (buff!=PS2C_DEV_RES_SELF_TEST_PASSED)){
+	if (!i8042_receiveDeviceByte(&buff) && (buff!=PS2C_DEV_RES_ACK) && (buff!=PS2C_DEV_RES_SELF_TEST_PASSED)){
 		return false;
 	}
 	// Byte 3: device ID (can be NOT present in the case of AT Keyboard)
-	if (!i8242_receiveDeviceByte(&buff)){
+	if (!i8042_receiveDeviceByte(&buff)){
 		return true;
 	}
 	// Byte 4: present for some devices
-	if (!i8242_receiveDeviceByte(&buff)){
+	if (!i8042_receiveDeviceByte(&buff)){
 		return true;
 	}
 
 	return true;
 }
 
-void i8242_initialize(){
+void i8042_initialize(){
 	uint8_t buff;
 
 	// 1. Disable Legacy USB (see USB driver, if present)
@@ -138,18 +137,23 @@ void i8242_initialize(){
 	writeControllerConfigurationByte(buff);
 
 	// 6. Perform self-test
-	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_SELF_TEST);
-	buff = readPort(PS2C_PORT_DATA);
-	if (buff != PS2C_RES_SELF_TEST_SUCCESS){
-		// Retry once
-		sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_SELF_TEST);
-		buff = readPort(PS2C_PORT_DATA);		
-		if (buff != PS2C_RES_SELF_TEST_SUCCESS){
-			g_enabled = false;
-			Logging_log(ERROR, MODULE, "initalization failed, chip self test failed");
-			return;
-		}
-	}
+	// However, according to: https://forum.osdev.org/viewtopic.php?t=57546
+	// we shouldn't use the PS/2 controller's self-test command as it can have unrecoverable side
+	// effects, and doesn't work correctly on hardware that is emulating a PS/2 controller in SMM.
+	// So we skip this part
+	// sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_SELF_TEST);
+	// buff = readPort(PS2C_PORT_DATA);
+	// if (buff != PS2C_RES_SELF_TEST_SUCCESS){
+	// 	// Retry once
+	// 	log(WARNING, MODULE, "Controller self-test returned failure (%p), retrying", buff);
+	// 	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_SELF_TEST);
+	// 	buff = readPort(PS2C_PORT_DATA);		
+	// 	if (buff != PS2C_RES_SELF_TEST_SUCCESS){
+	// 		g_enabled = false;
+	// 		log(ERROR, MODULE, "Initalization failed, chip self-test failed (%p)", buff);
+	// 		return;
+	// 	}
+	// }
 
 	// 7. Determine presence of port 2
 	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_ENABLE_PORT2);
@@ -190,12 +194,12 @@ void i8242_initialize(){
 
 	// 10. Reset devices
 	bool res;
-	res = i8242_resetDevice(1);
+	res = i8042_resetDevice(1);
 	if (!res) {
 		g_isPort1Valid = false;
 		Logging_log(INFO, MODULE, "Device 1 reset failed, deactivated");
 	}
-	res = i8242_resetDevice(2);
+	res = i8042_resetDevice(2);
 	if (!res) {
 		g_isPort1Valid = false;
 		Logging_log(INFO, MODULE, "Device 2 reset failed, deactivated");
@@ -215,25 +219,25 @@ void i8242_initialize(){
 	Logging_log(SUCCESS, MODULE, "Initalization success");
 }
 
-void i8242_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out){
+void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out){
 	*isEnabled_out = g_enabled;
 	*port1Available_out = g_isPort1Valid;
 	*port2Available_out = g_isPort2Valid;
 }
 
-void i8242_enableDevicesInterrupts(){
+void i8042_enableDevicesInterrupts(){
 	uint8_t ccb = readControllerConfigurationByte();
 	ccb |= (PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT);
 	writeControllerConfigurationByte(ccb);
 }
 
-void i8242_disableDevicesInterrupts(){
+void i8042_disableDevicesInterrupts(){
 	uint8_t ccb = readControllerConfigurationByte();
 	ccb = ccb & ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT);
 	writeControllerConfigurationByte(ccb);
 }
 
-bool i8242_sendByteToDevice1(uint8_t byte){
+bool i8042_sendByteToDevice1(uint8_t byte){
 	assert(g_enabled && g_isPort1Valid);
 
 	int timer = 0;
@@ -251,15 +255,15 @@ bool i8242_sendByteToDevice1(uint8_t byte){
 	return true;
 }
 
-bool i8242_sendByteToDevice2(uint8_t byte){
+bool i8042_sendByteToDevice2(uint8_t byte){
 	assert(g_enabled && g_isPort2Valid);
 
 	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_WRITE_PORT2_INPUT_BUFF);
 	// Nothing more needed for device 2, we can reuse our code for the first one
-	return i8242_sendByteToDevice1(byte);
+	return i8042_sendByteToDevice1(byte);
 }
 
-bool i8242_receiveDeviceByte(uint8_t* byte_out){
+bool i8042_receiveDeviceByte(uint8_t* byte_out){
 	assert(g_enabled);
 	assert(g_isPort1Valid || g_isPort2Valid);
 	bool buffer_full = false;
