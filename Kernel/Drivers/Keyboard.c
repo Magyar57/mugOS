@@ -5,7 +5,7 @@
 
 #include "Keyboard.h"
 
-#define MODULE "Keyboard submodule"
+#define MODULE "Keyboard subsystem"
 
 // Driver state variables
 bool g_capslockOn;
