@@ -1,7 +1,7 @@
-#include "stdio.h"
 #include "string.h"
-#include "LimineRequests.h"
 #include "CPU.h"
+#include "Logging.h"
+#include "LimineRequests.h"
 #include "Arch/HAL.h"
 #include "Drivers/Graphics/Graphics.h"
 #include "Drivers/Serial.h"
@@ -18,7 +18,7 @@ void kmain(){
 
 	Graphics_initialize(GRAPHICS_LIMINE_FRAMEBUFFER, (void*) framebufferReq.response->framebuffers[0]);
 	Graphics_clearScreen();
-	puts("Supposons que je sois dans votre kernel !");
+	log(INFO, NULL, "Supposons que je sois dans votre kernel !");
 
 	HAL_initialize();
 	Serial_initialize();
