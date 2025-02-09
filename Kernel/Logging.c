@@ -53,6 +53,8 @@ void Logging_log(int logLevel, const char* moduleName, const char* logFmtStr, ..
 	// During booting: log to stdout (screen)
 	fputs(buff, (logLevel >= ERROR) ? stdout : stderr);
 
-	// Log to Serial if it is enabled
-	if (Serial_isEnabled()) Serial_sendStringDefault(buff);
+	// Log to Serial
+	// sendStringDefault returns false if the Serial is uninitialized AND on error
+	// For simplicity, we ignore errors
+	Serial_sendStringDefault(buff);
 }

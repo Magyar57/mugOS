@@ -31,9 +31,6 @@
 
 ## Modifications
 
-- Serial driver: fix synchronization bug (internal buffer order messed up) (interrupt related ?) & in pushBackWriteBuffer
-  check if we need to remove enable/disableInterrupts (if we're in an interrupt gate already, they are masked, and restored by the iret)
-
 These are modifications to be done, that are dependent on other techs to be implemented first.
 
 - [ ] When implementing USB, intialize and disable USB legacy support BEFORE initializing the PS/2 controller

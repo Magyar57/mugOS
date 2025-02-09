@@ -116,10 +116,10 @@ static void processTHRE(UARTDevice* dev);
 
 // ================ External buffers handling ================
 
-// Add (push back) the null-terminated string str to be written the device buffer
-// If not enough place in buffer, send
+/// @brief Add (push back) the null-terminated string str to be written the device buffer
+/// @returns `true` on success, `false` on error
+/// @note Interrupts MUST BE DISABLED before calling this method
 static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
-	assert(str);
 	if (dev==NULL) return false;
 	if (str==NULL) return true;
 
@@ -130,14 +130,17 @@ static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 	// we need to trigger the THRE again so that we actually send what we put in the buffer
 	bool shouldTriggerTHRE = (dev->inWriteBuffer == 0);
 
-	size_t availableSpace = UARTDEVICE_EXT_BUFF_SIZE - dev->inWriteBuffer;
-	if (availableSpace < n) return false;
+	size_t available_space = UARTDEVICE_EXT_BUFF_SIZE - dev->inWriteBuffer;
+	if (available_space < n) return false;
 
 	// Copy the string to the external buffer
+	size_t write_index = dev->writeBeginIndex + dev->inWriteBuffer;
 	for(int i=0 ; i<n ; i++){
-		dev->externalWriteBuffer[dev->writeBeginIndex + dev->inWriteBuffer] = str[i];
-		dev->inWriteBuffer++;
+		dev->externalWriteBuffer[write_index] = str[i];
+		write_index++;
+		if (write_index == UARTDEVICE_EXT_BUFF_SIZE) write_index = 0;
 	}
+	dev->inWriteBuffer += n;
 
 	// Trigger THRE if we were not writing
 	if (shouldTriggerTHRE){
@@ -149,12 +152,10 @@ static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 	// Test if THRE was not triggered, do it manually
 	// Note: we test whether writeBuffer is full because activating THRE
 	// might have triggered the interrupt, possibly emptying the buffer
-	disableInterrupts();
 	uint8_t lsr = inb(dev->port + SERIAL_OFFSET_LSR);
 	if ((lsr & SERIAL_LSR_TEMT) && dev->inWriteBuffer){
 		processTHRE(dev);
 	}
-	enableInterrupts();
 
 	return true;
 }
@@ -492,23 +493,21 @@ bool Serial_isEnabled(){
 	return m_enabled;
 }
 
-void Serial_sendByte(int device, uint8_t byte){
-	if (!m_enabled || device<=0 || device>N_PORTS) return;
+bool Serial_sendByte(int device, uint8_t byte){
+	if (!m_enabled || device<=0 || device>N_PORTS) return false;
 
 	unsigned char toSend[] = { byte, '\0' };
 	bool res = pushBackWriteBuffer(&m_devices[device-1], toSend);
 
-	if (!res)
-		log(WARNING, MODULE, "Serial_sendByte: Couldn't send, buffer is full");
+	return res;
 }
 
-void Serial_sendString(int device, const char* str){
-	if (!m_enabled || device<=0 || device>N_PORTS) return;
+bool Serial_sendString(int device, const char* str){
+	if (!m_enabled || device<=0 || device>N_PORTS) return false;
 
 	bool res = pushBackWriteBuffer(&m_devices[device-1], (uint8_t*) str);
 
-	if (!res)
-		log(WARNING, MODULE, "Serial_sendString: Couldn't send, not enough room in buffer or invalid string");
+	return res;
 }
 
 uint8_t Serial_receiveByte(int device){
@@ -517,12 +516,12 @@ uint8_t Serial_receiveByte(int device){
 	return popFrontReadBuffer(&m_devices[device-1]);
 }
 
-void Serial_sendByteDefault(uint8_t byte){
-	Serial_sendByte(m_devices[m_defaultDevice].identifier, byte);
+bool Serial_sendByteDefault(uint8_t byte){
+	return Serial_sendByte(m_devices[m_defaultDevice].identifier, byte);
 }
 
-void Serial_sendStringDefault(const char* str){
-	Serial_sendString(m_devices[m_defaultDevice].identifier, str);
+bool Serial_sendStringDefault(const char* str){
+	return Serial_sendString(m_devices[m_defaultDevice].identifier, str);
 }
 
 uint8_t Serial_receiveByteDefault(){
