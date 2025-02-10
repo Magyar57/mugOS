@@ -52,6 +52,8 @@ char* strncpy(char* dst, const char* src, size_t len){
 }
 
 size_t strlen(const char* str){
+	if (str == NULL) return 0;
+
 	unsigned int res = 0;
 	while(*str){
 		str++;
@@ -84,16 +86,16 @@ void* memset(void* ptr, int value, size_t size){
 	return ptr;
 }
 
-void* memmove(void* dest, const void* src, size_t n) {
+void* memmove(void* dest, const void* src, size_t size){
 	uint8_t* pdest = (uint8_t*) dest;
 	const uint8_t* psrc = (const uint8_t*) src;
 
 	if (src > dest) {
-		for (size_t i = 0; i < n; i++) {
+		for (size_t i = 0; i < size; i++) {
 			pdest[i] = psrc[i];
 		}
 	} else if (src < dest) {
-		for (size_t i = n; i > 0; i--) {
+		for (size_t i = size; i > 0; i--) {
 			pdest[i-1] = psrc[i-1];
 		}
 	}
