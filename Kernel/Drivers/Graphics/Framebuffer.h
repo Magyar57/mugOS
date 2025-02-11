@@ -34,11 +34,12 @@ typedef struct s_Framebuffer {
 	uint32_t charHeight;		// The height of a character on screen, in pixels (accounts for zoom)
 
 	// Character array (framebuffer as a terminal)
-	uint32_t cursorX;			// Cursor X position in terminalText
-	uint32_t cursorY;			// Cursor Y position in terminalText
-	uint32_t terminalWidth;
-	uint32_t terminalHeight;
-	unsigned char terminalText[TERMINAL_SIZE]; // Contains the printed letters
+	uint32_t cursorX;			// Cursor X position on screen
+	uint32_t cursorY;			// Cursor Y position on screen
+	uint32_t textWidth;			// Width (number of characters in 'text')
+	uint32_t textHeight;		// Height (number of characters in 'text')
+	uint32_t textIndex;
+	unsigned char text[TERMINAL_SIZE]; // Contains the printed letters
 } Framebuffer;
 
 void Framebuffer_clearTerminal(Framebuffer* this);
@@ -47,16 +48,16 @@ void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom);
 void Framebuffer_clearScreen(Framebuffer* this);
 void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY);
 void Framebuffer_drawScreen(Framebuffer* this);
-void Framebuffer_scrollDown(Framebuffer* this, unsigned int n);
+void Framebuffer_scrollDown(Framebuffer* this);
 void Framebuffer_putchar(Framebuffer* this, const char c);
 void Framebuffer_puts_noLF(Framebuffer* this, const char* str);
 void Framebuffer_puts(Framebuffer* this, const char* str);
 
-/// @brief Initialize the GOP driver
+/// @brief Initialize the Framebuffer driver (from a GOP or Bios obtained memory-mapped framebuffer)
 /// @param this Framebuffer object to initialize. Note: it HAS to be pre-initialized with
 ///        fields `framebuffer`, `width`, `height`, `pitch` and `bpp` set
 /// @returns A boolean indicating initialization success
-/// @note This method and object are meant to be used and abstracted by the Graphics subsystem
+/// @note This method and its object are meant to be used and abstracted by the Graphics subsystem
 bool Framebuffer_initialize(Framebuffer* this);
 
 #endif

@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
+#include "string.h"
+#include "assert.h"
 #include "Logging.h"
 #include "Drivers/Graphics/Font.h"
 
@@ -8,10 +10,13 @@
 #define MODULE "Framebuffer"
 
 void Framebuffer_clearTerminal(Framebuffer* this){
-	for (int i=0 ; i<TERMINAL_SIZE ; i++) this->terminalText[i] = '\0';
+	assert(this);
+	memset(this->text, '\0', TERMINAL_SIZE);
 }
 
 void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom){
+	assert(this);
+
 	if (zoom == 0)
 		zoom = 1;
 
@@ -23,15 +28,18 @@ void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom){
 
 	uint64_t maxHorizontalChar = (this->width - 2*this->drawOffsetX*this->zoom) / (BITMAP_CHAR_WIDTH*this->zoom);
 	uint64_t maxVerticalChar = (this->height - 2*this->drawOffsetY*this->zoom) / (BITMAP_CHAR_HEIGHT*this->zoom);
-	this->terminalWidth = (maxHorizontalChar > MAX_TERMINAL_WIDTH) ? MAX_TERMINAL_WIDTH : maxHorizontalChar;
-	this->terminalHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
+	this->textWidth = (maxHorizontalChar > MAX_TERMINAL_WIDTH) ? MAX_TERMINAL_WIDTH : maxHorizontalChar;
+	this->textHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
 }
 
 void Framebuffer_setClearColor(Framebuffer* this, uint32_t clearColor){
+	assert(this);
 	this->clearColor = clearColor;
 }
 
 void Framebuffer_clearScreen(Framebuffer* this){
+	assert(this);
+
 	for(int j=0 ; j<this->height ; j++){
 		size_t lineOffset = this->width*j;
 		for (int i=0 ; i<this->width ; i++){
@@ -41,18 +49,20 @@ void Framebuffer_clearScreen(Framebuffer* this){
 }
 
 void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY){
+	assert(this);
+
 	uint8_t* bitmap = m_defaultFont[letter];
 	int mask; // bit mask, will be shifted right every iteration
 	gop_color_t colorToDraw;
 
 	// Cache as many things as possible, since this is a critical section (performance-wise)
-	uint64_t pixelsPerScanLine = this->width; // TODO CHECK
+	uint64_t pixelsPerScanLine = this->width;
 	uint64_t zoom = this->zoom;
 	uint64_t zoomedOffsetX = zoom * offsetX;
 
 	// i, j: indexes in the bitmap character
 	for (int j=0 ; j<BITMAP_CHAR_HEIGHT ; j++){
-		
+
 		uint64_t baseLineOffset = pixelsPerScanLine * zoom * (j+offsetY);
 
 		mask = 0b10000000;
@@ -76,10 +86,12 @@ void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fo
 }
 
 void Framebuffer_drawScreen(Framebuffer* this){
+	assert(this);
+
 	this->cursorX = 0;
 	this->cursorY = 0;
 	for (int i=0 ; i<TERMINAL_SIZE ; i++){
-		char c = this->terminalText[i];
+		char c = this->text[i];
 		if (c == '\n'){
 			this->cursorX = 0;
 			this->cursorY++;
@@ -92,37 +104,41 @@ void Framebuffer_drawScreen(Framebuffer* this){
 		if (c == '\0')
 			continue;
 		Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
-		this->cursorX = (this->cursorX+1) % this->terminalWidth;
+		this->cursorX = (this->cursorX+1) % this->textWidth;
 		if (this->cursorX == 0) this->cursorY++;
 	}
 }
 
-void Framebuffer_scrollDown(Framebuffer* this, unsigned int n){
-	if (n < 0) return;
+static inline size_t getFirstTextLineSize(Framebuffer* this){
+	assert(this);
 
-	// Move lines up
-	for(int y=n ; y<this->terminalHeight ; y++){
-		for(int x=0 ; x<this->terminalWidth ; x++){
-			char c = this->terminalText[this->terminalWidth*y + x];
-			this->terminalText[this->terminalWidth*(y-n) + x] = c;
-		}
+	size_t res = 0;
+	while(this->text[res] != '\n' && res < this->textWidth){
+		res++;
 	}
 
-	for(int y=this->terminalHeight-n ; y<this->terminalHeight ; y++){
-		for (int x=0; x<this->terminalWidth ; x++){
-			this->terminalText[this->terminalWidth*y + x] = '\0';
-		}
-	}
+	return res;
+}
 
-	this->cursorY -= n;
+void Framebuffer_scrollDown(Framebuffer* this){
+	assert(this);
 
-	// Redraw everything
+	// Move one line up
+	size_t line_size = getFirstTextLineSize(this);
+	if (line_size != this->textWidth) line_size++; // include the '\n'
+	memmove(this->text, this->text+line_size, TERMINAL_SIZE-line_size);
+	this->textIndex -= line_size;
+
+	// Redraw everything (cursor is reset by drawScreen)
 	Framebuffer_clearScreen(this);
 	Framebuffer_drawScreen(this);
 }
 
 void Framebuffer_putchar(Framebuffer* this, const char c){
-	this->terminalText[this->terminalWidth*this->cursorY + this->cursorX] = c;
+	assert(this);
+
+	this->text[this->textIndex] = c;
+	this->textIndex++;
 
 	if (c == '\n'){
 		this->cursorX = 0;
@@ -136,20 +152,24 @@ void Framebuffer_putchar(Framebuffer* this, const char c){
 	if (c == '\t'){
 		do {
 			Framebuffer_putchar(this, ' '); // recursion is fine, cannot go deeper than one call
-		} while(this->cursorX % TAB_SIZE != 0 && this->cursorX<this->terminalWidth);
+		} while(this->cursorX % TAB_SIZE != 0 && this->cursorX<this->textWidth);
 		goto end_putc;
 	}
 
-	Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
+	if (c != '\0')
+		Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
 
-	this->cursorX = (this->cursorX+1) % this->terminalWidth;
+	this->cursorX = (this->cursorX+1) % this->textWidth;
 	if (this->cursorX == 0) this->cursorY++;
 
 	end_putc:
-	if (this->cursorY >= this->terminalHeight) Framebuffer_scrollDown(this, 1);
+	if (this->cursorY >= this->textHeight) Framebuffer_scrollDown(this);
 }
 
 void Framebuffer_puts_noLF(Framebuffer* this, const char* str){
+	assert(this);
+	if (str==NULL) return;
+
 	while(*str){
 		Framebuffer_putchar(this, *str);
 		str++;
