@@ -31,6 +31,9 @@
 
 ## Modifications
 
+- Bugfix: Writing to the framebuffer triggers a page fault sometimes (through Logging_log)
+- Bugfix: The Serial driver internal buffer messes up the order sometimes
+
 These are modifications to be done, that are dependent on other techs to be implemented first.
 
 - [ ] When implementing USB, intialize and disable USB legacy support BEFORE initializing the PS/2 controller
@@ -38,5 +41,6 @@ These are modifications to be done, that are dependent on other techs to be impl
 - [ ] With proper executable and lib support, remove callbacks from the keyboard driver when its owner exits
 
 Notes:
-- Current PS/2 implementation purposely does not support hot-plug (as the PS/2 was not designed for it originally...)
+- PS/2 Driver purposely does NOT support hot-plug (as the specification PS/2 was designed for)
+- PS/2 Keyboard driver SysRq detection implementation sends spurious (but ) alt presses (see PS2.c in handleScancode for more details)
 - The framebuffer driver only supports 32 bpp framebuffers

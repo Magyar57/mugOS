@@ -17,17 +17,19 @@
 #define KB_MODIFIER_NUMLOCK			0b00010000
 #define KB_MODIFIER_CAPSLOCK		0b00100000
 
-#define KB_CALLBACK_KEY_PRESSED		0x01
-// #define KB_CALLBACK_KEY_REPEAT		0x02
-#define KB_CALLBACK_KEY_RELEASED	0x03
+typedef enum e_KeypressMode {
+	KB_KEYMODE_KEY_PRESSED,
+	KB_KEYMODE_KEY_REPEAT,
+	KB_KEYMODE_KEY_RELEASED
+} KeypressMode;
 
 /// @brief Callback function type `void key_callback(int @p keycode, int @p character, uint8_t @p mode, uint8_t @p modifier_keys)`
 /// @param keycode The keycode for which the key was pressed (see Keycodes.h)
 /// @param character The ASCII character corresponding to the key (0 if non-printable)
-/// @param mode Key mode, either KB_CALLBACK_KEY_PRESSED (or KB_CALLBACK_KEY_REPEAT [not supported yet]) or KB_CALLBACK_KEY_RELEASED
-/// @param modifier_keys Flags of modifiers. Bit set (=1) means modifier is pressed (see `KB_MODIFIER_*` for bits descriptions)
+/// @param mode KeyMode, either KB_KEYMODE_KEY_PRESSED (or KB_KEYMODE_KEY_REPEAT [never emitted yet]) or KB_KEYMODE_KEY_RELEASED
+/// @param modifierKeys Flags of modifiers. Bit set (=1) means modifier is pressed (see `KB_MODIFIER_*` for bits descriptions)
 /// @returns void
-typedef void(*KeyCallback)(int keycode, int character, uint8_t mode, uint8_t modifier_keys);
+typedef void(*KeyCallback)(Keycode keycode, int character, KeypressMode mode, uint8_t modifierKeys);
 
 /// @brief Adds a KeyCallback @p callback function as callback (see KeyCallback for parameters description)
 /// @returns True on success, false on error (callback array full)
@@ -36,6 +38,9 @@ bool Keyboard_registerKeyCallback(KeyCallback callback);
 /// @brief Removes a KeyCallback @p callback function from the internal array
 /// @returns void
 void Keyboard_unregisterKeyCallback(KeyCallback callback);
+
+/// @brief Returns a string representing the input NON-PRINTABLE `keycode` argument (e.g.: KEY_RSHIFT => "RSHIFT")
+const char* Keyboard_getKeyString(Keycode keycode);
 
 // Internal use
 void Keyboard_initialize();

@@ -42,6 +42,8 @@ static char getNumpadKey_NoNumluck(Keycode k){
 	}
 }
 
+/// @returns Whether the Keycode `k` is a numpad key THAT DO CHANGE depending on the NumLock state
+///          e.g. KEY_NUMPAD_ENTER returns false !
 static inline bool isNumpadKey(Keycode k){
 	switch (k){
 		case KEY_NUMPAD_7: return true;
@@ -58,6 +60,8 @@ static inline bool isNumpadKey(Keycode k){
 		default: return false;
 	}
 }
+
+// ================ Get printable character from corresponding Keycode ================
 
 static char getChar_AZERTY_NoModifier(Keycode k){
 	switch (k){
@@ -127,6 +131,8 @@ static char getChar_AZERTY_NoModifier(Keycode k){
 		case KEY_NUMPAD_0:			return '0'; // Keypad 0 OR Insert
 		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
 		case KEY_LESSTHAN:			return '<';
+		case KEY_NUMPAD_ENTER:		return '\n';
+		case KEY_NUMPAD_SLASH:		return '/';
 		default:
 			return (char) 0;
 	}
@@ -160,7 +166,7 @@ static char getChar_AZERTY_CapsLock(Keycode k){
 		case KEY_P:					return 'P';
 		case KEY_LBRACKET:			return '^';
 		case KEY_RBRACKET:			return '$';
-		case KEY_ENTER:				return '\n'; // enter
+		case KEY_ENTER:				return '\n';
 		case KEY_A:					return 'Q';
 		case KEY_S:					return 'S';
 		case KEY_D:					return 'D';
@@ -171,8 +177,8 @@ static char getChar_AZERTY_CapsLock(Keycode k){
 		case KEY_K:					return 'K';
 		case KEY_L:					return 'L';
 		case KEY_SEMICOLON:			return 'M';
-		case KEY_QUOTE:				return (char) 163; // Ùnot available so we return 'ù'
-		case KEY_GRAVE:				return (char) 253; // 
+		case KEY_QUOTE:				return (char) 163; // Ù not available so we return 'ù'
+		case KEY_GRAVE:				return (char) 253; // ²
 		case KEY_BACKSLASH:			return '*';
 		case KEY_Z:					return 'W';
 		case KEY_X:					return 'X';
@@ -200,6 +206,8 @@ static char getChar_AZERTY_CapsLock(Keycode k){
 		case KEY_NUMPAD_0:			return '0'; // Keypad 0 OR Insert
 		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
 		case KEY_LESSTHAN:			return '<';
+		case KEY_NUMPAD_ENTER:		return '\n';
+		case KEY_NUMPAD_SLASH:		return '/';
 		default:
 			return (char) 0;
 	}
@@ -273,6 +281,8 @@ static char getChar_AZERTY_ShiftAltGr(Keycode k){
 		case KEY_NUMPAD_0:			return '0'; // Keypad 0 OR Insert
 		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
 		case KEY_LESSTHAN:			return (char) 0; // ¦
+		case KEY_NUMPAD_ENTER:		return '\n';
+		case KEY_NUMPAD_SLASH:		return '/';
 		default:
 			return (char) 0;
 	}
@@ -346,6 +356,8 @@ static char getChar_AZERTY_AltGr(Keycode k){
 		case KEY_NUMPAD_0:			return '0'; // Keypad 0 OR Insert
 		case KEY_NUMPAD_DOT:		return '.'; // Keypad . OR Del
 		case KEY_LESSTHAN:			return '|';
+		case KEY_NUMPAD_ENTER:		return '\n';
+		case KEY_NUMPAD_SLASH:		return '/';
 		default:
 			return (char) 0;
 	}
@@ -377,7 +389,7 @@ static char getChar_AZERTY_Shift(Keycode k){
 		case KEY_I:					return 'I';
 		case KEY_O:					return 'O';
 		case KEY_P:					return 'P';
-		case KEY_LBRACKET:			return '?'; // ¨ not available in ascii
+		case KEY_LBRACKET:			return (char) 0; // ¨ not available in ascii
 		case KEY_RBRACKET:			return (char) 156; // £
 		case KEY_ENTER:				return '\n';
 		case KEY_A:					return 'Q';
@@ -402,7 +414,7 @@ static char getChar_AZERTY_Shift(Keycode k){
 		case KEY_M:					return '?';
 		case KEY_COMMA:				return '.';
 		case KEY_DOT:				return '/';
-		case KEY_SLASH:				return '?'; // § not available in ascii
+		case KEY_SLASH:				return (char) 0; // § not available in ascii
 		case KEY_NUMPAD_ASTERISK:	return '*';
 		case KEY_SPACE:				return ' ';
 		case KEY_NUMPAD_7:			return '7';
@@ -419,7 +431,8 @@ static char getChar_AZERTY_Shift(Keycode k){
 		case KEY_NUMPAD_0:			return '0';
 		case KEY_NUMPAD_DOT:		return '.';
 		case KEY_LESSTHAN:			return '>';
-
+		case KEY_NUMPAD_ENTER:		return '\n';
+		case KEY_NUMPAD_SLASH:		return '/';
 		default:
 			return (char) 0;
 	}
@@ -428,13 +441,6 @@ static char getChar_AZERTY_Shift(Keycode k){
 // Returns the ASCII char corresponding to the keycode, in AZERTY (Q is A, W is Z...)
 // If 'keycode' is non printable, returns 0
 static char getChar_AZERTY(Keycode k){
-	// If Ctrl or Meta are pressed, no key to return
-	if (g_modifierKeys & (KB_MODIFIER_META | KB_MODIFIER_CTRL))
-		return 0;
-	// If left alt is pressed, no key to return
-	if (g_leftAltPressed)
-		return 0;
-
 	// Only shift
 	if ((g_leftShiftPressed || g_rightShiftPressed) && !g_rightAltPressed && !g_capslockOn)
 		return getChar_AZERTY_Shift(k);
@@ -451,9 +457,11 @@ static char getChar_AZERTY(Keycode k){
 	if (g_capslockOn && !g_leftShiftPressed && !g_rightShiftPressed)
 		return getChar_AZERTY_CapsLock(k);
 
-	// None or CapsLock+Shift
+	// None or Ctrl or LAlt or Meta or CapsLock+Shift
 	return getChar_AZERTY_NoModifier(k);
 }
+
+// ================ Public API ================
 
 static inline int findAvailableCallbackIndex(){
 	for(int i=0 ; i<MAX_CALLBACKS ; i++){
@@ -464,17 +472,35 @@ static inline int findAvailableCallbackIndex(){
 	return -1;
 }
 
-static inline void executeCallbacks(int keycode, int character, uint8_t mode, uint8_t modifier_keys){
+static inline void executeCallbacks(Keycode keycode, int character, KeypressMode mode, uint8_t modifierKeys){
 	for(int i=0 ; i<MAX_CALLBACKS ; i++){
 		if (g_callbacks[i] == NULL) continue;
-		g_callbacks[i](keycode, character, mode, modifier_keys);
+		g_callbacks[i](keycode, character, mode, modifierKeys);
 	}
+}
+
+static void keyCallback_printKey(Keycode keycode, int character, KeypressMode mode, uint8_t modifierKeys){
+	const char* mode_string = (mode == KB_KEYMODE_KEY_PRESSED) ? "pressed " : "released";
+
+	// Non-printable key
+	if (character == 0){
+		debug("key %s %p '%s'", mode_string, keycode, Keyboard_getKeyString(keycode));
+		return;
+	}
+
+	// Enter ('\n') is printable, but we don't actually want to put a line feed in the output
+	if (character == '\n'){
+		debug("key %s %p '\\n'", mode_string, keycode);
+		return;
+	}
+
+	debug("key %s %p '%c'", mode_string, keycode, character);
 }
 
 bool Keyboard_registerKeyCallback(KeyCallback callback){
 	int index = findAvailableCallbackIndex();
 	if (index == -1) return false;
-	
+
 	g_callbacks[index] = callback;
 	return true;
 }
@@ -485,6 +511,62 @@ void Keyboard_unregisterKeyCallback(KeyCallback callback){
 			g_callbacks[i] = NULL;
 		}
 	}
+}
+
+const char* Keyboard_getKeyString(Keycode keycode){
+	switch (keycode){
+		case KEY_ESC:			return "ESC";
+		case KEY_BACKSPACE: 	return "BACKSPACE";
+		case KEY_LCTRL:			return "LCTRL";
+		case KEY_LSHIFT:		return "LSHIFT";
+		case KEY_RSHIFT:		return "RSHIFT";
+		case KEY_LALT:			return "LALT";
+		case KEY_CAPSLOCK:		return "CAPSLOCK";
+		case KEY_F1: 			return "F1";
+		case KEY_F2: 			return "F2";
+		case KEY_F3: 			return "F3";
+		case KEY_F4: 			return "F4";
+		case KEY_F5: 			return "F5";
+		case KEY_F6: 			return "F6";
+		case KEY_F7: 			return "F7";
+		case KEY_F8: 			return "F8";
+		case KEY_F9: 			return "F9";
+		case KEY_F10: 			return "F10";
+		case KEY_NUMLOCK: 		return "NUMLOCK";
+		case KEY_SCROLLLOCK: 	return "SCROLLLOCK";
+		case KEY_F11: 			return "F11";
+		case KEY_F12: 			return "F12";
+		case KEY_RCTRL:			return "RCTRL";
+		case KEY_PRINTSCREEN: 	return "PRINTSCREEN";
+		case KEY_RALT:			return "RALT";
+		case KEY_HOME: 			return "HOME";
+		case KEY_UP: 			return "UP";
+		case KEY_PAGEUP: 		return "PAGEUP";
+		case KEY_LEFT: 			return "LEFT";
+		case KEY_RIGHT: 		return "RIGHT";
+		case KEY_END: 			return "END";
+		case KEY_DOWN: 			return "DOWN";
+		case KEY_PAGEDOWN: 		return "PAGEDOWN";
+		case KEY_INSERT: 		return "INSERT";
+		case KEY_DELETE: 		return "DELETE";
+		case KEY_PAUSE: 		return "PAUSE";
+		case KEY_LMETA:			return "LMETA";
+		case KEY_RMETA:			return "RMETA";
+		case KEY_MENU:			return "MENU";
+		case KEY_F13: 			return "F13";
+		case KEY_F14: 			return "F14";
+		case KEY_F15: 			return "F15";
+		case KEY_F17: 			return "F17";
+		case KEY_F18: 			return "F18";
+		case KEY_F19: 			return "F19";
+		case KEY_F20: 			return "F20";
+		case KEY_F21: 			return "F21";
+		case KEY_F22: 			return "F22";
+		case KEY_F23: 			return "F23";
+		case KEY_F24: 			return "F24";
+	}
+
+	return NULL;
 }
 
 void Keyboard_initialize(){
@@ -586,7 +668,7 @@ void Keyboard_notifyReleased(Keycode keycode){
 				}
 				break;
 			case KEY_NUMPAD_5:
-				if (g_numlockKeyWasFunction[4]) 
+				if (g_numlockKeyWasFunction[4])
 					g_numlockKeyWasFunction[4] = false;
 				return;
 			case KEY_NUMPAD_6:
@@ -629,7 +711,7 @@ void Keyboard_notifyReleased(Keycode keycode){
 	}
 
 	char c = getChar_AZERTY(keycode);
-	executeCallbacks(keycode, (int) c, KB_CALLBACK_KEY_RELEASED, g_modifierKeys);
+	executeCallbacks(keycode, (int) c, KB_KEYMODE_KEY_RELEASED, g_modifierKeys);
 }
 
 void Keyboard_notifyPressed(Keycode keycode){
@@ -709,18 +791,14 @@ void Keyboard_notifyPressed(Keycode keycode){
 	}
 
 	char c = getChar_AZERTY(keycode);
-	executeCallbacks(keycode, (int) c, KB_CALLBACK_KEY_PRESSED, g_modifierKeys);
-}
-
-void keyCallback_printKey(int keycode, int character, uint8_t mode, uint8_t modifier_keys){
-	debug("key %p (%c)", keycode, character);
+	executeCallbacks(keycode, (int) c, KB_KEYMODE_KEY_PRESSED, g_modifierKeys);
 }
 
 void Keyboard_NotifySysRq(){
 	// For now, sysrq just enables keyboard print
 	static bool callbackOn = false;
 
-	callbackOn ? 
+	callbackOn ?
 		Keyboard_unregisterKeyCallback(keyCallback_printKey) :
 		Keyboard_registerKeyCallback(keyCallback_printKey);
 

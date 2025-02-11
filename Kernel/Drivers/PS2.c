@@ -185,7 +185,7 @@ void PS2_initializeKeyboard(PS2Keyboard* keyboard){
 	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_KEYSET);
 	buff2 = sendByteToDevice1_HandleResend(PS2_KB_DATA_SCANCODE_SET2);
 	if (buff1!=PS2_KB_RES_ACK || buff2!=PS2_KB_RES_ACK){
-		Logging_log(INFO, MODULE, "PS/2 Keyboard doesn't support scan code set 1, deactivated.");
+		Logging_log(INFO, MODULE, "PS/2 Keyboard doesn't support scan code set 2, deactivated.");
 		keyboard->enabled = false;
 		return;
 	}
@@ -363,17 +363,20 @@ static Keycode getKeycode(uint8_t scancode){
 		case 0x2c: return KEY_T;
 		case 0x2d: return KEY_R;
 		case 0x2e: return KEY_5;
+		case 0x2f: return KEY_F13;
 		case 0x31: return KEY_N;
 		case 0x32: return KEY_B;
 		case 0x33: return KEY_H;
 		case 0x34: return KEY_G;
 		case 0x35: return KEY_Y;
 		case 0x36: return KEY_6;
+		case 0x37: return KEY_F14;
 		case 0x3a: return KEY_M;
 		case 0x3b: return KEY_J;
 		case 0x3c: return KEY_U;
 		case 0x3d: return KEY_7;
 		case 0x3e: return KEY_8;
+		case 0x3f: return KEY_F15;
 		case 0x41: return KEY_COMMA;
 		case 0x42: return KEY_K;
 		case 0x43: return KEY_I;
@@ -467,7 +470,7 @@ static Keycode getKeycodeEscaped(uint8_t scancode){
 }
 
 // Returns the new pauseSequence index depending on scancode ; 0x7fffffff if sequence was completed
-static int cyclePauseSequence(int pauseSequenceIndex, uint8_t scancode){
+static inline int cyclePauseSequence(int pauseSequenceIndex, uint8_t scancode){
 	assert(pauseSequenceIndex > 0);
 
 	// Check for Pause
@@ -518,7 +521,7 @@ static inline bool isResponseCode(uint8_t code){
 
 static void handleScancode(uint8_t scancode){
 	// Check for Print Screen sequence PRESSED=[0xe0,0x12,0xe0,0x7c]
-	if (g_pressedPrintScreenSequence>0){
+	if (g_pressedPrintScreenSequence > 0){
 		switch (g_pressedPrintScreenSequence) {
 			case 1:
 				if (scancode != 0x12) {g_pressedPrintScreenSequence = 0; break;}
@@ -538,8 +541,9 @@ static void handleScancode(uint8_t scancode){
 				break;
 		}
 	}
+
 	// Check for Print Screen sequence RELEASED=[0xe0,0xf0,0x7c,0xe0,0xf0,0x12]
-	if (g_releasedPrintScreenSequence>0){
+	if (g_releasedPrintScreenSequence > 0){
 		switch (g_releasedPrintScreenSequence) {
 			case 1:
 				if (scancode != 0xf0) {g_releasedPrintScreenSequence = 0; break;}
@@ -596,8 +600,17 @@ static void handleScancode(uint8_t scancode){
 		return;
 	}
 
+	// Note: In reality, sysrq is the sequence: [0x11,0xf0,0x11,0x11,0xf0,0x11,0x11,0x84,0xf0,0x84,0xf0,0x11,0x11]
+	// However, since it starts with "make alt, break alt, make alt, break alt", we would need bufferize each
+	// input and setup a timeout, which when reached, would indicate that we're not getting the sysrq sequence but
+	// actually got two presses of alt in a row from the user. Since this would be costly to implement, we chose
+	// instead to implement it so that we simply sends spurious alt presses to the keyboard subsystem.
+	// These won't matter anyway, since the user pressed sysrq (alt+print_screen) key, which includes the alt key.
 	if (scancode == PS2_KB_SCANCODE_SYSRQ){
-		if (g_isBreakedState) return; // do not notify on release
+		// Do note notify on release
+		// Note: we don't invert the g_isBreakedState to manipulate the incomming fake alt presses from the sysrq sequence
+		// This way, we invert 0xf0,0x11,0x11 break alt make alt => make alt release alt, and end up with a released alt key
+		if (g_isBreakedState) return;
 		Keyboard_NotifySysRq();
 		return;
 	}
