@@ -13,6 +13,7 @@
 #define ISR_DIVIDE_BY_ZERO_ERROR	0x00
 #define ISR_DOUBLE_FAULT			0x08
 #define ISR_SEGMENT_NOT_PRESENT		0x0b
+#define ISR_PAGE_FAULT				0x0e
 
 // Global array of [un]registered interrupt handlers
 ISR g_ISR[256];
@@ -123,6 +124,11 @@ void ISR_segmentNotPresent(ISR_Params* params){
 	panic();
 }
 
+void ISR_pageFault(ISR_Params* params){
+	log(PANIC, MODULE, "Page fault ! Page swapping unsupported yet");
+	panic();
+}
+
 // ================ Initialize ================
 
 // In ISR_defs.c
@@ -143,4 +149,5 @@ void ISR_initialize(){
 	ISR_registerHandler(ISR_DIVIDE_BY_ZERO_ERROR, ISR_divisionByZeroError);
 	ISR_registerHandler(ISR_DOUBLE_FAULT, ISR_doubleFault);
 	ISR_registerHandler(ISR_SEGMENT_NOT_PRESENT, ISR_segmentNotPresent);
+	ISR_registerHandler(ISR_PAGE_FAULT, ISR_pageFault);
 }
