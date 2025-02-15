@@ -6,5 +6,5 @@
 
 void panic(){
 	log(PANIC, NULL, "Halting");
-	terminate();
+	haltAndCatchFire();
 }

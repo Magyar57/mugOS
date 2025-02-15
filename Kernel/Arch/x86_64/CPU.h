@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef struct z_CPU {
+typedef struct s_CPU {
 	char vendor[13];
 	uint8_t model;
 	uint16_t family;
@@ -16,17 +16,17 @@ typedef struct z_CPU {
 	uint32_t features0, features1;
 } CPU;
 
-// Halt (stops until next interrupt) the processor
-void halt();
+/// @brief Halt (stops until next interrupt) the processor
+#define halt() __asm__ volatile("hlt")
 
-// Stops DEFINITELY the processor (interrupts are masked)
-void terminate();
+/// @brief Stops DEFINITELY the processor (interrupts are masked)
+#define haltAndCatchFire() __asm__ volatile("cli; 1: hlt; jmp 1b")
 
-// Disable interrupts (cli)
-void disableInterrupts();
+/// @brief Disable interrupts (cli)
+#define disableInterrupts() __asm__ volatile("cli")
 
-// Enable interrupts (sti)
-void enableInterrupts();
+/// @brief Enable interrupts (sti)
+#define enableInterrupts() __asm__ volatile("sti")
 
 /// @returns Whether the cpu supports the cpuid instruction
 extern bool CPU_supportsCpuid();

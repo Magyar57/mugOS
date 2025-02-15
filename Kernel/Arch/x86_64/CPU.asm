@@ -1,36 +1,5 @@
 section .text
 
-; void halt();
-global halt
-halt:
-	hlt
-	ret
-; END halt
-
-; void terminate();
-global terminate
-terminate:
-	.terminate:
-	cli
-	hlt
-	jmp .terminate
-	ret
-; END terminate
-
-; void disableInterrupts();
-global disableInterrupts
-disableInterrupts:
-	cli
-	ret
-; END disableInterrupts
-
-; void enableInterrupts();
-global enableInterrupts
-enableInterrupts:
-	sti
-	ret
-; END enableInterrupts
-
 ; bool CPU_supportsCpuid();
 global CPU_supportsCpuid
 CPU_supportsCpuid:
