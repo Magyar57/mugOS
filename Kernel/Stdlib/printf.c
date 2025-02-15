@@ -294,9 +294,10 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 						sign = false;
 						radix = 10;
 						break;
+					case 'p':
+						length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
 					case 'X':
 					case 'x':
-					case 'p':
 						dputc('0', fd);
 						dputc('x', fd);
 						printed += 2;
@@ -482,9 +483,10 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 						sign = false;
 						radix = 10;
 						break;
+					case 'p':
+						length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
 					case 'X':
 					case 'x':
-					case 'p':
 						vsnprintf_internal_checkBoundaries(size, i+2, checkSize);
 						fmtStr[i++] = '0';
 						fmtStr[i++] = 'x';
@@ -503,7 +505,6 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 				}
 
 			if (number){
-				
 				switch (length){
 				case PRINTF_LENGTH_DEFAULT:
 				case PRINTF_LENGTH_SHORT_SHORT:
