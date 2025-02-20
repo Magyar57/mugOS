@@ -16,7 +16,7 @@ void kmain(){
 	// Clear uninitialized data
 	memset(&__bss_start, 0, (&__end) - (&__bss_start));
 
-	Graphics_initialize(GRAPHICS_LIMINE_FRAMEBUFFER, (void*) framebufferReq.response->framebuffers[0]);
+	Graphics_initialize(GRAPHICS_LIMINE_FRAMEBUFFER, (void *)framebufferReq.response->framebuffers[0]);
 	Graphics_clearScreen();
 	log(INFO, NULL, "Supposons que je sois dans votre kernel !");
 
@@ -26,5 +26,6 @@ void kmain(){
 	Keyboard_initialize();
 
 	// Infinite loop: whenever an interrupts fire, handle it ; then stop again.
-	while(true) halt();
+	while (true)
+		halt();
 }

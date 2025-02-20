@@ -13,7 +13,10 @@ typedef enum e_GraphicsSource {
 /// @param pointer The pointer to the graphics data structure (eg: limine framebuffer,
 /// 				UEFI EFI_GRAPHICS_OUTPUT_PROTOCOL*). It musts correspond to the graphics parameter
 void Graphics_initialize(GraphicsSource graphics, void* pointer);
+
 void Graphics_clearScreen();
 void Graphics_putchar(char c);
+void Graphics_puts(const char* str);
+void Graphics_puts_noLF(const char* str);
 
 #endif

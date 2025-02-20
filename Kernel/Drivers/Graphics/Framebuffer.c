@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include "string.h"
 #include "assert.h"
+#include "IRQ.h"
 #include "Logging.h"
 #include "Drivers/Graphics/Font.h"
 
@@ -50,6 +51,8 @@ void Framebuffer_clearScreen(Framebuffer* this){
 
 void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY){
 	assert(this);
+	assert((offsetX+BITMAP_CHAR_WIDTH) < this->width);
+	assert((offsetY+BITMAP_CHAR_HEIGHT) < this->height);
 
 	uint8_t* bitmap = m_defaultFont[letter];
 	int mask; // bit mask, will be shifted right every iteration
@@ -85,85 +88,144 @@ void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fo
 	}
 }
 
-void Framebuffer_drawScreen(Framebuffer* this){
+// Draws a '\t' character to the screen. IRQ UNSAFE !
+static inline void drawTab(Framebuffer* this){
+	do {
+		Framebuffer_drawLetter(this, ' ', WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
+		this->cursorX = (this->cursorX+1) % this->textWidth;
+		if (this->cursorX == 0) {
+			this->cursorY++;
+			break;
+		}
+	} while (this->cursorX % TAB_SIZE != 0);
+}
+
+// (Re)draws the entire screen. IRQ UNSAFE !
+static inline void drawScreen(Framebuffer* this){
 	assert(this);
 
 	this->cursorX = 0;
 	this->cursorY = 0;
 	for (int i=0 ; i<TERMINAL_SIZE ; i++){
 		char c = this->text[i];
-		if (c == '\n'){
-			this->cursorX = 0;
-			this->cursorY++;
-			continue;
+
+		switch (c){
+			case '\0':
+				break;
+			case '\n':
+				this->cursorX = 0;
+				this->cursorY++;
+				break;
+			case '\r':
+				this->cursorX = 0;
+				break;;
+			case '\t':
+				drawTab(this);
+				break;
+			default:
+				Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
+				this->cursorX = (this->cursorX+1) % this->textWidth;
+				if (this->cursorX == 0) this->cursorY++;
+				break;
 		}
-		if (c == '\r'){
-			this->cursorX = 0;
-			continue;
-		}
-		if (c == '\0')
-			continue;
-		Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
-		this->cursorX = (this->cursorX+1) % this->textWidth;
-		if (this->cursorX == 0) this->cursorY++;
+
 	}
 }
 
+// Get the size of the terminal's first line, in character number
 static inline size_t getFirstTextLineSize(Framebuffer* this){
 	assert(this);
 
-	size_t res = 0;
-	while(this->text[res] != '\n' && res < this->textWidth){
-		res++;
+	// To get the terminal line size, we count the number of character up to
+	// the next '\n', or we hit the end of the screen ("forced" line feed)
+	// For this "forced" case, we need to track the number of printer characters on screen too !
+	// Hence screen_size
+
+	size_t line_size = 0;
+	size_t screen_size = 0;
+	char c = this->text[0];
+	while( (c != '\n') && (screen_size < this->textWidth) ){
+		if (c == '\t'){
+			screen_size += (TAB_SIZE - (screen_size % TAB_SIZE));
+		}
+		else {
+			screen_size++;
+		}
+
+		line_size++;
+		c = this->text[line_size];
 	}
 
-	return res;
+	return line_size;
 }
 
 void Framebuffer_scrollDown(Framebuffer* this){
 	assert(this);
+	unsigned long flags;
+	IRQ_disableSave(flags);
 
-	// Move one line up
+	// First line size
 	size_t line_size = getFirstTextLineSize(this);
 	if (line_size != this->textWidth) line_size++; // include the '\n'
+
+	// Move the terminal text one line up
 	memmove(this->text, this->text+line_size, TERMINAL_SIZE-line_size);
 	this->textIndex -= line_size;
 
 	// Redraw everything (cursor is reset by drawScreen)
 	Framebuffer_clearScreen(this);
-	Framebuffer_drawScreen(this);
+	drawScreen(this);
+
+	IRQ_restore(flags);
 }
 
 void Framebuffer_putchar(Framebuffer* this, const char c){
 	assert(this);
+	unsigned long flags;
 
-	this->text[this->textIndex] = c;
-	this->textIndex++;
+	switch (c){
+		case '\0':
+			return;
 
-	if (c == '\n'){
-		this->cursorX = 0;
-		this->cursorY++;
-		goto end_putc;
+		case '\t':
+			IRQ_disableSave(flags);
+			this->text[this->textIndex] = '\t';
+			this->textIndex++;
+			drawTab(this);
+			IRQ_restore(flags);
+			break;
+
+		case '\n':
+			IRQ_disableSave(flags);
+			this->text[this->textIndex] = c;
+			this->textIndex++;
+			this->cursorX = 0;
+			this->cursorY++;
+			IRQ_restore(flags);
+			break;
+
+		case '\r':
+			IRQ_disableSave(flags);
+			this->text[this->textIndex] = c;
+			this->textIndex++;
+			this->cursorX = 0;
+			IRQ_restore(flags);
+			break;
+
+		default:
+			IRQ_disableSave(flags);
+			this->text[this->textIndex] = c;
+			this->textIndex++;
+			Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
+			this->cursorX = (this->cursorX+1) % this->textWidth;
+			if (this->cursorX == 0) this->cursorY++;
+			IRQ_restore(flags);
+			break;
 	}
-	if (c == '\r'){
-		this->cursorX = 0;
-		goto end_putc;
-	}
-	if (c == '\t'){
-		do {
-			Framebuffer_putchar(this, ' '); // recursion is fine, cannot go deeper than one call
-		} while(this->cursorX % TAB_SIZE != 0 && this->cursorX<this->textWidth);
-		goto end_putc;
-	}
 
-	if (c != '\0')
-		Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
-
-	this->cursorX = (this->cursorX+1) % this->textWidth;
-	if (this->cursorX == 0) this->cursorY++;
-
-	end_putc:
-	if (this->cursorY >= this->textHeight) Framebuffer_scrollDown(this);
+	// Note: scrollDown is interrupt-safe
+	if (this->cursorY >= this->textHeight)
+		Framebuffer_scrollDown(this);
 }
 
 void Framebuffer_puts_noLF(Framebuffer* this, const char* str){

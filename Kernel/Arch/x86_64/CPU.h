@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "Preprocessor.h"
+
+// CPU.h:
+// - Architecture related definitions
+// - CPU structure
+
+#define X86_64_RFLAGS_IF 1<<9
 
 typedef struct s_CPU {
 	char vendor[13];
@@ -23,10 +30,23 @@ typedef struct s_CPU {
 #define haltAndCatchFire() __asm__ volatile("cli; 1: hlt; jmp 1b")
 
 /// @brief Disable interrupts (cli)
-#define disableInterrupts() __asm__ volatile("cli")
+#define CPU_IRQDisable() __asm__ volatile("cli")
 
 /// @brief Enable interrupts (sti)
-#define enableInterrupts() __asm__ volatile("sti")
+#define CPU_IRQEnable() __asm__ volatile("sti; nop")
+
+static always_inline unsigned long getFlags(){
+	unsigned long flags;
+
+	// "=rm": compiler can place flags_var in registers or memory
+	__asm__ volatile("pushf ; pop %[flags_var]"
+		: [flags_var] "=rm" (flags)
+		:
+		: "memory"
+	);
+
+	return flags;
+}
 
 /// @returns Whether the cpu supports the cpuid instruction
 extern bool CPU_supportsCpuid();

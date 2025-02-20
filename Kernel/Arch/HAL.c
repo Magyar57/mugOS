@@ -2,6 +2,7 @@
 #include "Logging.h"
 
 #include "HAL.h"
+#include "IRQ.h"
 
 // ================ x86_64 ================
 #ifdef x86_64
@@ -13,14 +14,14 @@
 #include "Arch/x86_64/IRQ.h"
 
 void HAL_initialize(){
-	disableInterrupts();
+	IRQ_disable();
 
 	GDT_initialize();
 	IDT_initialize();
 	ISR_initialize();
 	IRQ_initialize();
 
-	enableInterrupts();
+	IRQ_enable();
 	log(SUCCESS, "x86_64 HAL", "Initalization success");
 }
 

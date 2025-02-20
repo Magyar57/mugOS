@@ -47,7 +47,6 @@ void Framebuffer_setClearColor(Framebuffer* this, uint32_t clearColor);
 void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom);
 void Framebuffer_clearScreen(Framebuffer* this);
 void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY);
-void Framebuffer_drawScreen(Framebuffer* this);
 void Framebuffer_scrollDown(Framebuffer* this);
 void Framebuffer_putchar(Framebuffer* this, const char c);
 void Framebuffer_puts_noLF(Framebuffer* this, const char* str);

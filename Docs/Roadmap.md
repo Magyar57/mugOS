@@ -39,6 +39,7 @@ These are modifications to be done, that are dependent on other techs to be impl
 - [ ] When implementing USB, intialize and disable USB legacy support BEFORE initializing the PS/2 controller
 - [ ] With ACPI implemented, finish step 2 of the 8042 PS/2 controller initalization
 - [ ] With proper executable and lib support, remove callbacks from the keyboard driver when its owner exits
+- [ ] With threads, implement threaded interrupts (so that we minimize time with masked interrupts) ; see linux request_threaded_irq kernel/irq/manage.c
 
 Notes:
 - PS/2 Driver purposely does NOT support hot-plug (as the specification PS/2 was designed for)

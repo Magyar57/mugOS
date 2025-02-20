@@ -3,7 +3,7 @@
 #include "Logging.h"
 #include "Panic.h"
 // #include "Drivers/VGA.h"
-// #include "EFI/Protocols/GRaphicsOutputProtocol.h"
+// #include "EFI/Protocols/GraphicsOutputProtocol.h"
 #include "limine.h"
 #include "Drivers/Graphics/Framebuffer.h"
 
@@ -87,4 +87,38 @@ void Graphics_putchar(char c){
 	}
 }
 
-// TODO add putstring ?
+void Graphics_puts(const char* str){
+	if (!m_initialized) return;
+
+	switch (m_driverType){
+		case GRAPHICS_NONE:
+			break;
+		case GRAPHICS_BIOS_VGA:
+			break;
+		case GRAPHICS_UEFI_GOP:
+			break;
+		case GRAPHICS_LIMINE_FRAMEBUFFER:
+			Framebuffer_puts(m_driver, str);
+			break;
+	default:
+		break;
+	}
+}
+
+void Graphics_puts_noLF(const char* str){
+	if (!m_initialized) return;
+
+	switch (m_driverType){
+		case GRAPHICS_NONE:
+			break;
+		case GRAPHICS_BIOS_VGA:
+			break;
+		case GRAPHICS_UEFI_GOP:
+			break;
+		case GRAPHICS_LIMINE_FRAMEBUFFER:
+			Framebuffer_puts_noLF(m_driver, str);
+			break;
+	default:
+		break;
+	}
+}
