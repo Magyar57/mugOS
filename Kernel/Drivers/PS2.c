@@ -680,31 +680,45 @@ void PS2_notifyKeyboard(){
 
 #pragma region PS/2 Mouse
 
-static unsigned int g_mouseCurPacketIndex = 0;
-static uint8_t g_mouseCurPacket[4];
-
-void PS2_handleMousePacket(uint8_t packet[4]){
+void PS2_handleMousePacket(uint8_t flags, uint8_t dx, uint8_t dy, uint8_t wheelAndThumbBtn){
 	// byte1 bits: Y overflow, X overflow, Y sign bit, X sign bit, Always 1, Middle Btn, Right Btn, Left Btn
 	// byte2: X movement
 	// byte3: Y movement
-	// byte4: [OPT]:
+	// byte4: [OPT]: wheel & thumb button
 
-	// If X or Y overflow, ignore packet !
+	// If X or Y overflow, we can ignore the packet !
 
-	debug("mouse interrupt, packet=[%p, %p, %p, %p]", packet[0], packet[1], packet[2], packet[3]);
+	debug("mouse interrupt, packet=[%#hhx, %#hhx, %#hhx, %#hhx]", flags, dx, dy, wheelAndThumbBtn);
 }
 
 void PS2_notifyMouse(){
+	static int packet_index = 0; // current index in packet streams
+	static uint8_t flags, dx, dy;
 	uint8_t data;
 
 	bool res = PS2Controller_receiveDeviceByte(&data);
 	if (!res) return;
 
-	g_mouseCurPacket[g_mouseCurPacketIndex] = data;
-	if (++g_mouseCurPacketIndex == g_PS2Mouse.packetSize){
-		PS2_handleMousePacket(g_mouseCurPacket);
-		memset(g_mouseCurPacket, 0, sizeof(g_mouseCurPacket));
-		g_mouseCurPacketIndex = 0;
+	switch (packet_index){
+	case 0:
+		flags = data;	
+		packet_index++;
+		break;
+	case 1:
+		dx = data;	
+		packet_index++;
+		break;
+	case 2:
+		dy = data;
+		packet_index++;
+		// If packet size is 4, stop here
+		if (g_PS2Mouse.packetSize > 3) break;
+		// Otherwise we got a full packet, we can handle it
+		data = 0xff; // wheelAndThumbBtn is dummy here
+	case 3:
+		// data is now 'wheelAndThumbBtn'
+		PS2_handleMousePacket(flags, dx, dy, data);
+		packet_index = 0;
 	}
 }
 
