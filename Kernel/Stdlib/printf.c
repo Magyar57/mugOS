@@ -12,56 +12,21 @@
 // Doc: https://cplusplus.com/reference/cstdio/printf/
 // %[$][flags][width][.precision][length modifier]specifier
 // supported options:
-// - specifier: c s % d i o x u p
+// - flags: #
+// - specifier: c s % d i o x X u p
 // - width: h hh l ll
 
 // Tests printf
 // printf("%% %c %s ", 'a', "my_string");
-// printf("%d %i %x %p %o ", 1234, -5678, 0x7fff, 0xbeef, 012345);
-// printf("%hd %hi %hhu %hhd\r\n", (short)57, (short)-42, (unsigned char) 20, (char)-10);
-// printf("%ld %lx %lld %llx\r\n\n", -100000000l, 0x7ffffffful, 10200300400ll, 0xeeeeaaaa7777ffffull);
-
-// Tests snprintf
-// int res;
-// char* str = "_______________________________________________________________";
-// // %s
-// res = snprintf(str, 64, "bonjaj");
-// printf("(%d/64) %s \n", res, str);
-// res = snprintf(str, 4, "bonjaj");
-// printf("(%d/4) %s \n", res, str);
-// res = snprintf(str, 2, "bonjaj");
-// printf("(%d/2) %s \n", res, str);
-// res = snprintf(str, 1, "bonjaj");
-// printf("(%d/1) %s \n", res, str);
-// res = snprintf(str, 0, "bonjaj");
-// printf("(%d/0) %s \n", res, str);
-// res = snprintf(str, 7, "%s", NULL);
-// printf("(%d/7) %s \n", res, str);
-// res = snprintf(str, 6, "%s", NULL);
-// printf("(%d/6) %s \n", res, str);
-// // %c
-// res = snprintf(str, 2, "%c", 'a');
-// printf("(%d/2) %s \n", res, str);
-// res = snprintf(str, 1, "%c", 'a');
-// printf("(%d/1) %s \n", res, str);
-// // %llu %lld
-// res = snprintf(str, 21, "%llu", 18446744073709551615llu);
-// printf("(%d/21) %s \n", res, str);
-// res = snprintf(str, 20, "%llu", 18446744073709551615llu);
-// printf("(%d/20) %s \n", res, str);
-// res = snprintf(str, 21, "%lld", -9223372036854775807ll); // -9223372036854775808 aka -2^63 yields a warning
-// printf("(%d/21) %s \n", res, str);
-// res = snprintf(str, 20, "%lld", -9223372036854775807ll);
-// printf("(%d/20) %s \n", res, str);
-// // %p
-// res = snprintf(str, 11, "%p", 0xffffffff);
-// printf("(%d/11) %s \n", res, str);
-// res = snprintf(str, 10, "%p", 0xffffffff);
-// printf("(%d/10) %s \n", res, str);
+// printf("%d %i %x %p %o \n", 1234, -5678, 0x7fff, 0xbeef, 012345);
+// printf("%hd %hi %hhd %hhu \n", (short)57, (short)-42, (unsigned char) 20, (char)-10);
+// printf("%ld %li %lld %llu \n", 100000057l, -100000042l, -1099511627776ll, 0xffffffffffffffffull);
+// printf("%p %x %#x %X %#llX \n", 0x123456789abcdef0, 0x80000000ffffffff, 0x80000000ffffffff, 0x80000000ffffffff, 0x80000000ffffffff);
 
 // Enum for the printf state-machine state
 enum PRINTF_STATE {
 	PRINTF_STATE_NORMAL,
+	PRINTF_STATE_FLAGS,
 	PRINTF_STATE_LENGTH,
 	PRINTF_STATE_LENGTH_SHORT,
 	PRINTF_STATE_LENGTH_LONG,
@@ -99,11 +64,11 @@ static int dputs(const char* restrict s, int fd){
 	return 1;
 }
 
-static int printf_unsigned(int fd, unsigned long long number, int radix){
+static int printf_unsigned(int fd, unsigned long long number, int radix, bool uppercase){
 	int printed = 0;
 
 	// All possible characters that we can encouter
-	const char hexChars[] = "0123456789abcdef";
+	const char* hexChars = (uppercase) ? "0123456789ABCDEF" : "0123456789abcdef";
 
 	char buffer[128];
 	int pos = 0; // position in the buffer
@@ -126,7 +91,7 @@ static int printf_unsigned(int fd, unsigned long long number, int radix){
 	return printed;
 }
 
-static int printf_signed(int fd, long long number, int radix){
+static int printf_signed(int fd, long long number, int radix, bool uppercase){
 	int offset = 0;
 
 	if (number < 0){
@@ -135,7 +100,7 @@ static int printf_signed(int fd, long long number, int radix){
 		offset = 1;
 	}
 
-	return offset + printf_unsigned(fd, number, radix);
+	return offset + printf_unsigned(fd, number, radix, uppercase);
 }
 
 static size_t sizeOfNumberToBeWritten(long long number, int radix, bool sign){
@@ -154,12 +119,12 @@ static size_t sizeOfNumberToBeWritten(long long number, int radix, bool sign){
 	return res;
 }
 
-static int sprintf_unsigned(char* str, unsigned long long number, int radix){
+static int sprintf_unsigned(char* str, unsigned long long number, int radix, bool uppercase){
 	int printed = 0;
 	int i = 0; // index in str
 
 	// All possible characters that we can encouter
-	const char hexChars[] = "0123456789abcdef";
+	const char* hexChars = (uppercase) ? "0123456789ABCDEF" : "0123456789abcdef";
 
 	char buffer[128];
 	int pos = 0; // position in the buffer
@@ -182,7 +147,7 @@ static int sprintf_unsigned(char* str, unsigned long long number, int radix){
 	return printed;
 }
 
-static int sprintf_signed(char* str, long long number, int radix){
+static int sprintf_signed(char* str, long long number, int radix, bool uppercase){
 	int offset = 0;
 
 	if (number < 0){
@@ -191,7 +156,7 @@ static int sprintf_signed(char* str, long long number, int radix){
 		offset = 1;
 	}
 
-	return offset + sprintf_unsigned(str+offset, number, radix);
+	return offset + sprintf_unsigned(str+offset, number, radix, uppercase);
 }
 
 // ================ internal printf functions (actual logic) ================
@@ -203,145 +168,169 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 	bool sign = false;
 	int radix = 10;
 	int printed = 0;
+	bool uppercase = false; // false: 0x7fff true: 0X7FFF
+	bool putHexPrefix = false; // 0x prefix
 	const char* s; // '%s' pointer
 
 	if (format == NULL) return -1;
 	if (fd < 0) return -2;
 
 	while(*format){
-
 		switch(state){
 
-			case PRINTF_STATE_NORMAL:
-				switch(*format){
-					case '%':
-						state = PRINTF_STATE_LENGTH;
-						break;
-					default:
-						dputc(*format, fd);
-						printed++;
-						break;
-				}
+		case PRINTF_STATE_NORMAL:
+			switch(*format){
+			case '%':
+				state = PRINTF_STATE_FLAGS;
 				break;
-
-			case PRINTF_STATE_LENGTH:
-				switch(*format){
-					case 'h':
-						length = PRINTF_LENGTH_SHORT;
-						state = PRINTF_STATE_LENGTH_SHORT;
-						break;
-					case 'l':
-						length = PRINTF_LENGTH_LONG;
-						state = PRINTF_STATE_LENGTH_LONG;
-						break;
-					default:
-						goto PRINTF_STATE_SPEC_;
-				}
+			default:
+				dputc(*format, fd);
+				printed++;
 				break;
+			}
+			break;
 
-			case PRINTF_STATE_LENGTH_SHORT:
-				if (*format == 'h'){
-					length = PRINTF_LENGTH_SHORT_SHORT;
-					state = PRINTF_STATE_SPEC;
-				}
-				else {
-					goto PRINTF_STATE_SPEC_;
-				}
+		case PRINTF_STATE_FLAGS:
+			switch (*format){
+			case '#':
+				putHexPrefix = true;
 				break;
+			default:
+				state = PRINTF_STATE_LENGTH;
+				goto PRINTF_STATE_LENGTH_;
+			}
+			break;
 
-			case PRINTF_STATE_LENGTH_LONG:
-				if (*format == 'l'){
-					length = PRINTF_LENGTH_LONG_LONG;
-					state = PRINTF_STATE_SPEC;
-				}
-				else {
-					goto PRINTF_STATE_SPEC_;
-				}
+		case PRINTF_STATE_LENGTH:
+			PRINTF_STATE_LENGTH_:
+			switch(*format){
+			case 'h':
+				length = PRINTF_LENGTH_SHORT;
+				state = PRINTF_STATE_LENGTH_SHORT;
 				break;
+			case 'l':
+				length = PRINTF_LENGTH_LONG;
+				state = PRINTF_STATE_LENGTH_LONG;
+				break;
+			default:
+				goto PRINTF_STATE_SPEC_;
+			}
+			break;
 
-			case PRINTF_STATE_SPEC:
-				PRINTF_STATE_SPEC_:
-				switch(*format){
-					case 'c':
-						// Note: we call va_args with int size, and not char, because in 32bits pmode
-						// all arguments pushed onto the stack are rounded to 32 bits
-						dputc((char) va_arg(args, int), fd);
-						printed++;
-						break;
-					case 's':
-						s = va_arg(args, const char*);
-						if (s == NULL) {
-							dputs("(null)", fd);
-							printed += 6;
-						}
-						else {
-							dputs(s, fd);
-							printed += strlen(s);
-						}
-						break;
-					case '%':
-						dputc('%', fd);
-						printed++;
-						break;
-					case 'd':
-					case 'i':
-						number = true;
-						sign = true;
-						radix = 10;
-						break;
-					case 'u':
-						number = true;
-						sign = false;
-						radix = 10;
-						break;
-					case 'p':
-						length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
-					case 'X':
-					case 'x':
-						dputc('0', fd);
-						dputc('x', fd);
-						printed += 2;
-						number = true;
-						sign = false;
-						radix = 16;
-						break;
-					case 'o':
-						number = true;
-						sign = false;
-						radix = 8;
-						break;
-					default:
-						break; // ignore invalid specifiers
-				}
+		case PRINTF_STATE_LENGTH_SHORT:
+			if (*format != 'h')
+				goto PRINTF_STATE_SPEC_;
+			length = PRINTF_LENGTH_SHORT_SHORT;
+			state = PRINTF_STATE_SPEC;
+			break;
 
-			if (number){
-				switch (length){
-				case PRINTF_LENGTH_SHORT_SHORT:
-				case PRINTF_LENGTH_SHORT:
-				case PRINTF_LENGTH_DEFAULT:
-					if (sign)	printed += printf_signed(fd, va_arg(args, int), radix);
-					else		printed += printf_unsigned(fd, va_arg(args, unsigned int), radix);
+		case PRINTF_STATE_LENGTH_LONG:
+			if (*format != 'l')
+				goto PRINTF_STATE_SPEC_;
+			length = PRINTF_LENGTH_LONG_LONG;
+			state = PRINTF_STATE_SPEC;
+			break;
+
+		case PRINTF_STATE_SPEC:
+			PRINTF_STATE_SPEC_:
+			switch(*format){
+				case '%':
+					dputc('%', fd);
+					printed++;
 					break;
-				case PRINTF_LENGTH_LONG:
-					if (sign)	printed += printf_signed(fd, va_arg(args, long), radix);
-					else		printed += printf_unsigned(fd, va_arg(args, unsigned long), radix);
+				case 'X':
+					if (putHexPrefix){ dputs("0X", fd); printed += 2; }
+					number = true;
+					sign = false;
+					radix = 16;
+					uppercase = true;
 					break;
-				case PRINTF_LENGTH_LONG_LONG:
-					if (sign)	printed += printf_signed(fd, va_arg(args, long long), radix);
-					else		printed += printf_unsigned(fd, va_arg(args, unsigned long long), radix);
+				case 'c':
+					// Note: we call va_args with int size, and not char, because in 32bits pmode
+					// all arguments pushed onto the stack are rounded to 32 bits
+					dputc((char) va_arg(args, int), fd);
+					printed++;
+					break;
+				case 's':
+					s = va_arg(args, const char*);
+					if (s == NULL) {
+						dputs("(null)", fd);
+						printed += 6;
+					}
+					else {
+						dputs(s, fd);
+						printed += strlen(s);
+					}
+					break;
+				case 'd':
+				case 'i':
+					number = true;
+					sign = true;
+					radix = 10;
+					break;
+				case 'o':
+					number = true;
+					sign = false;
+					radix = 8;
+					break;
+				case 'p':
+					length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
+					dputs("0x", fd);
+					printed += 2;
+					number = true;
+					sign = false;
+					radix = 16;
+					break;
+				case 'u':
+					number = true;
+					sign = false;
+					radix = 10;
+					break;
+				case 'x':
+					if (putHexPrefix){ dputs("0x", fd); printed += 2; }
+					number = true;
+					sign = false;
+					radix = 16;
+					uppercase = false;
 					break;
 				default:
-					break;
-				}
+					break; // ignore invalid specifiers
 			}
 
-			// reset state
+			if (!number)
+				goto reset_state;
+
+			switch (length){
+			case PRINTF_LENGTH_SHORT_SHORT:
+			case PRINTF_LENGTH_SHORT:
+			case PRINTF_LENGTH_DEFAULT:
+				if (sign)	printed += printf_signed(fd, va_arg(args, int), radix, uppercase);
+				else		printed += printf_unsigned(fd, va_arg(args, unsigned int), radix, uppercase);
+				break;
+			case PRINTF_LENGTH_LONG:
+				if (sign)	printed += printf_signed(fd, va_arg(args, long), radix, uppercase);
+				else		printed += printf_unsigned(fd, va_arg(args, unsigned long), radix, uppercase);
+				break;
+			case PRINTF_LENGTH_LONG_LONG:
+				if (sign)	printed += printf_signed(fd, va_arg(args, long long), radix, uppercase);
+				else		{
+					unsigned long long val = va_arg(args, unsigned long long);
+					printed += printf_unsigned(fd, val, radix, uppercase);
+				}
+				break;
+			default:
+				break;
+			}
+
+			reset_state:
 			state = PRINTF_STATE_NORMAL;
 			length = PRINTF_LENGTH_DEFAULT;
 			radix = 10;
 			sign = false;
 			number = false;
-			break;
+			uppercase = false;
+			putHexPrefix = false;
+			break; // case PRINTF_STATE_SPEC
 		}
 
 		format++;
@@ -351,7 +340,7 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 }
 
 // Returns whether writing a new character WILL write to the '\0' character's place
-static bool snprintf_isBoundaryExceeded(size_t size, int i, bool checkSize){
+static inline bool snprintf_isBoundaryExceeded(size_t size, int i, bool checkSize){
 	if (!checkSize) return false;
 
 	// We are sure that this function will be called with size>0
@@ -368,6 +357,8 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 	bool sign = false;
 	int radix = 10;
 	int printed = 0;
+	bool uppercase = false; // false: 0x7fff true: 0X7FFF
+	bool putHexPrefix = false; // 0x prefix
 	int i = 0; // index in fmtStr
 	const char* s; // '%s' pointer
 
@@ -381,192 +372,222 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 	}
 
 	while(*format){
-
 		switch(state){
 
-			case PRINTF_STATE_NORMAL:
-				switch(*format){
-					case '%':
-						state = PRINTF_STATE_LENGTH;
-						break;
-					default:
-						vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
-						fmtStr[i] = *format;
-						printed++;
-						i++;
-						break;
-				}
+		case PRINTF_STATE_NORMAL:
+			switch(*format){
+			case '%':
+				state = PRINTF_STATE_FLAGS;
 				break;
-
-			case PRINTF_STATE_LENGTH:
-				switch(*format){
-					case 'h':
-						length = PRINTF_LENGTH_SHORT;
-						state = PRINTF_STATE_LENGTH_SHORT;
-						break;
-					case 'l':
-						length = PRINTF_LENGTH_LONG;
-						state = PRINTF_STATE_LENGTH_LONG;
-						break;
-					default:
-						goto PRINTF_STATE_SPEC_;
-				}
+			default:
+				vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
+				fmtStr[i] = *format;
+				printed++;
+				i++;
 				break;
+			}
+			break;
 
-			case PRINTF_STATE_LENGTH_SHORT:
-				if (*format == 'h'){
-					length = PRINTF_LENGTH_SHORT_SHORT;
-					state = PRINTF_STATE_SPEC;
+		case PRINTF_STATE_FLAGS:
+			switch (*format){
+			case '#':
+				putHexPrefix = true;
+				break;
+			default:
+				state = PRINTF_STATE_LENGTH;
+				goto PRINTF_STATE_LENGTH_;
+			}
+			break;
+
+		case PRINTF_STATE_LENGTH:
+			PRINTF_STATE_LENGTH_:
+			switch(*format){
+			case 'h':
+				length = PRINTF_LENGTH_SHORT;
+				state = PRINTF_STATE_LENGTH_SHORT;
+				break;
+			case 'l':
+				length = PRINTF_LENGTH_LONG;
+				state = PRINTF_STATE_LENGTH_LONG;
+				break;
+			default:
+				goto PRINTF_STATE_SPEC_;
+			}
+			break;
+
+		case PRINTF_STATE_LENGTH_SHORT:
+			if (*format != 'h')
+				goto PRINTF_STATE_SPEC_;
+			length = PRINTF_LENGTH_SHORT_SHORT;
+			state = PRINTF_STATE_SPEC;
+			break;
+
+		case PRINTF_STATE_LENGTH_LONG:
+			if (*format != 'l')
+				goto PRINTF_STATE_SPEC_;
+			length = PRINTF_LENGTH_LONG_LONG;
+			state = PRINTF_STATE_SPEC;
+			break;
+
+		case PRINTF_STATE_SPEC:
+			PRINTF_STATE_SPEC_:
+			switch(*format){
+			case '%':
+				vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
+				fmtStr[i] = '%';
+				printed++;
+				i++;
+				break;
+			case 'X':
+				if (putHexPrefix){
+					vsnprintf_internal_checkBoundaries(size, i+2, checkSize);
+					fmtStr[i++] = '0';
+					fmtStr[i++] = 'X';
+					printed += 2;
+				}
+				number = true;
+				sign = false;
+				radix = 16;
+				uppercase = true;
+				break;
+			case 'c':
+				// Note: we call va_args with int size, and not char, because in 32bits pmode
+				// all arguments pushed onto the stack are rounded to 32 bits
+				vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
+				fmtStr[i] = (char) va_arg(args, int);
+				printed++;
+				i++;
+				break;
+			case 's':
+				s = va_arg(args, const char*);
+				if (s == NULL) {
+					vsnprintf_internal_checkBoundaries(size, i+6, checkSize);
+					fmtStr[i++] = '(';
+					fmtStr[i++] = 'n';
+					fmtStr[i++] = 'u';
+					fmtStr[i++] = 'l';
+					fmtStr[i++] = 'l';
+					fmtStr[i++] = ')';
+					printed += 6;
 				}
 				else {
-					goto PRINTF_STATE_SPEC_;
-				}
-				break;
-
-			case PRINTF_STATE_LENGTH_LONG:
-				if (*format == 'l'){
-					length = PRINTF_LENGTH_LONG_LONG;
-					state = PRINTF_STATE_SPEC;
-				}
-				else {
-					goto PRINTF_STATE_SPEC_;
-				}
-				break;
-
-			case PRINTF_STATE_SPEC:
-				PRINTF_STATE_SPEC_:
-				switch(*format){
-					case 'c':
-						// Note: we call va_args with int size, and not char, because in 32bits pmode
-						// all arguments pushed onto the stack are rounded to 32 bits
+					while(*s){
 						vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
-						fmtStr[i] = (char) va_arg(args, int);
+						fmtStr[i] = *s;
 						printed++;
 						i++;
-						break;
-					case 's':
-						s = va_arg(args, const char*);
-						if (s == NULL) {
-							vsnprintf_internal_checkBoundaries(size, i+6, checkSize);
-							fmtStr[i++] = '(';
-							fmtStr[i++] = 'n';
-							fmtStr[i++] = 'u';
-							fmtStr[i++] = 'l';
-							fmtStr[i++] = 'l';
-							fmtStr[i++] = ')';
-							printed += 6;
-						}
-						else {
-							while(*s){
-								vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
-								fmtStr[i] = *s;
-								printed++;
-								i++;
-								s++;
-							}
-						}
-						break;
-					case '%':
-						vsnprintf_internal_checkBoundaries(size, i+1, checkSize);
-						fmtStr[i] = '%';
-						printed++;
-						i++;
-						break;
-					case 'd':
-					case 'i':
-						number = true;
-						sign = true;
-						radix = 10;
-						break;
-					case 'u':
-						number = true;
-						sign = false;
-						radix = 10;
-						break;
-					case 'p':
-						length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
-					case 'X':
-					case 'x':
-						vsnprintf_internal_checkBoundaries(size, i+2, checkSize);
-						fmtStr[i++] = '0';
-						fmtStr[i++] = 'x';
-						printed += 2;
-						number = true;
-						sign = false;
-						radix = 16;
-						break;
-					case 'o':
-						number = true;
-						sign = false;
-						radix = 8;
-						break;
-					default:
-						break; // ignore invalid specifiers
+						s++;
+					}
 				}
-
-			if (number){
-				switch (length){
-				case PRINTF_LENGTH_DEFAULT:
-				case PRINTF_LENGTH_SHORT_SHORT:
-				case PRINTF_LENGTH_SHORT:
-					if (sign) {
-						int numberToPrint = va_arg(args, int);
-						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_signed(fmtStr+i, numberToPrint, radix);
-						printed += written;
-						i+= written;
-					}
-					else {
-						unsigned int numberToPrint = va_arg(args, unsigned int);
-						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix);
-						printed += written;
-						i+= written;
-					}
-					break;
-				case PRINTF_LENGTH_LONG:
-					if (sign) {
-						long numberToPrint = va_arg(args, long);
-						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_signed(fmtStr+i, numberToPrint, radix);
-						printed += written;
-						i+= written;
-					}
-					else {
-						unsigned long numberToPrint = va_arg(args, unsigned long);
-						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix);
-						printed += written;
-						i+= written;
-					}
-					break;
-				case PRINTF_LENGTH_LONG_LONG:
-					if (sign) {
-						long long numberToPrint = va_arg(args, long long);
-						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_signed(fmtStr+i, numberToPrint, radix);
-						printed += written;
-						i+= written;
-					}
-					else {
-						unsigned long long numberToPrint = va_arg(args, unsigned long long);
-						vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
-						int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix);
-						printed += written;
-						i+= written;
-					}
-					break;
-				default:
-					break;
+				break;
+			case 'd':
+			case 'i':
+				number = true;
+				sign = true;
+				radix = 10;
+				break;
+			case 'o':
+				number = true;
+				sign = false;
+				radix = 8;
+				break;
+			case 'p':
+				length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
+				vsnprintf_internal_checkBoundaries(size, i+2, checkSize);
+				fmtStr[i++] = '0';
+				fmtStr[i++] = 'x';
+				printed += 2;
+				number = true;
+				sign = false;
+				radix = 16;
+				break;
+			case 'u':
+				number = true;
+				sign = false;
+				radix = 10;
+				break;
+			case 'x':
+				if (putHexPrefix){
+					vsnprintf_internal_checkBoundaries(size, i+2, checkSize);
+					fmtStr[i++] = '0';
+					fmtStr[i++] = 'x';
+					printed += 2;
 				}
+				number = true;
+				sign = false;
+				radix = 16;
+				uppercase = false;
+				break;
+			default:
+				break; // ignore invalid specifiers
 			}
 
-			// reset state
+			if (!number)
+				goto reset_state;
+
+			switch (length){
+			case PRINTF_LENGTH_DEFAULT:
+			case PRINTF_LENGTH_SHORT_SHORT:
+			case PRINTF_LENGTH_SHORT:
+				if (sign) {
+					int numberToPrint = va_arg(args, int);
+					vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
+					int written = sprintf_signed(fmtStr+i, numberToPrint, radix, uppercase);
+					printed += written;
+					i+= written;
+				}
+				else {
+					unsigned int numberToPrint = va_arg(args, unsigned int);
+					vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
+					int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix, uppercase);
+					printed += written;
+					i+= written;
+				}
+				break;
+			case PRINTF_LENGTH_LONG:
+				if (sign) {
+					long numberToPrint = va_arg(args, long);
+					vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
+					int written = sprintf_signed(fmtStr+i, numberToPrint, radix, uppercase);
+					printed += written;
+					i+= written;
+				}
+				else {
+					unsigned long numberToPrint = va_arg(args, unsigned long);
+					vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
+					int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix, uppercase);
+					printed += written;
+					i+= written;
+				}
+				break;
+			case PRINTF_LENGTH_LONG_LONG:
+				if (sign) {
+					long long numberToPrint = va_arg(args, long long);
+					vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
+					int written = sprintf_signed(fmtStr+i, numberToPrint, radix, uppercase);
+					printed += written;
+					i+= written;
+				}
+				else {
+					unsigned long long numberToPrint = va_arg(args, unsigned long long);
+					vsnprintf_internal_checkBoundaries(size, i+sizeOfNumberToBeWritten(numberToPrint, radix, sign), checkSize);
+					int written = sprintf_unsigned(fmtStr+i, numberToPrint, radix, uppercase);
+					printed += written;
+					i+= written;
+				}
+				break;
+			default:
+				break;
+			}
+
+			reset_state:
 			state = PRINTF_STATE_NORMAL;
 			length = PRINTF_LENGTH_DEFAULT;
 			radix = 10;
 			sign = false;
 			number = false;
+			uppercase = false;
+			putHexPrefix = false;
 			break;
 		}
 
@@ -614,7 +635,7 @@ int sprintf(char* restrict str, const char* restrict format, ...){
 	va_list args;
 
 	va_start(args, format);
-	int res = vsprintf(str, format, args);
+	int res = vsnprintf_internal(str, 0, false, format, args);
 	va_end(args);
 
 	return res;
@@ -624,7 +645,7 @@ int snprintf(char* restrict str, size_t size, const char* restrict format, ...){
 	va_list args;
 
 	va_start(args, format);
-	int res = vsnprintf(str, size, format, args);
+	int res = vsnprintf_internal(str, size, true, format, args);
 	va_end(args);
 
 	return res;
