@@ -125,7 +125,7 @@ void ISR_segmentNotPresent(ISR_Params* params){
 }
 
 void ISR_pageFault(ISR_Params* params){
-	log(PANIC, MODULE, "Page fault ! Page swapping unsupported yet");
+	log(PANIC, MODULE, "Page fault (error=%#llx) ! From code at address %p", params->err, params->rip);
 	panic();
 }
 
