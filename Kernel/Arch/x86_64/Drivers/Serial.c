@@ -116,9 +116,9 @@ static void processTHRE(UARTDevice* dev);
 
 // ================ External buffers handling ================
 
-/// @brief Add (push back) the null-terminated string str to be written the device buffer
+/// @brief Add (push back) the null-terminated string str to be written the device write buffer
 /// @returns `true` on success, `false` on error
-/// @note Interrupts MUST BE DISABLED before calling this method
+/// @note IRQ-safe
 static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 	if (dev==NULL) return false;
 	if (str==NULL) return true;
@@ -130,11 +130,14 @@ static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 	// we need to trigger the THRE again so that we actually send what we put in the buffer
 	bool shouldTriggerTHRE = (dev->inWriteBuffer == 0);
 
+	unsigned long flags;
+	IRQ_disableSave(flags);
+
 	size_t available_space = UARTDEVICE_EXT_BUFF_SIZE - dev->inWriteBuffer;
-	if (available_space < n) return false;
+	if (available_space < n) { IRQ_restore(flags); return false; }
 
 	// Copy the string to the external buffer
-	size_t write_index = dev->writeBeginIndex + dev->inWriteBuffer;
+	size_t write_index = (dev->writeBeginIndex + dev->inWriteBuffer) % UARTDEVICE_EXT_BUFF_SIZE;
 	for(int i=0 ; i<n ; i++){
 		dev->externalWriteBuffer[write_index] = str[i];
 		write_index++;
@@ -157,22 +160,18 @@ static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 		processTHRE(dev);
 	}
 
+	IRQ_restore(flags);
 	return true;
 }
 
-// Remove (pop front) a byte from the buffer
+/// @brief Remove (pop front) `n` bytes from the buffer into `out` (out size must be >= n !)
+/// @note IRQs MUST BE DISABLED when calling this method
 static uint8_t popFrontWriteBuffer(UARTDevice* dev){
-	// n can be passed as an argument,
-	// if we're able to return several char
-	int n = 1;
 	uint8_t res;
 
-	// Clamp
-	if (dev->inWriteBuffer < n) n = dev->inWriteBuffer;
-
 	res = dev->externalWriteBuffer[dev->writeBeginIndex];
-	dev->writeBeginIndex = (dev->writeBeginIndex + n) % UARTDEVICE_EXT_BUFF_SIZE;
-	dev->inWriteBuffer -= n;
+	dev->writeBeginIndex = (dev->writeBeginIndex + 1) % UARTDEVICE_EXT_BUFF_SIZE;
+	dev->inWriteBuffer--;
 
 	// If nothing more to be written, disable THRE
 	if (dev->inWriteBuffer == 0){
@@ -184,6 +183,8 @@ static uint8_t popFrontWriteBuffer(UARTDevice* dev){
 	return res;
 }
 
+/// @brief Add (push back) the null-terminated string str to be written the device read buffer
+/// @note IRQs MUST BE DISABLED when calling this method
 static bool pushBackReadBuffer(UARTDevice* dev, const uint8_t* str){
 	assert(str);
 	if (dev==NULL) return false;
@@ -196,34 +197,29 @@ static bool pushBackReadBuffer(UARTDevice* dev, const uint8_t* str){
 	if (availableSpace < n) return false;
 
 	// Copy the string to the external buffer
+	size_t write_index = (dev->readBeginIndex + dev->inReadBuffer) % UARTDEVICE_EXT_BUFF_SIZE;
 	for(int i=0 ; i<n ; i++){
-		dev->externalReadBuffer[dev->readBeginIndex + dev->inReadBuffer] = str[i];
+		dev->externalReadBuffer[write_index] = str[i];
 		dev->inReadBuffer++;
 	}
 
 	return true;
 }
 
+/// @brief Pop first byte from the device's read buffer
+/// @note IRQ-safe
 static uint8_t popFrontReadBuffer(UARTDevice* dev){
-	// n can be passed as an argument,
-	// if we're able to return several char
-	int n = 1;
 	uint8_t res;
+	if (dev->inReadBuffer < 1) return 0x00;
 
-	// Clamp
-	if (dev->inReadBuffer < n) n = dev->inReadBuffer;
+	unsigned long flags;
+	IRQ_disableSave(flags);
 
 	res = dev->externalReadBuffer[dev->readBeginIndex];
-	dev->readBeginIndex = (dev->readBeginIndex + n) % UARTDEVICE_EXT_BUFF_SIZE;
-	dev->inReadBuffer -= n;
+	dev->readBeginIndex = (dev->readBeginIndex + 1) % UARTDEVICE_EXT_BUFF_SIZE;
+	dev->inReadBuffer--;
 
-	// If nothing more to be written, disable THRE
-	if (dev->inReadBuffer == 0){
-		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
-		ier &= ~SERIAL_IER_THRE;
-		outb(dev->port+SERIAL_OFFSET_IER, ier);
-	}
-
+	IRQ_restore(flags);
 	return res;
 }
 
@@ -253,7 +249,11 @@ static void processAvailableData(UARTDevice* dev){
 
 	// Put it in the buffer for public access
 	if (!pushBackReadBuffer(dev, temp)){
-		log(WARNING, MODULE, "Received data but read buffer is full, data will be discarded. Please read more often !");
+		static unsigned int counter = 0, times = 0; // times the pushBackReadBuffer was called with already full buffer
+		counter++;
+		times = counter % 256;
+		if (times == 0)
+			log(WARNING, MODULE, "Received data but read buffer is full, data discarded (total discarded: %d bytes). Fix by reading the buffer", counter);
 	}
 
 	// Send it back
