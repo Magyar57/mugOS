@@ -9,14 +9,14 @@
 // A GDTEntry is a segment descriptor
 // Base  (32-bit value): linear address where the segment begins
 // Limit (20-bit value): tells maximum addressable unit (controlled by the granularity)
-typedef struct {
+struct GDTEntry {
 	uint16_t limit_0to15;				// Limit (bit 0-15)
 	uint16_t base_0to15;				// Base (bit 0-15)
 	uint8_t base_16to23;				// Base (bit 16-23)
 	uint8_t accessByte;					// Access byte (see GDTAccess)
 	uint8_t limit_16to19_and_flags;		// Limit (bit 16-19) followed by flags (on 4 bits)
 	uint8_t base_24to31;				// Base (bit 24-31)
-} __attribute__((packed)) GDTEntry;
+} __attribute__((packed));
 
 // Access bytes, bits:
 // 7:   Present
@@ -68,10 +68,10 @@ enum GDTFlags {
 // =========== Descriptors ===========
 
 // GDT Descriptor (long mode)
-typedef struct {
+struct GDTLocationDescriptor {
 	uint16_t size;		// GDT size -1
 	uint64_t offset;	// GDT address in memory
-} __attribute__((packed)) GDTLocationDescriptor;
+} __attribute__((packed));
 
 // =========== GDT generation maccros ===========
 
@@ -93,18 +93,18 @@ typedef struct {
 
 // Global GDT variable, in (kernel) memory
 // TODO replace hardcoded values with the macros above
-GDTEntry g_GDT[] = {
+struct GDTEntry g_GDT[] = {
 	GDT_get_GDTEntry(0x0, 0x0, 0, 0),				// Null descriptor
 	GDT_get_GDTEntry(0x0, 0xffffffff, 0x9a, 0xa),	// Kernel 32-bit code segment
 	GDT_get_GDTEntry(0x0, 0xffffffff, 0x92, 0xc)	// Kernel 32-bit data segment
 };
 
 // Global GDT location descriptor, in (kernel) memory
-GDTLocationDescriptor g_GDTLocationDescriptor = { sizeof(g_GDT)-1, (uint64_t) g_GDT };
+struct GDTLocationDescriptor g_GDTLocationDescriptor = { sizeof(g_GDT)-1, (uint64_t) g_GDT };
 
 // setGDT - Defined in GDT.asm
 // Sets the GDT located at 'descriptor' and loads the segments registers accordingly (kcodeSegment & kdataSegment)
-void setGDT(GDTLocationDescriptor* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
+void setGDT(struct GDTLocationDescriptor* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
 
 void GDT_initialize(){
 	setGDT(&g_GDTLocationDescriptor, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);

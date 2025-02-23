@@ -1,6 +1,6 @@
 section .text
 
-; void setGDT(GDTLocationDescriptor* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
+; void setGDT(struct GDTLocationDescriptor* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
 ; in System V ABI,   i386 (32 bits): descriptor in ebp+8 ; kcodeSegment in ebp+12 ; kdataSegment in ebp+16
 ; in System V ABI, x86_64 (64 bits): descriptor in rdi   ; kcodeSegment in rsi    ; kdataSegment in rdx
 global setGDT

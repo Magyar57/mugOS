@@ -3,16 +3,15 @@
 
 #include <stdint.h>
 
-// TODO modify for 64 bits
-typedef struct s_ISR_Params {
+struct ISR_Params {
 	uint64_t ds;
 	uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
 	uint64_t rdi, rsi, rbp, rbx, rdx, rcx, rax;
 	uint64_t vector, err;
 	uint64_t rip, cs, rflags, rsp, ss;
-} __attribute__((packed)) ISR_Params;
+} __attribute__((packed));
 
-typedef void (*ISR)(ISR_Params*);
+typedef void (*ISR)(struct ISR_Params*);
 
 // Initialize the ISR (Interrupt Service Routines) in the IDT (important: call IDT_initialize beforehand !)
 void ISR_initialize();

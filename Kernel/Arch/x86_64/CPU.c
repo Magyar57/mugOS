@@ -15,7 +15,7 @@ extern void cpuidWrapper(unsigned int code, uint64_t* rax, uint64_t* rbx, uint64
 // log(INFO, "MAIN", "cpu brandIndex=%d cflushLineSize=%d maxAddressableCpuIds=%d", cpu.brandIndex, cpu.cflushLineSize, cpu.maxAddressableCpuIds);
 // log(INFO, "MAIN", "cpu features: %p %p", cpu.features0, cpu.features1);
 
-bool CPU_identify(CPU* cpu){
+bool CPU_identify(struct CPU* cpu){
 	uint64_t rax, rbx, rcx, rdx;
 
 	if (!CPU_supportsCpuid()) return false;

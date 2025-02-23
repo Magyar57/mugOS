@@ -53,27 +53,27 @@
 #define PS2_KB_RES_RESEND				0xfe
 #define PS2_KB_RES_ERROR1				0xff // Same as KB_RESPONSE_ERROR0, other scan code
 
-typedef struct s_PS2Keyboard {
+struct PS2Keyboard {
 	bool enabled;
 	const char* name;
 } PS2Keyboard;
 
-typedef enum e_PS2MouseType {
+enum PS2MouseType {
 	PS2MOUSETYPE_STD = 0x00,
 	PS2MOUSETYPE_WHEEL = 0x03,
 	PS2MOUSETYPE_5BUTTONS = 0x04
-} PS2MouseType;
+};
 
-typedef struct s_PS2Mouse {
+struct PS2Mouse {
 	bool enabled;
-	PS2MouseType type;
+	enum PS2MouseType type;
 	const char* name;
 	uint8_t packetSize;
-} PS2Mouse;
+};
 
-static bool g_enabled;
-static PS2Keyboard g_PS2Keyboard;
-static PS2Mouse g_PS2Mouse;
+static bool m_enabled;
+static struct PS2Keyboard m_PS2Keyboard;
+static struct PS2Mouse m_PS2Mouse;
 
 // We need these keyboard-related definitions here for the PS/2 driver intialization
 static void setLEDs(uint8_t leds);
@@ -155,7 +155,7 @@ static const char* getKeyboardName(){
 }
 
 // Detect a mouse on port 2 and returns its id (0xff if unrecognized or is a keyboard)
-static PS2MouseType getMouseType(){
+static enum PS2MouseType getMouseType(){
 	uint8_t buff;
 
 	buff = sendByteToDevice2_HandleResend(PS2_CMD_IDENTIFY);
@@ -168,7 +168,7 @@ static PS2MouseType getMouseType(){
 }
 
 // Note: check that port 1 is available and populated before calling this method
-void PS2_initializeKeyboard(PS2Keyboard* keyboard){
+void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 	uint8_t buff1, buff2;
 	keyboard->enabled = false;
 
@@ -204,7 +204,7 @@ void PS2_initializeKeyboard(PS2Keyboard* keyboard){
 }
 
 // Note: check that port 2 is available and populated before calling this method
-void PS2_initializeMouse(PS2Mouse* mouse){
+void PS2_initializeMouse(struct PS2Mouse* mouse){
 	mouse->enabled = false;
 
 	mouse->type = getMouseType();
@@ -268,26 +268,26 @@ void PS2_initialize(){
 	bool enabled, port1_enabled, port2_enabled;
 	PS2Controller_getStatus(&enabled, &port1_enabled, &port2_enabled);
 	if (!enabled){
-		g_enabled = false;
-		g_PS2Keyboard.enabled = false;
-		g_PS2Mouse.enabled = false;
+		m_enabled = false;
+		m_PS2Keyboard.enabled = false;
+		m_PS2Mouse.enabled = false;
 		Logging_log(ERROR, MODULE, "Initalization failed, PS/2 Controller driver is disabled");
 		return;
 	}
 
-	g_enabled = true;
-	if (port1_enabled) PS2_initializeKeyboard(&g_PS2Keyboard);
-	if (port2_enabled) PS2_initializeMouse(&g_PS2Mouse);
+	m_enabled = true;
+	if (port1_enabled) PS2_initializeKeyboard(&m_PS2Keyboard);
+	if (port2_enabled) PS2_initializeMouse(&m_PS2Mouse);
 
 	// After intialization, we can re-enable scanning
 	uint8_t buff;
-	if (g_PS2Keyboard.enabled) {
+	if (m_PS2Keyboard.enabled) {
 		buff = sendByteToDevice1_HandleResend(PS2_KB_CMD_ENABLE_SCANNING);
-		if (buff != PS2_KB_RES_ACK) g_PS2Keyboard.enabled = false;
+		if (buff != PS2_KB_RES_ACK) m_PS2Keyboard.enabled = false;
 	}
-	if (g_PS2Mouse.enabled) {
+	if (m_PS2Mouse.enabled) {
 		buff = sendByteToDevice2_HandleResend(PS2_KB_CMD_ENABLE_SCANNING);
-		if (buff != PS2_KB_RES_ACK) g_PS2Mouse.enabled = false;
+		if (buff != PS2_KB_RES_ACK) m_PS2Mouse.enabled = false;
 	}
 
 	PS2Controller_enableDevicesInterrupts();
@@ -653,7 +653,7 @@ static void handleScancode(uint8_t scancode){
 }
 
 void PS2_notifyKeyboard(){
-	if(!g_PS2Keyboard.enabled) return;
+	if(!m_PS2Keyboard.enabled) return;
 	uint8_t code;
 
 	// Debug print
@@ -712,7 +712,7 @@ void PS2_notifyMouse(){
 		dy = data;
 		packet_index++;
 		// If packet size is 4, stop here
-		if (g_PS2Mouse.packetSize > 3) break;
+		if (m_PS2Mouse.packetSize > 3) break;
 		// Otherwise we got a full packet, we can handle it
 		data = 0xff; // wheelAndThumbBtn is dummy here
 	case 3:

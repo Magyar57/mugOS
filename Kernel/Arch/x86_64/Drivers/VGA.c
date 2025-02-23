@@ -14,11 +14,11 @@
 // Address 0x410 => Bios Data Area: packed bit flags for detected hardware
 #define BDA_HARDWARE 0x410
 
-typedef enum {
+enum VGATextMode{
 	VGA_TEXTMODE_NONE,
 	VGA_TEXTMODE_COLOUR,
 	VGA_TEXTMODE_MONOCHROME
-} VGATextMode;
+};
 
 #define VGA_COLOUR_VIDEO_MEMORY		(uint8_t*) 0xb8000
 #define VGA_MONOCHROME_VIDEO_MEMORY	(uint8_t*) 0xb0000
@@ -35,7 +35,7 @@ int m_screenY = 0; // Cursor's Y position
 #define VGA_CRTC_ADDR_CURSOR_HIGH		0x0e
 #define VGA_CRTC_ADDR_CURSOR_LOW		0x0f
 
-static VGATextMode detectVideoTextMode(){
+static enum VGATextMode detectVideoTextMode(){
 	const uint16_t* bdaHardwarePtr = (const uint16_t*) BDA_HARDWARE;
 	const uint16_t bdaHardware = *bdaHardwarePtr;
 
@@ -105,7 +105,7 @@ static void scrollDown(int n){
 
 bool VGA_initialize(){
 	// Test for color or not
-	VGATextMode videoMode = detectVideoTextMode();
+	enum VGATextMode videoMode = detectVideoTextMode();
 	if (videoMode == VGA_TEXTMODE_NONE)
 		return false;
 

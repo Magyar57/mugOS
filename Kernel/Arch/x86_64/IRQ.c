@@ -51,7 +51,7 @@ void IRQ_deregisterHandler(uint8_t irq){
 
 // ================ IRQ Handlers ================
 
-void IRQ_prehandler(ISR_Params* params){
+void IRQ_prehandler(struct ISR_Params* params){
 	// If we have a handler to call, we call it, and 'alles gut'
 
 	uint8_t irq = (uint8_t) params->vector;
@@ -69,16 +69,16 @@ void IRQ_prehandler(ISR_Params* params){
 	panic();
 }
 
-void IRQ_timer(ISR_Params* params){
+void IRQ_timer(struct ISR_Params* params){
 	// Nothing to do yet
 }
 
-void IRQ_keyboard(ISR_Params* params){
+void IRQ_keyboard(struct ISR_Params* params){
 	// Tell the PS/2 driver to update
 	PS2_notifyKeyboard();
 }
 
-void IRQ_mouse(ISR_Params* params){
+void IRQ_mouse(struct ISR_Params* params){
 	// Tell the PS/2 driver to update
 	PS2_notifyMouse();
 }

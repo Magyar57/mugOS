@@ -62,7 +62,7 @@
 #define PS2C_DEV_RES_ACK					0xfa
 #define PS2C_DEV_RES_SELF_TEST_PASSED		0xaa
 
-static bool g_enabled = false;
+static bool m_enabled = false;
 static bool g_isPort1Valid = false; // works
 static bool g_isPort2Valid = false; // is present AND works
 
@@ -149,7 +149,7 @@ void i8042_initialize(){
 	// 	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_SELF_TEST);
 	// 	buff = readPort(PS2C_PORT_DATA);		
 	// 	if (buff != PS2C_RES_SELF_TEST_SUCCESS){
-	// 		g_enabled = false;
+	// 		m_enabled = false;
 	// 		log(ERROR, MODULE, "Initalization failed, chip self-test failed (%p)", buff);
 	// 		return;
 	// 	}
@@ -181,8 +181,8 @@ void i8042_initialize(){
 		g_isPort2Valid = (buff == PS2C_RES_PORT2_TEST_SUCCESS);
 	}
 	// Update driver state
-	g_enabled = (g_isPort1Valid | g_isPort2Valid);
-	if (!g_enabled){
+	m_enabled = (g_isPort1Valid | g_isPort2Valid);
+	if (!m_enabled){
 		Logging_log(ERROR, MODULE, "initalization failed, no functionning PS/2 port found.");
 		return;
 	}
@@ -220,7 +220,7 @@ void i8042_initialize(){
 }
 
 void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out){
-	*isEnabled_out = g_enabled;
+	*isEnabled_out = m_enabled;
 	*port1Available_out = g_isPort1Valid;
 	*port2Available_out = g_isPort2Valid;
 }
@@ -238,7 +238,7 @@ void i8042_disableDevicesInterrupts(){
 }
 
 bool i8042_sendByteToDevice1(uint8_t byte){
-	assert(g_enabled && g_isPort1Valid);
+	assert(m_enabled && g_isPort1Valid);
 
 	int timer = 0;
 	bool buffer_clear = false;
@@ -256,7 +256,7 @@ bool i8042_sendByteToDevice1(uint8_t byte){
 }
 
 bool i8042_sendByteToDevice2(uint8_t byte){
-	assert(g_enabled && g_isPort2Valid);
+	assert(m_enabled && g_isPort2Valid);
 
 	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_WRITE_PORT2_INPUT_BUFF);
 	// Nothing more needed for device 2, we can reuse our code for the first one
@@ -264,7 +264,7 @@ bool i8042_sendByteToDevice2(uint8_t byte){
 }
 
 bool i8042_receiveDeviceByte(uint8_t* byte_out){
-	assert(g_enabled);
+	assert(m_enabled);
 	assert(g_isPort1Valid || g_isPort2Valid);
 	bool buffer_full = false;
 	uint8_t buff;

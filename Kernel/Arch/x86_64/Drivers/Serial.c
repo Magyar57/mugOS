@@ -22,30 +22,30 @@
 const int PORTS[N_PORTS] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8, 0x5f8, 0x4f8, 0x5e8, 0x4e8 };
 
 // UART controllers types
-typedef enum {
+enum UARTController {
 	UART_NONE,
 	UART_8250,
 	UART_16450,
 	UART_16550,
 	UART_16550A,
-} UARTController;
+};
 const char* UARTControllersNames[] = { "None", "8250", "16450", "16550", "16550A" };
 
 #define UARTDEVICE_EXT_BUFF_SIZE 1024
-typedef struct s_UARTDevice {
+struct UARTDevice {
 	int identifier; // COM1 on DOS, /dev/ttyS0 on linux ; we simply use the number
 	int present;
 	int port;
-	UARTController controller;
+	enum UARTController controller;
 	const char* controllerName;
 	int internalBufferSize; // Internal FIFO buffer size: 14 on 16550A, 1 otherwise
 	uint8_t externalWriteBuffer[UARTDEVICE_EXT_BUFF_SIZE];
 	unsigned int writeBeginIndex, inWriteBuffer; // externalWriteBuffer FIFO variables
 	uint8_t externalReadBuffer[UARTDEVICE_EXT_BUFF_SIZE];
 	unsigned int readBeginIndex, inReadBuffer; // externalWriteBuffer FIFO variables
-} UARTDevice;
+};
 
-UARTDevice m_devices[N_PORTS];
+struct UARTDevice m_devices[N_PORTS];
 int m_defaultDevice = -1;
 bool m_enabled = false;
 
@@ -112,14 +112,14 @@ bool m_enabled = false;
 #define BAUD_RATE_DIVISOR_LOW 12 // low byte
 #define BAUD_RATE_DIVISOR_HIGH 0 // high byte
 
-static void processTHRE(UARTDevice* dev);
+static void processTHRE(struct UARTDevice* dev);
 
 // ================ External buffers handling ================
 
 /// @brief Add (push back) the null-terminated string str to be written the device write buffer
 /// @returns `true` on success, `false` on error
 /// @note IRQ-safe
-static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
+static bool pushBackWriteBuffer(struct UARTDevice* dev, const uint8_t* str){
 	if (dev==NULL) return false;
 	if (str==NULL) return true;
 
@@ -166,7 +166,7 @@ static bool pushBackWriteBuffer(UARTDevice* dev, const uint8_t* str){
 
 /// @brief Remove (pop front) `n` bytes from the buffer into `out` (out size must be >= n !)
 /// @note IRQs MUST BE DISABLED when calling this method
-static uint8_t popFrontWriteBuffer(UARTDevice* dev){
+static uint8_t popFrontWriteBuffer(struct UARTDevice* dev){
 	uint8_t res;
 
 	res = dev->externalWriteBuffer[dev->writeBeginIndex];
@@ -185,7 +185,7 @@ static uint8_t popFrontWriteBuffer(UARTDevice* dev){
 
 /// @brief Add (push back) the null-terminated string str to be written the device read buffer
 /// @note IRQs MUST BE DISABLED when calling this method
-static bool pushBackReadBuffer(UARTDevice* dev, const uint8_t* str){
+static bool pushBackReadBuffer(struct UARTDevice* dev, const uint8_t* str){
 	assert(str);
 	if (dev==NULL) return false;
 	if (str==NULL) return true;
@@ -208,7 +208,7 @@ static bool pushBackReadBuffer(UARTDevice* dev, const uint8_t* str){
 
 /// @brief Pop first byte from the device's read buffer
 /// @note IRQ-safe
-static uint8_t popFrontReadBuffer(UARTDevice* dev){
+static uint8_t popFrontReadBuffer(struct UARTDevice* dev){
 	uint8_t res;
 	if (dev->inReadBuffer < 1) return 0x00;
 
@@ -228,7 +228,7 @@ static uint8_t popFrontReadBuffer(UARTDevice* dev){
 // Process available data interrupts:
 // - DR or trigger level reached
 // - No receiver FIFO action since 4 words' time but data in RX-FIFO
-static void processAvailableData(UARTDevice* dev){
+static void processAvailableData(struct UARTDevice* dev){
 	// Served "by reading RBR (until under level)"
 	//
 	// Read available data from the internal FIFO buffer, and send it back
@@ -261,7 +261,7 @@ static void processAvailableData(UARTDevice* dev){
 }
 
 // Process THRE: Transmitter Holding Register Empty interrupt
-static void processTHRE(UARTDevice* dev){
+static void processTHRE(struct UARTDevice* dev){
 	// Served "by reading IIR or writing to THR"
 	//
 	// If we have data in the external buffer to be sent,
@@ -285,7 +285,7 @@ static void processTHRE(UARTDevice* dev){
 }
 
 // Process MSR: Modem Service Register bits changed interrupt
-static void processUpdatedMSR(UARTDevice* dev){
+static void processUpdatedMSR(struct UARTDevice* dev){
 	// Served "by reading MSR"
 	// We need to read it in order to serve the interrupt,
 	// but we don't do anything with it
@@ -295,7 +295,7 @@ static void processUpdatedMSR(UARTDevice* dev){
 }
 
 // Process an updated LSR interrupt
-static void processUpdatedLSR(UARTDevice* dev){
+static void processUpdatedLSR(struct UARTDevice* dev){
 	// Served "by reading the LSR"
 
 	uint8_t lsr = inb(dev->port+SERIAL_OFFSET_LSR);
@@ -310,7 +310,7 @@ static void processUpdatedLSR(UARTDevice* dev){
 	if (lsr & SERIAL_LSR_IE) log(ERROR, MODULE, "Device %d: Error with a word in the input buffer", dev->identifier);
 }
 
-static void handleDeviceInterrupt(UARTDevice* dev){
+static void handleDeviceInterrupt(struct UARTDevice* dev){
 	if (!dev->present) return; // interrupt might get triggered by software
 
 	uint8_t iir;
@@ -354,7 +354,7 @@ static void handleDeviceInterrupt(UARTDevice* dev){
 	} while (iir != SERIAL_IIR_INT_PENDING);
 }
 
-static void handleInterrupt(ISR_Params* params){
+static void handleInterrupt(struct ISR_Params* params){
 	// Determine which device sent the interrupt
 
 	// For all present devices, trigger IRQ handling
@@ -369,7 +369,7 @@ static void handleInterrupt(ISR_Params* params){
 // ================ Public API ================
 
 /// @brief Test if a UART controller is present, and return which controller it is
-static UARTController detectUARTController(int port){
+static enum UARTController detectUARTController(int port){
    	int mcr_save;
 
    	// Check if a UART is present anyway
@@ -447,7 +447,7 @@ void Serial_initialize(){
 
 	// Initialize UART Controllers, Serial Devices (if present), and set m_devices accordingly
 	for(int i=0 ; i<N_PORTS ; i++){
-		UARTDevice* curDev = m_devices+i;
+		struct UARTDevice* curDev = m_devices+i;
 
 		curDev->identifier = i+1;
 		curDev->port = PORTS[i];

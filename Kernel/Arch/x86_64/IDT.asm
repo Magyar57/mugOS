@@ -1,6 +1,6 @@
 bits 64
 
-; void setIDT(IDTLocationDescriptor* descriptor);
+; void setIDT(struct IDTLocationDescriptor* descriptor);
 global setIDT
 setIDT:
 	push rbp

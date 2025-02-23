@@ -8,7 +8,7 @@
 // Each Gate is either an Interrupt, a Task or a Trap Gate descriptor
 // Offset: address of the entry point of the ISR
 // Segment selector: a selector with multiple fields (must point to a valid code segment in the GDT)
-typedef struct s_IDTEntry {
+struct IDTEntry {
 	uint16_t offset_0to15;				// Offset (bit 0-15)
 	uint16_t segment_0to15;				// Segment selector (bit 0-15)
 	uint8_t reserved0;					// Unused, set to 0
@@ -21,7 +21,7 @@ typedef struct s_IDTEntry {
 // ================ Descriptor ================
 
 // IDT Descriptor (64 bits)
-typedef struct s_IDTLocationDescriptor {
+struct IDTLocationDescriptor {
 	uint16_t size;		// IDT size -1
 	uint64_t offset;	// IDT linear address in memory (paging applies)
 } __attribute__((packed)) IDTLocationDescriptor;
@@ -29,15 +29,15 @@ typedef struct s_IDTLocationDescriptor {
 // ================ Declare IDT ================
 
 // Global IDT variable, in (kernel) memory
-IDTEntry g_IDT[256];
+struct IDTEntry g_IDT[256];
 
 // Global IDT location descriptor, in (kernel) memory
-IDTLocationDescriptor g_IDTLocationDescriptor = { sizeof(g_IDT)-1, (uint64_t) g_IDT };
+struct IDTLocationDescriptor g_IDTLocationDescriptor = { sizeof(g_IDT)-1, (uint64_t) g_IDT };
 
 // ================ IDT and ISR manipulations ================
 
 // setIDT (IDT.asm) - Sets the IDT located at 'descriptor'
-void setIDT(IDTLocationDescriptor* descriptor);
+void setIDT(struct IDTLocationDescriptor* descriptor);
 
 void IDT_initialize(){
 	setIDT(&g_IDTLocationDescriptor);

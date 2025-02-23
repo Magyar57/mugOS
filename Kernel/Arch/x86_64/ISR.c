@@ -65,7 +65,7 @@ void ISR_deregisterHandler(uint8_t vector){
 // ================ ISR Handlers ================
 
 // All ISR lead to a common ISR_Asm_Prehandler function, which calls this function
-void ISR_C_prehandler(ISR_Params* params){
+void ISR_C_prehandler(struct ISR_Params* params){
 
 	// If we have a handler to call, we call it, and 'alles gut'
 	if (g_ISR[params->vector] != NULL){
@@ -79,12 +79,12 @@ void ISR_C_prehandler(ISR_Params* params){
 	panic();
 }
 
-void ISR_divisionByZeroError(ISR_Params* params){
+void ISR_divisionByZeroError(struct ISR_Params* params){
 	log(PANIC, NULL, "Division by zero error !!");
 	panic();
 }
 
-void ISR_doubleFault(ISR_Params* params){
+void ISR_doubleFault(struct ISR_Params* params){
 	log(PANIC, NULL, "Double fault !!");
 	log(PANIC, NULL, "vector=%p rflags=%p err=%p", params->vector, params->rflags, params->err);
 	log(PANIC, NULL, "\trax=%p rbx=%p rcx=%p rdx=%p", params->rax, params->rbx, params->rcx, params->rdx);
@@ -96,7 +96,7 @@ void ISR_doubleFault(ISR_Params* params){
 	panic();
 }
 
-void ISR_segmentNotPresent(ISR_Params* params){
+void ISR_segmentNotPresent(struct ISR_Params* params){
 	// https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-220.html
 	
 	const char* origin = (params->err & 0x0001) ? "External" : "Internal";
@@ -124,7 +124,7 @@ void ISR_segmentNotPresent(ISR_Params* params){
 	panic();
 }
 
-void ISR_pageFault(ISR_Params* params){
+void ISR_pageFault(struct ISR_Params* params){
 	log(PANIC, MODULE, "Page fault (error=%#llx) ! From code at address %p", params->err, params->rip);
 	panic();
 }

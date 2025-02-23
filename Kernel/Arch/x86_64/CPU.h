@@ -11,7 +11,7 @@
 
 #define X86_64_RFLAGS_IF 1<<9
 
-typedef struct s_CPU {
+struct CPU {
 	char vendor[13];
 	uint8_t model;
 	uint16_t family;
@@ -21,7 +21,7 @@ typedef struct s_CPU {
 	uint8_t cflushLineSize;
 	uint8_t maxAddressableCpuIds;
 	uint32_t features0, features1;
-} CPU;
+};
 
 /// @brief Halt (stops until next interrupt) the processor
 #define halt() __asm__ volatile("hlt")
@@ -53,6 +53,6 @@ extern bool CPU_supportsCpuid();
 
 /// @brief Fill the CPU struct with CPU identification informations
 /// @returns true on success, false on error (cpuid instruction not supported)
-bool CPU_identify(CPU* cpu);
+bool CPU_identify(struct CPU* cpu);
 
 #endif
