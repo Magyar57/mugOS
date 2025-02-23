@@ -13,12 +13,12 @@
 
 bool m_initialized = false;
 void* m_driver; // current driver
-GraphicsSource m_driverType; // Which drive we're using
+enum GraphicsSource m_driverType; // Which drive we're using
 
 // Supported drivers
 Framebuffer m_framebuffer;
 
-void Graphics_initialize(GraphicsSource graphics, void* pointer){
+void Graphics_initialize(enum GraphicsSource graphics, void* pointer){
 	m_driverType = graphics;
 
 	switch (graphics){

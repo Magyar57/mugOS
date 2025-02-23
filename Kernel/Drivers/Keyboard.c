@@ -472,14 +472,14 @@ static inline int findAvailableCallbackIndex(){
 	return -1;
 }
 
-static inline void executeCallbacks(Keycode keycode, int character, KeypressMode mode, uint8_t modifierKeys){
+static inline void executeCallbacks(Keycode keycode, int character, enum KeypressMode mode, uint8_t modifierKeys){
 	for(int i=0 ; i<MAX_CALLBACKS ; i++){
 		if (g_callbacks[i] == NULL) continue;
 		g_callbacks[i](keycode, character, mode, modifierKeys);
 	}
 }
 
-static void keyCallback_printKey(Keycode keycode, int character, KeypressMode mode, uint8_t modifierKeys){
+static void keyCallback_printKey(Keycode keycode, int character, enum KeypressMode mode, uint8_t modifierKeys){
 	const char* mode_string = (mode == KB_KEYMODE_KEY_PRESSED) ? "pressed " : "released";
 
 	// Non-printable key
