@@ -6,27 +6,24 @@
 
 #include "stdio.h"
 
-// Note: when - and 0, 0 should be ignored
-
 // Doc: https://cplusplus.com/reference/cstdio/printf/
 // %[$][flags][width][.precision][length modifier]specifier
 // Supported options:
-// - flags: # + (space)
+// - flags: # + (space) -
 // - width: (number)
 // - width: h hh l ll
 // - specifier: c s % d i u o x X p
-// Unsupported options: '-' flag, and all floating point
-// Future implementation notes:
-// - '-' overrides '0' (if - is there, always pad with spaces, and on the right)
-// - If precision is present, always pad the missing precision numbers with 0
+
+// ALL integer functionnality is implemented, but the '*' specifier
+// NO floating point functionnality implemented
 
 // Tests printf
 // printf("%% %c %s ", 'a', "my_string");
-// printf("%d %i %x %p %o \n", 1234, -5678, 0x7fff, 0xbeef, 012345);
-// printf("%hd %hi %hhu %hhd \n", (short)57, (short)-42, (unsigned char) 20, (char)-10);
-// printf("%ld %li %lld %llu \n", 100000057l, -100000042l, -1099511627776ll, 0xffffffffffffffffull);
+// printf("%d %d %d %i %x %X %p %o \n", 0, 1, -1, -5678, 0x7fff, 0xbeef, 0x8000, 012345);
+// printf("%hd %hi %hhu %hhd %ld %li %lld %llu \n", (short)57, (short)-42, (unsigned char) 20, (char)-10, 100000057l, -100000042l, -1099511627776ll, 0xffffffffffffffffull);
 // printf("%p %x %#x %X %#llX %#018llx '%# 18llx'\n", 0x123456789abcdef0, 0x1ffffffff, 0x1ffffffff, 0x1ffffffff, 0x80000000ffffffff, 0x7fffffffllu, 0x7fffffffllu);
 // printf("'%4d' '% 4d' '%+4d' %04d '% 04d' %+04d \n", -10, 10, 10, 10, -10, 10, 10, 10);
+// printf("'%8.4d' '%-8.4d' '%-08.4d' '%- 8.4d' '%-+8.4d' '%4.8d' '%.0d' '%.0d' \n", -10, -10, -10, 10, 10, -10, 0, 1);
 
 // Tests snprintf
 // void test_snprintf(int max_buff, const char* fmt, uint64_t value){
@@ -34,7 +31,7 @@
 //     memset(str, 0, 1024);
 //     if (max_buff >= 1024) return;
 //     int res = res = snprintf(str, max_buff, fmt, value);
-//     printf("(%2d/%2d) sprintf('%s', %#018hhx) => '%s' \n", res, max_buff, fmt, value, str);
+//     printf("(%2d/%-2d) sprintf('%s', %#018hhx) => '%s' \n", res, max_buff, fmt, value, str);
 // }
 // test_snprintf(64, "bonjaj", 0); // 6 'bonjaj'
 // test_snprintf(4, "bonjaj", 0); // -1 'bon'
@@ -57,8 +54,26 @@
 // test_snprintf(13, "%#012x", 0xffffffff); // 12 '  0xffffffff'
 // test_snprintf(12, "%#012x", 0xffffffff); // -1 ''
 // test_snprintf(4, "%+d", 0x00000040); // 3 '+64'
+// test_snprintf(3, "%+d", 0x00000040); // -1 ''
 // test_snprintf(5, "%+04d", 0x00000040); // 4 '+064'
+// test_snprintf(4, "%+04d", 0x00000040); // -1 ''
 // test_snprintf(5, "% +4d", 0x00000040); // 4 ' +64'
+// test_snprintf(4, "% +4d", 0x00000040); //
+// test_snprintf(9, "%8.4d", -10); // 8 '   -0010'
+// test_snprintf(8, "%8.4d", -10); // -1 ''
+// test_snprintf(9, "%-8.4d", -10); // 8 '-0010   '
+// test_snprintf(8, "%-8.4d", -10); // -1 ''
+// test_snprintf(9, "%-08.4d", -10); // 8 '-0010   '
+// test_snprintf(8, "%-08.4d", -10); // -1 ''
+// test_snprintf(9, "%- 8.4d", +10); // 8 ' 0010   '
+// test_snprintf(8, "%- 8.4d", +10); // -1 ''
+// test_snprintf(9, "%-+8.4d", +10); // 8 '+0010   '
+// test_snprintf(8, "%-+8.4d", +10); // -1 ''
+// test_snprintf(10, "%4.8d", -10); // 8 '-00000010'
+// test_snprintf(9, "%4.8d", -10); // -1 ''
+// test_snprintf(2, "%d", 0); // 1 '0'
+// test_snprintf(1, "%.0d", 0); // 0 ''
+// test_snprintf(2, "%.0d", 1); // 1 '1'
 
 // Enum for the printf state-machine state
 enum PRINTF_STATE {
@@ -103,7 +118,7 @@ static inline void resetSpecifierState(struct specifierState* spec){
 	spec->padRight = false;
 	spec->sign = '\0';
 	spec->width = 0;
-	spec->precision = 0;
+	spec->precision = -1;
 	spec->length = PRINTF_LENGTH_DEFAULT;
 	spec->radix = 10;
 	spec->numberSigned = false;
@@ -134,14 +149,10 @@ static int dputs(const char* restrict s, int fd){
 	return 1;
 }
 
-// Put the padding (width * padding_char) if the current padding_char_position (' ' or '0') is the right one
-static int printf_uint_putPadding(int fd, int width, char padding_char_position, char padding_char){
-	if (padding_char != padding_char_position)
-		return 0;
-
+static int printf_uint_putPadding(int fd, int n, char padding){
 	int printed = 0;
-	for (int i=width ; i>0 ; i--){
-		int res = dputc(padding_char, fd);
+	for (int i=n ; i>0 ; i--){
+		int res = dputc(padding, fd);
 		if (res == EOF) return printed; // cannot write anymore
 		printed++;
 	}
@@ -168,12 +179,12 @@ static int printf_uint_putPrefix(int fd, int radix, bool uppercase){
 static int printf_uint(int fd, unsigned long long number, struct specifierState* spec){
 	int printed = 0;
 	int res;
-	int64_t width = spec->width; // we don't want to modify the struct's value, just in case it would be re-used elsewhere
 
 	// All possible characters that we can encouter
 	const char* hexChars = (spec->uppercase) ? "0123456789ABCDEF" : "0123456789abcdef";
-	// Padding character
-	const char padding_char = spec->padWithZeros ? '0' : ' ';
+
+	if (spec->precision == 0 && number == 0)
+		return 0;
 
 	char buffer[128];
 	int pos = 0; // position in the buffer
@@ -186,15 +197,25 @@ static int printf_uint(int fd, unsigned long long number, struct specifierState*
 		buffer[pos++] = hexChars[rem];
 	} while(number > 0 && pos<128);
 
-	// Update the padding width: remove character already printed & prefix size
-	width -= pos;
-	if (spec->putPrefix) width -= (spec->radix > 9) ? 2 : 1;
-	if (spec->sign) width--; // leave one space for the sign
+	// padding_spaces = width - max(pos, precision) - prefix - sign
+	int64_t padding_spaces = spec->width;
+	padding_spaces -= (pos > spec->precision) ? pos : spec->precision;
+	if (spec->putPrefix) padding_spaces -= (spec->radix > 9) ? 2 : 1;
+	if (spec->sign) padding_spaces--; // leave one space for the sign
+	// padding_zeros: 
+	int64_t padding_zeros = spec->precision;
+	padding_zeros -= pos;
+	if ( spec->padWithZeros && !spec->padRight && (spec->width > spec->precision) ){
+		padding_zeros += padding_spaces;
+		padding_spaces = 0;
+	}
 
-	// Print spaces padding, if padding_char is a space
-	res = printf_uint_putPadding(fd, width, ' ', padding_char);
-	if (res == EOF) return printed;
-	printed += res;
+	// Print left padding
+	if (!spec->padRight){
+		res = printf_uint_putPadding(fd, padding_spaces, ' ');
+		if (res == EOF) return printed;
+		printed += res;
+	}
 
 	// Put the sign (if needed)
 	if (spec->sign){
@@ -210,8 +231,8 @@ static int printf_uint(int fd, unsigned long long number, struct specifierState*
 		printed += res;
 	}
 
-	// Print zeros padding, if padding_char is a zero
-	res = printf_uint_putPadding(fd, width, '0', padding_char);
+	// Print a minimum of 'precision' characters (0 padding)
+	res = printf_uint_putPadding(fd, padding_zeros, '0');
 	if (res == EOF) return printed;
 	printed += res;
 
@@ -220,6 +241,13 @@ static int printf_uint(int fd, unsigned long long number, struct specifierState*
 		res = dputc(buffer[pos], fd);
 		if (res == EOF) return printed;
 		printed++;
+	}
+
+	// Print right padding
+	if (spec->padRight){
+		res = printf_uint_putPadding(fd, padding_spaces, ' ');
+		if (res == EOF) return printed;
+		printed += res;
 	}
 
 	return printed;
@@ -305,21 +333,27 @@ static inline int getNumberOfDigits(unsigned long long number, int base){
 }
 
 static size_t getSizeOfNumberToPrint_unsigned(unsigned long long number, struct specifierState* spec){
-	// [space padding][prefix][0 padding][sign]number
+	size_t size_to_print;
 
-	size_t size_to_print = getNumberOfDigits(number, spec->radix);
+	// Special case of precision=0 and number=0 should return 0
+	if ( (spec->precision == 0 ) && number==0 )
+		return 0;
 
-	// Account for prefix size
-	if (spec->putPrefix)
-		size_to_print += (spec->radix > 9) ? 2 : 1;
+	// Size of the number's digits only:
+	// size_to_print = max(numberOfDigits(number), precision)
+	size_to_print = getNumberOfDigits(number, spec->radix);
+	// Note:  since size_to_print is unsigned, we need the added comparison
+	if ( (spec->precision > 0) && ( (uint64_t)spec->precision > size_to_print))
+		size_to_print = spec->precision;
 
-	// Any sign to be printed (+, - or space)
-	if (spec->sign)
-		size_to_print++;
+	// Add the sign and prefix:
+	// size_to_print = max(numberOfDigits(number), precision) + sign length + prefix length
+	if (spec->putPrefix) size_to_print += (spec->radix > 9) ? 2 : 1;
+	if (spec->sign) size_to_print += 1;
 
-	// size_to_print = max(paddingWidth, size_to_print)
-	if (spec->width > size_to_print)
-		size_to_print = spec->width;
+	// Add eventual padding:
+	// size_to_print = max(size_to_print, width)
+	if (spec->width > size_to_print) size_to_print = spec->width;
 
 	return size_to_print;
 }
@@ -340,13 +374,10 @@ static size_t getSizeOfNumberToPrint_signed(long long number, struct specifierSt
 }
 
 // Put the padding (width * padding_char) if the current padding_char_position (' ' or '0') is the right one
-static int sprintf_uint_putPadding(char* str, int width, char padding_char_position, char padding_char){
-	if (padding_char != padding_char_position)
-		return 0;
-
+static int sprintf_uint_putPadding(char* str, int n, char padding){
 	int printed;
-	for (printed=0 ; printed<width ; printed++){
-		str[printed] = padding_char;
+	for (printed=0 ; printed<n ; printed++){
+		str[printed] = padding;
 	}
 
 	return printed;
@@ -368,12 +399,12 @@ static int sprintf_uint_putPrefix(char* str, int radix, bool uppercase){
 
 static int sprintf_uint(char* str, unsigned long long number, struct specifierState* spec){
 	int printed = 0; // index in str
-	int64_t width = spec->width;
 
 	// All possible characters that we can encouter
 	const char* hexChars = (spec->uppercase) ? "0123456789ABCDEF" : "0123456789abcdef";
-	// Padding character
-	const char padding_char = spec->padWithZeros ? '0' : ' ';
+
+	if (spec->precision == 0 && number == 0)
+		return 0;
 
 	char buffer[128];
 	int pos = 0; // position in the buffer
@@ -386,13 +417,23 @@ static int sprintf_uint(char* str, unsigned long long number, struct specifierSt
 		buffer[pos++] = hexChars[rem];
 	} while(number > 0 && pos<128);
 
-	// Update the padding width: remove character already printed & prefix size
-	width -= pos;
-	if (spec->putPrefix) width -= (spec->radix > 9) ? 2 : 1;
-	if (spec->sign) width--; // leave one space for the sign
+	// padding_spaces = width - max(pos, precision) - prefix - sign
+	int64_t padding_spaces = spec->width;
+	padding_spaces -= (pos > spec->precision) ? pos : spec->precision;
+	if (spec->putPrefix) padding_spaces -= (spec->radix > 9) ? 2 : 1;
+	if (spec->sign) padding_spaces--; // leave one space for the sign
+	// padding_zeros: 
+	int64_t padding_zeros = spec->precision;
+	padding_zeros -= pos;
+	if ( spec->padWithZeros && !spec->padRight && (spec->width > spec->precision) ){
+		padding_zeros += padding_spaces;
+		padding_spaces = 0;
+	}
 
-	// Print spaces padding, if padding_char is a space
-	printed += sprintf_uint_putPadding(str, width, ' ', padding_char);
+	// Print left padding
+	if (!spec->padRight){
+		printed += sprintf_uint_putPadding(str, padding_spaces, ' ');
+	}
 
 	// Put the sign (if needed)
 	if (spec->sign){
@@ -404,12 +445,17 @@ static int sprintf_uint(char* str, unsigned long long number, struct specifierSt
 		printed += sprintf_uint_putPrefix(str+printed, spec->radix, spec->uppercase);
 	}
 
-	// Print zeros padding, if padding_char is a zero
-	printed += sprintf_uint_putPadding(str+printed, width, '0', padding_char);
+	// Print a minimum of 'precision' characters (0 padding)
+	printed += sprintf_uint_putPadding(str+printed, padding_zeros, '0');
 
 	// Print the parsed number into the string
 	while (--pos >= 0) {
 		str[printed++] = buffer[pos];
+	}
+
+	// Print right padding
+	if (spec->padRight){
+		printed += sprintf_uint_putPadding(str+printed, padding_spaces, ' ');
 	}
 
 	return printed;
@@ -528,6 +574,7 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 			case '7':
 			case '8':
 			case '9':
+				if (spec_state.precision < 0) spec_state.precision = 0; // precision defaults to -1
 				spec_state.precision *= 10;
 				spec_state.precision += (*format - '0');
 				break;
@@ -674,14 +721,9 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 	struct specifierState spec_state;
 	resetSpecifierState(&spec_state);
 
+	if (checkSize && size==0) return -1; // cannot write final '\0'
 	if (fmtStr == NULL) return -2;
 	if (format == NULL) return -3;
-
-	if (checkSize && size==0) return -1; // cannot write final '\0'
-	if (checkSize && size==1) {
-		if (*format != '\0') printed = -1; // return error if there was stuff to print
-		goto end; // write '\0' and return
-	}
 
 	while(*format){
 		switch(state){
@@ -766,6 +808,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 			case '7':
 			case '8':
 			case '9':
+				if (spec_state.precision < 0) spec_state.precision = 0; // precision defaults to -1
 				spec_state.precision *= 10;
 				spec_state.precision += (*format - '0');
 				break;
