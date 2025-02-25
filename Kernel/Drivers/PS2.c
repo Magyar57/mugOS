@@ -688,7 +688,7 @@ void PS2_handleMousePacket(uint8_t flags, uint8_t dx, uint8_t dy, uint8_t wheelA
 
 	// If X or Y overflow, we can ignore the packet !
 
-	debug("mouse interrupt, packet=[%#hhx, %#hhx, %#hhx, %#hhx]", flags, dx, dy, wheelAndThumbBtn);
+	debug("mouse interrupt, packet=[%#.2hhx, %#.2hhx, %#.2hhx, %#.2hhx]", flags, dx, dy, wheelAndThumbBtn);
 }
 
 void PS2_notifyMouse(){

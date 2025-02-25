@@ -484,21 +484,21 @@ static void keyCallback_printKey(Keycode keycode, int character, enum KeypressMo
 
 	// Non-printable key
 	if (character == 0){
-		debug("key %s %#x '%s'", mode_string, keycode, Keyboard_getKeyString(keycode));
+		debug("key %s %#.2x '%s'", mode_string, keycode, Keyboard_getKeyString(keycode));
 		return;
 	}
 
 	// Enter ('\n') is printable, but we don't actually want to put a line feed in the output
 	if (character == '\n'){
-		debug("key %s %#x '\\n'", mode_string, keycode);
+		debug("key %s %#.2x '\\n'", mode_string, keycode);
 		return;
 	}
 	if (character == '\t'){
-		debug("key %s %#x '\\t'", mode_string, keycode);
+		debug("key %s %#.2x '\\t'", mode_string, keycode);
 		return;
 	}
 
-	debug("key %s %#x '%c'", mode_string, keycode, character);
+	debug("key %s %#.2x '%c'", mode_string, keycode, character);
 }
 
 bool Keyboard_registerKeyCallback(KeyCallback callback){
