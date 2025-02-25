@@ -23,7 +23,7 @@
 // Tests printf
 // printf("%% %c %s ", 'a', "my_string");
 // printf("%d %i %x %p %o \n", 1234, -5678, 0x7fff, 0xbeef, 012345);
-// printf("%hd %hi %hhd %hhu \n", (short)57, (short)-42, (unsigned char) 20, (char)-10);
+// printf("%hd %hi %hhu %hhd \n", (short)57, (short)-42, (unsigned char) 20, (char)-10);
 // printf("%ld %li %lld %llu \n", 100000057l, -100000042l, -1099511627776ll, 0xffffffffffffffffull);
 // printf("%p %x %#x %X %#llX %#018llx '%# 18llx'\n", 0x123456789abcdef0, 0x1ffffffff, 0x1ffffffff, 0x1ffffffff, 0x80000000ffffffff, 0x7fffffffllu, 0x7fffffffllu);
 // printf("'%4d' '% 4d' '%+4d' %04d '% 04d' %+04d \n", -10, 10, 10, 10, -10, 10, 10, 10);
@@ -32,7 +32,7 @@
 // void test_snprintf(int max_buff, const char* fmt, uint64_t value){
 //     char str[1024];
 //     memset(str, 0, 1024);
-//     if (max_buff >= 1024) return; 
+//     if (max_buff >= 1024) return;
 //     int res = res = snprintf(str, max_buff, fmt, value);
 //     printf("(%2d/%2d) sprintf('%s', %#018hhx) => '%s' \n", res, max_buff, fmt, value, str);
 // }
@@ -65,6 +65,8 @@ enum PRINTF_STATE {
 	PRINTF_STATE_NORMAL,
 	PRINTF_STATE_FLAGS,
 	PRINTF_STATE_WIDTH,
+	PRINTF_STATE_PRECISION_SEP,
+	PRINTF_STATE_PRECISION,
 	PRINTF_STATE_LENGTH,
 	PRINTF_STATE_LENGTH_SHORT,
 	PRINTF_STATE_LENGTH_LONG,
@@ -79,6 +81,34 @@ enum PRINTF_LENGTH {
 	PRINTF_LENGTH_LONG,
 	PRINTF_LENGTH_LONG_LONG
 };
+
+// State of the currently parsed specifier
+struct specifierState {
+	bool putPrefix;			// Flag '#' => put prefix: "0x"/"0X" for hex, "0" for octal
+	bool padRight;			// Flag '-' => pad with spaces on the right instead of default left
+	bool padWithZeros;		// Flag '0' => pad with '0' instead of ' ' when width is specified
+	char sign;				// Flag '+' or ' ' => how to print the sign of positives number (\0 means nothing to print)
+	int64_t width;			// Width (number) => width specifier (padding)
+	int64_t precision;		// Precision (number) => number padding (minimum digits to print)
+	int length;				// Length (h, hh, l, ll) => size of the number to be poped
+	int radix;				// Specifier (d, x, o, ...) => print as decimal, hexadecimal, octal
+	bool numberSigned;		// Specifier (d, u) => print signed, unsigned
+	bool uppercase;			// Specifier (x, X) => 0x7fff, 0X7FFF
+};
+
+static inline void resetSpecifierState(struct specifierState* spec){
+	spec->putPrefix = false;
+	spec->padRight = false;
+	spec->padWithZeros = false;
+	spec->padRight = false;
+	spec->sign = '\0';
+	spec->width = 0;
+	spec->precision = 0;
+	spec->length = PRINTF_LENGTH_DEFAULT;
+	spec->radix = 10;
+	spec->numberSigned = false;
+	spec->uppercase = false;
+}
 
 // ================ Helpers for *printf implementation ================
 
@@ -135,30 +165,31 @@ static int printf_uint_putPrefix(int fd, int radix, bool uppercase){
 }
 
 // sign is the character to put as a sign in front of the number
-static int printf_uint(int fd, unsigned long long number, int radix, char sign, bool uppercase, bool putPrefix, bool padWithZeros, int64_t width){
+static int printf_uint(int fd, unsigned long long number, struct specifierState* spec){
 	int printed = 0;
 	int res;
+	int64_t width = spec->width; // we don't want to modify the struct's value, just in case it would be re-used elsewhere
 
 	// All possible characters that we can encouter
-	const char* hexChars = (uppercase) ? "0123456789ABCDEF" : "0123456789abcdef";
+	const char* hexChars = (spec->uppercase) ? "0123456789ABCDEF" : "0123456789abcdef";
 	// Padding character
-	const char padding_char = padWithZeros ? '0' : ' ';
+	const char padding_char = spec->padWithZeros ? '0' : ' ';
 
 	char buffer[128];
 	int pos = 0; // position in the buffer
 
 	// Convert the number to ASCII
 	do {
-		unsigned long long rem = number % radix;
-		number /= radix;
+		unsigned long long rem = number % spec->radix;
+		number /= spec->radix;
 
 		buffer[pos++] = hexChars[rem];
 	} while(number > 0 && pos<128);
 
 	// Update the padding width: remove character already printed & prefix size
 	width -= pos;
-	if (putPrefix) width -= (radix > 9) ? 2 : 1;
-	if (sign) width--; // leave one space for the sign
+	if (spec->putPrefix) width -= (spec->radix > 9) ? 2 : 1;
+	if (spec->sign) width--; // leave one space for the sign
 
 	// Print spaces padding, if padding_char is a space
 	res = printf_uint_putPadding(fd, width, ' ', padding_char);
@@ -166,15 +197,15 @@ static int printf_uint(int fd, unsigned long long number, int radix, char sign, 
 	printed += res;
 
 	// Put the sign (if needed)
-	if (sign){
-		res = dputc(sign, fd);
+	if (spec->sign){
+		res = dputc(spec->sign, fd);
 		if (res == EOF) return printed;
 		printed++;
 	}
 
 	// Put the prefix
-	if (putPrefix){
-		res = printf_uint_putPrefix(fd, radix, uppercase);
+	if (spec->putPrefix){
+		res = printf_uint_putPrefix(fd, spec->radix, spec->uppercase);
 		if (res == EOF) return printed;
 		printed += res;
 	}
@@ -194,14 +225,14 @@ static int printf_uint(int fd, unsigned long long number, int radix, char sign, 
 	return printed;
 }
 
-static int printf_int(int fd, long long number, int radix, char sign, bool uppercase, bool putPrefix, bool padWithZeros, int64_t width){
+static int printf_int(int fd, long long number, struct specifierState* spec){
 	if (number < 0){
-		sign = '-';
+		spec->sign = '-';
 		number = -number;
 	}
 	// else leave sign untouched (can be either '+' or ' ')
 
-	return printf_uint(fd, number, radix, sign, uppercase, putPrefix, padWithZeros, width);
+	return printf_uint(fd, number, spec);
 }
 
 // ================ Helpers for s*printf implementation ================
@@ -273,39 +304,39 @@ static inline int getNumberOfDigits(unsigned long long number, int base){
 	return getNumberOfDigits_base10(number);
 }
 
-static size_t getSizeOfNumberToPrint_unsigned(unsigned long long number, int base, char sign, bool putPrefix, int64_t paddingWidth){
+static size_t getSizeOfNumberToPrint_unsigned(unsigned long long number, struct specifierState* spec){
 	// [space padding][prefix][0 padding][sign]number
 
-	size_t size_to_print = getNumberOfDigits(number, base);
+	size_t size_to_print = getNumberOfDigits(number, spec->radix);
 
 	// Account for prefix size
-	if (putPrefix)
-		size_to_print += (base > 9) ? 2 : 1;
+	if (spec->putPrefix)
+		size_to_print += (spec->radix > 9) ? 2 : 1;
 
 	// Any sign to be printed (+, - or space)
-	if (sign)
+	if (spec->sign)
 		size_to_print++;
 
 	// size_to_print = max(paddingWidth, size_to_print)
-	if (paddingWidth > size_to_print)
-		size_to_print = paddingWidth;
+	if (spec->width > size_to_print)
+		size_to_print = spec->width;
 
 	return size_to_print;
 }
 
-static size_t getSizeOfNumberToPrint_signed(long long number, int base, char sign, bool putPrefix, int64_t paddingWidth){
+static size_t getSizeOfNumberToPrint_signed(long long number, struct specifierState* spec){
 	unsigned long long numberUnsigned;
 
 	// Account for sign character
 	if (number<0){
 		numberUnsigned = (unsigned long long) -number;
-		sign = '-'; // force getSizeOfNumberToPrint_unsigned to account for a sign
+		spec->sign = '-'; // force getSizeOfNumberToPrint_unsigned to account for a sign
 	}
 	else {
 		numberUnsigned = (unsigned long long) number;
 	}
 
-	return getSizeOfNumberToPrint_unsigned(numberUnsigned, base, sign, putPrefix, paddingWidth);
+	return getSizeOfNumberToPrint_unsigned(numberUnsigned, spec);
 }
 
 // Put the padding (width * padding_char) if the current padding_char_position (' ' or '0') is the right one
@@ -335,41 +366,42 @@ static int sprintf_uint_putPrefix(char* str, int radix, bool uppercase){
 	}
 }
 
-static int sprintf_uint(char* str, unsigned long long number, int radix, char sign, bool uppercase, bool putPrefix, bool padWithZeros, int64_t width){
+static int sprintf_uint(char* str, unsigned long long number, struct specifierState* spec){
 	int printed = 0; // index in str
+	int64_t width = spec->width;
 
 	// All possible characters that we can encouter
-	const char* hexChars = (uppercase) ? "0123456789ABCDEF" : "0123456789abcdef";
+	const char* hexChars = (spec->uppercase) ? "0123456789ABCDEF" : "0123456789abcdef";
 	// Padding character
-	const char padding_char = padWithZeros ? '0' : ' ';
+	const char padding_char = spec->padWithZeros ? '0' : ' ';
 
 	char buffer[128];
 	int pos = 0; // position in the buffer
 
 	// Convert the number to ASCII
 	do {
-		unsigned long long rem = number % radix;
-		number /= radix;
+		unsigned long long rem = number % spec->radix;
+		number /= spec->radix;
 
 		buffer[pos++] = hexChars[rem];
 	} while(number > 0 && pos<128);
 
 	// Update the padding width: remove character already printed & prefix size
 	width -= pos;
-	if (putPrefix) width -= (radix > 9) ? 2 : 1;
-	if (sign) width--; // leave one space for the sign
+	if (spec->putPrefix) width -= (spec->radix > 9) ? 2 : 1;
+	if (spec->sign) width--; // leave one space for the sign
 
 	// Print spaces padding, if padding_char is a space
 	printed += sprintf_uint_putPadding(str, width, ' ', padding_char);
 
 	// Put the sign (if needed)
-	if (sign){
-		str[printed++] = sign;
+	if (spec->sign){
+		str[printed++] = spec->sign;
 	}
 
 	// Put the prefix
-	if (putPrefix){
-		printed += sprintf_uint_putPrefix(str+printed, radix, uppercase);
+	if (spec->putPrefix){
+		printed += sprintf_uint_putPrefix(str+printed, spec->radix, spec->uppercase);
 	}
 
 	// Print zeros padding, if padding_char is a zero
@@ -383,13 +415,13 @@ static int sprintf_uint(char* str, unsigned long long number, int radix, char si
 	return printed;
 }
 
-static int sprintf_int(char* str, long long number, int radix, char sign, bool uppercase, bool putPrefix, bool padWithZeros, int64_t width){
+static int sprintf_int(char* str, long long number, struct specifierState* spec){
 	if (number < 0){
-		sign = '-';
+		spec->sign = '-';
 		number = -number;
 	}
 
-	return sprintf_uint(str, number, radix, sign, uppercase, putPrefix, padWithZeros, width);
+	return sprintf_uint(str, number, spec);
 }
 
 // Returns whether writing a new character WILL write to the '\0' character's place
@@ -406,15 +438,9 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 	int printed = 0; // number of characters printed (return value)
 
 	int state = PRINTF_STATE_NORMAL;
-	bool put_prefix = false;			// Flag '#' => put prefix: "0x"/"0X" for hex, "0" for octal
-	bool pad_with_zeros = false;		// Flag '0' => pad with '0' instead of ' ' when width is specified
-	char sign = '\0';					// Flag '+' or ' ' => how to print the sign of positives number (\0 means nothing to print)
-	int64_t width = 0;					// Width (number) => width specifier (padding)
-	int length = PRINTF_LENGTH_DEFAULT;	// Length (h, hh, l, ll) => size of the number to be poped
-	bool print_number = true;			// Specifier is a number to print (if not, skip)
-	int radix = 10;						// Specifier (d, x, o, ...) => print as decimal, hexadecimal, octal
-	bool number_signed = false;			// Specifier (d, u) => print signed, unsigned
-	bool uppercase = false;				// Specifier (x, X) => 0x7fff, 0X7FFF
+	bool print_number = true;
+	struct specifierState spec_state;
+	resetSpecifierState(&spec_state);
 
 	if (format == NULL) return -1;
 	if (fd < 0) return -2;
@@ -437,16 +463,19 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 		case PRINTF_STATE_FLAGS:
 			switch (*format){
 			case ' ':
-				sign = ' ';
+				spec_state.sign = ' ';
 				break;
 			case '#':
-				put_prefix = true;
+				spec_state.putPrefix = true;
 				break;
 			case '+':
-				sign = '+';
+				spec_state.sign = '+';
+				break;
+			case '-':
+				spec_state.padRight = true;
 				break;
 			case '0':
-				pad_with_zeros = true;
+				spec_state.padWithZeros = true;
 				break;
 			default:
 				state = PRINTF_STATE_WIDTH;
@@ -467,24 +496,56 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 				case '7':
 				case '8':
 				case '9':
-					width *= 10;
-					width += (*format - '0'); // convert '0' to '9' to their corresponding number 0-9
+					spec_state.width *= 10;
+					spec_state.width += (*format - '0'); // convert '0' to '9' to their corresponding number 0-9
 					break;
 			default:
 				state = PRINTF_STATE_LENGTH;
-				goto PRINTF_STATE_LENGTH_;
+				goto PRINTF_STATE_PRECISION_SEP_;
 			}
 			break;
+
+		case PRINTF_STATE_PRECISION_SEP:
+		PRINTF_STATE_PRECISION_SEP_:
+			if (*format == '.'){
+				state = PRINTF_STATE_PRECISION;
+				break;
+			}
+			else {
+				state = PRINTF_STATE_LENGTH;
+				goto PRINTF_STATE_LENGTH_;
+			}
+
+		case PRINTF_STATE_PRECISION:
+		switch (*format){
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				spec_state.precision *= 10;
+				spec_state.precision += (*format - '0');
+				break;
+		default:
+			state = PRINTF_STATE_LENGTH;
+			goto PRINTF_STATE_LENGTH_;
+		}
+		break;
 
 		case PRINTF_STATE_LENGTH:
 			PRINTF_STATE_LENGTH_:
 			switch(*format){
 			case 'h':
-				length = PRINTF_LENGTH_SHORT;
+				spec_state.length = PRINTF_LENGTH_SHORT;
 				state = PRINTF_STATE_LENGTH_SHORT;
 				break;
 			case 'l':
-				length = PRINTF_LENGTH_LONG;
+				spec_state.length = PRINTF_LENGTH_LONG;
 				state = PRINTF_STATE_LENGTH_LONG;
 				break;
 			default:
@@ -495,14 +556,14 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 		case PRINTF_STATE_LENGTH_SHORT:
 			if (*format != 'h')
 				goto PRINTF_STATE_SPEC_;
-			length = PRINTF_LENGTH_SHORT_SHORT;
+			spec_state.length = PRINTF_LENGTH_SHORT_SHORT;
 			state = PRINTF_STATE_SPEC;
 			break;
 
 		case PRINTF_STATE_LENGTH_LONG:
 			if (*format != 'l')
 				goto PRINTF_STATE_SPEC_;
-			length = PRINTF_LENGTH_LONG_LONG;
+			spec_state.length = PRINTF_LENGTH_LONG_LONG;
 			state = PRINTF_STATE_SPEC;
 			break;
 
@@ -515,10 +576,10 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 					print_number = false;
 					break;
 				case 'X':
-					number_signed = false;
-					radix = 16;
-					uppercase = true;
-					sign = '\0';
+					spec_state.numberSigned = false;
+					spec_state.radix = 16;
+					spec_state.uppercase = true;
+					spec_state.sign = '\0';
 					break;
 				case 'c':
 					dputc((char) va_arg(args, int), fd);
@@ -539,29 +600,29 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 					break;
 				case 'd':
 				case 'i':
-					number_signed = true;
-					radix = 10;
+					spec_state.numberSigned = true;
+					spec_state.radix = 10;
 					break;
 				case 'o':
-					number_signed = false;
-					radix = 8;
+					spec_state.numberSigned = false;
+					spec_state.radix = 8;
 					break;
 				case 'p':
-					length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
-					put_prefix = true; // always put 0x prefix for %p
-					number_signed = false;
-					radix = 16;
-					sign = '\0';
+					spec_state.length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
+					spec_state.putPrefix = true; // always put 0x prefix for %p
+					spec_state.numberSigned = false;
+					spec_state.radix = 16;
+					spec_state.sign = '\0';
 					break;
 				case 'u':
-					number_signed = false;
-					radix = 10;
+					spec_state.numberSigned = false;
+					spec_state.radix = 10;
 					break;
 				case 'x':
-					number_signed = false;
-					radix = 16;
-					sign = '\0';
-					uppercase = false;
+					spec_state.numberSigned = false;
+					spec_state.radix = 16;
+					spec_state.sign = '\0';
+					spec_state.uppercase = false;
 					break;
 				default:
 					print_number = false;
@@ -572,23 +633,20 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 			if (!print_number)
 				goto reset_state;
 
-			switch (length){
+			switch (spec_state.length){
 			case PRINTF_LENGTH_SHORT_SHORT:
 			case PRINTF_LENGTH_SHORT:
 			case PRINTF_LENGTH_DEFAULT:
-				if (number_signed)	printed += printf_int(fd, va_arg(args, int), radix, sign, uppercase, put_prefix, pad_with_zeros, width);
-				else		printed += printf_uint(fd, va_arg(args, unsigned int), radix, sign, uppercase, put_prefix, pad_with_zeros, width);
+				if (spec_state.numberSigned)	printed += printf_int(fd, va_arg(args, int), &spec_state);
+				else							printed += printf_uint(fd, va_arg(args, unsigned int), &spec_state);
 				break;
 			case PRINTF_LENGTH_LONG:
-				if (number_signed)	printed += printf_int(fd, va_arg(args, long), radix, sign, uppercase, put_prefix, pad_with_zeros, width);
-				else		printed += printf_uint(fd, va_arg(args, unsigned long), radix, sign, uppercase, put_prefix, pad_with_zeros, width);
+				if (spec_state.numberSigned)	printed += printf_int(fd, va_arg(args, long), &spec_state);
+				else							printed += printf_uint(fd, va_arg(args, unsigned long), &spec_state);
 				break;
 			case PRINTF_LENGTH_LONG_LONG:
-				if (number_signed)	printed += printf_int(fd, va_arg(args, long long), radix, sign, uppercase, put_prefix, pad_with_zeros, width);
-				else		{
-					unsigned long long val = va_arg(args, unsigned long long);
-					printed += printf_uint(fd, val, radix, sign, uppercase, put_prefix, pad_with_zeros, width);
-				}
+				if (spec_state.numberSigned)	printed += printf_int(fd, va_arg(args, long long), &spec_state);
+				else 							printed += printf_uint(fd, va_arg(args, unsigned long long), &spec_state);
 				break;
 			default:
 				break;
@@ -596,15 +654,8 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 
 			reset_state:
 			state = PRINTF_STATE_NORMAL;
-			put_prefix = false;
-			pad_with_zeros = false;
-			sign = '\0';
-			width = 0;
-			length = PRINTF_LENGTH_DEFAULT;
 			print_number = true;
-			radix = 10;
-			number_signed = false;
-			uppercase = false;
+			resetSpecifierState(&spec_state);
 			break; // case PRINTF_STATE_SPEC
 		}
 
@@ -619,15 +670,9 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 	int printed = 0; // number of printed characters & index in fmtStr
 
 	int state = PRINTF_STATE_NORMAL;
-	bool put_prefix = false;			// Flag '#' => put prefix: "0x"/"0X" for hex, "0" for octal
-	bool pad_with_zeros = false;		// Flag '0' => pad with '0' instead of ' ' when width is specified
-	char sign = '\0';					// Flag '+' or ' ' => how to print the sign of positives number (\0 means nothing to print)
-	int64_t width = 0;					// Width (number) => width specifier (padding)
-	int length = PRINTF_LENGTH_DEFAULT;	// Length (h, hh, l, ll) => size of the number to be poped
-	bool print_number = true;			// Specifier is a number to print (if not, skip)
-	int radix = 10;						// Specifier (d, x, o, ...) => print as decimal, hexadecimal, octal
-	bool number_signed = false;			// Specifier (d, u) => print signed, unsigned
-	bool uppercase = false;				// Specifier (x, X) => 0x7fff, 0X7FFF
+	bool print_number = true;
+	struct specifierState spec_state;
+	resetSpecifierState(&spec_state);
 
 	if (fmtStr == NULL) return -2;
 	if (format == NULL) return -3;
@@ -656,16 +701,19 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 		case PRINTF_STATE_FLAGS:
 			switch (*format){
 			case ' ':
-				sign = ' ';
+				spec_state.sign = ' ';
 				break;
 			case '#':
-				put_prefix = true;
+				spec_state.putPrefix = true;
 				break;
 			case '+':
-				sign = '+';
+				spec_state.sign = '+';
+				break;
+			case '-':
+				spec_state.padRight = true;
 				break;
 			case '0':
-				pad_with_zeros = true;
+				spec_state.padWithZeros = true;
 				break;
 			default:
 				state = PRINTF_STATE_WIDTH;
@@ -686,24 +734,56 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 			case '7':
 			case '8':
 			case '9':
-				width *= 10;
-				width += (*format - '0'); // convert '0' to '9' to their corresponding number 0-9
+				spec_state.width *= 10;
+				spec_state.width += (*format - '0'); // convert '0' to '9' to their corresponding number 0-9
 				break;
 			default:
 				state = PRINTF_STATE_LENGTH;
-				goto PRINTF_STATE_LENGTH_;
+				goto PRINTF_STATE_PRECISION_SEP_;
 			}
 			break;
+
+		case PRINTF_STATE_PRECISION_SEP:
+		PRINTF_STATE_PRECISION_SEP_:
+			if (*format == '.'){
+				state = PRINTF_STATE_PRECISION;
+				break;
+			}
+			else {
+				state = PRINTF_STATE_LENGTH;
+				goto PRINTF_STATE_LENGTH_;
+			}
+
+		case PRINTF_STATE_PRECISION:
+		switch (*format){
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				spec_state.precision *= 10;
+				spec_state.precision += (*format - '0');
+				break;
+		default:
+			state = PRINTF_STATE_LENGTH;
+			goto PRINTF_STATE_LENGTH_;
+		}
+		break;
 
 		case PRINTF_STATE_LENGTH:
 			PRINTF_STATE_LENGTH_:
 			switch(*format){
 			case 'h':
-				length = PRINTF_LENGTH_SHORT;
+				spec_state.length = PRINTF_LENGTH_SHORT;
 				state = PRINTF_STATE_LENGTH_SHORT;
 				break;
 			case 'l':
-				length = PRINTF_LENGTH_LONG;
+				spec_state.length = PRINTF_LENGTH_LONG;
 				state = PRINTF_STATE_LENGTH_LONG;
 				break;
 			default:
@@ -714,14 +794,14 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 		case PRINTF_STATE_LENGTH_SHORT:
 			if (*format != 'h')
 				goto PRINTF_STATE_SPEC_;
-			length = PRINTF_LENGTH_SHORT_SHORT;
+			spec_state.length = PRINTF_LENGTH_SHORT_SHORT;
 			state = PRINTF_STATE_SPEC;
 			break;
 
 		case PRINTF_STATE_LENGTH_LONG:
 			if (*format != 'l')
 				goto PRINTF_STATE_SPEC_;
-			length = PRINTF_LENGTH_LONG_LONG;
+			spec_state.length = PRINTF_LENGTH_LONG_LONG;
 			state = PRINTF_STATE_SPEC;
 			break;
 
@@ -734,10 +814,10 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 				print_number = false;
 				break;
 			case 'X':
-				number_signed = false;
-				radix = 16;
-				uppercase = true;
-				sign = '\0';
+				spec_state.numberSigned = false;
+				spec_state.radix = 16;
+				spec_state.uppercase = true;
+				spec_state.sign = '\0';
 				break;
 			case 'c':
 				vsnprintf_internal_checkBoundaries(size, printed+1, checkSize);
@@ -766,29 +846,29 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 				break;
 			case 'd':
 			case 'i':
-				number_signed = true;
-				radix = 10;
+				spec_state.numberSigned = true;
+				spec_state.radix = 10;
 				break;
 			case 'o':
-				number_signed = false;
-				radix = 8;
+				spec_state.numberSigned = false;
+				spec_state.radix = 8;
 				break;
 			case 'p':
-				length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
-				put_prefix = true; // always put 0x prefix for %p
-				number_signed = false;
-				radix = 16;
-				sign = '\0';
+				spec_state.length = PRINTF_LENGTH_LONG_LONG; // pointers are 64 bits
+				spec_state.putPrefix = true; // always put 0x prefix for %p
+				spec_state.numberSigned = false;
+				spec_state.radix = 16;
+				spec_state.sign = '\0';
 				break;
 			case 'u':
-				number_signed = false;
-				radix = 10;
+				spec_state.numberSigned = false;
+				spec_state.radix = 10;
 				break;
 			case 'x':
-				number_signed = false;
-				radix = 16;
-				sign = '\0';
-				uppercase = false;
+				spec_state.numberSigned = false;
+				spec_state.radix = 16;
+				spec_state.sign = '\0';
+				spec_state.uppercase = false;
 				break;
 			default:
 				print_number = false;
@@ -799,43 +879,43 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 			if (!print_number)
 				goto reset_state;
 
-			switch (length){
+			switch (spec_state.length){
 			case PRINTF_LENGTH_DEFAULT:
 			case PRINTF_LENGTH_SHORT_SHORT:
 			case PRINTF_LENGTH_SHORT:
-				if (number_signed) {
+				if (spec_state.numberSigned) {
 					int numberToPrint = va_arg(args, int);
-					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, radix, sign, put_prefix, width), checkSize);
-					printed += sprintf_int(fmtStr+printed, numberToPrint, radix, sign, uppercase, put_prefix, pad_with_zeros, width);
+					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, &spec_state), checkSize);
+					printed += sprintf_int(fmtStr+printed, numberToPrint, &spec_state);
 				}
 				else {
 					unsigned int numberToPrint = va_arg(args, unsigned int);
-					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_unsigned(numberToPrint, radix, sign, put_prefix, width), checkSize);
-					printed += sprintf_uint(fmtStr+printed, numberToPrint, radix, sign, uppercase, put_prefix, pad_with_zeros, width);
+					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_unsigned(numberToPrint, &spec_state), checkSize);
+					printed += sprintf_uint(fmtStr+printed, numberToPrint, &spec_state);
 				}
 				break;
 			case PRINTF_LENGTH_LONG:
-				if (number_signed) {
+				if (spec_state.numberSigned) {
 					long numberToPrint = va_arg(args, long);
-					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, radix, sign, put_prefix, width), checkSize);
-					printed += sprintf_int(fmtStr+printed, numberToPrint, radix, sign, uppercase, put_prefix, pad_with_zeros, width);
+					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, &spec_state), checkSize);
+					printed += sprintf_int(fmtStr+printed, numberToPrint, &spec_state);
 				}
 				else {
 					unsigned long numberToPrint = va_arg(args, unsigned long);
-					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_unsigned(numberToPrint, radix, sign, put_prefix, width), checkSize);
-					printed += sprintf_uint(fmtStr+printed, numberToPrint, radix, sign, uppercase, put_prefix, pad_with_zeros, width);
+					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_unsigned(numberToPrint, &spec_state), checkSize);
+					printed += sprintf_uint(fmtStr+printed, numberToPrint, &spec_state);
 				}
 				break;
 			case PRINTF_LENGTH_LONG_LONG:
-				if (number_signed) {
+				if (spec_state.numberSigned) {
 					long long numberToPrint = va_arg(args, long long);
-					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, radix, sign, put_prefix, width), checkSize);
-					printed += sprintf_int(fmtStr+printed, numberToPrint, radix, sign, uppercase, put_prefix, pad_with_zeros, width);
+					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, &spec_state), checkSize);
+					printed += sprintf_int(fmtStr+printed, numberToPrint, &spec_state);
 				}
 				else {
 					unsigned long long numberToPrint = va_arg(args, unsigned long long);
-					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_unsigned(numberToPrint, radix, sign, put_prefix, width), checkSize);
-					printed += sprintf_uint(fmtStr+printed, numberToPrint, radix, sign, uppercase, put_prefix, pad_with_zeros, width);
+					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_unsigned(numberToPrint, &spec_state), checkSize);
+					printed += sprintf_uint(fmtStr+printed, numberToPrint, &spec_state);
 				}
 				break;
 			default:
@@ -844,15 +924,8 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 
 			reset_state:
 			state = PRINTF_STATE_NORMAL;
-			put_prefix = false;
-			pad_with_zeros = false;
-			sign = '\0';
-			width = 0;
-			length = PRINTF_LENGTH_DEFAULT;
 			print_number = true;
-			radix = 10;
-			number_signed = false;
-			uppercase = false;
+			resetSpecifierState(&spec_state);
 			break;
 		}
 
