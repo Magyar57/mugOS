@@ -41,15 +41,15 @@ void Framebuffer_setClearColor(Framebuffer* this, uint32_t clearColor){
 void Framebuffer_clearScreen(Framebuffer* this){
 	assert(this);
 
-	for(int j=0 ; j<this->height ; j++){
+	for(uint64_t j=0 ; j<this->height ; j++){
 		size_t lineOffset = this->width*j;
-		for (int i=0 ; i<this->width ; i++){
+		for (uint64_t i=0 ; i<this->width ; i++){
 			this->address[lineOffset + i] = this->clearColor;
 		}
 	}
 }
 
-void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, int offsetX, int offsetY){
+void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, unsigned int offsetX, unsigned int offsetY){
 	assert(this);
 	assert((offsetX+BITMAP_CHAR_WIDTH) < this->width);
 	assert((offsetY+BITMAP_CHAR_HEIGHT) < this->height);
@@ -76,9 +76,9 @@ void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fo
 			uint64_t horizontalOffset = zoom*i + zoomedOffsetX;
 
 			// ii, jj: pixel indexes in the framebuffer
-			for (int jj=0 ; jj<zoom ; jj++){
+			for (uint64_t jj=0 ; jj<zoom ; jj++){
 				uint64_t iterationLineOffset = baseLineOffset + jj*pixelsPerScanLine;
-				for (int ii=0 ; ii<zoom ; ii++){
+				for (uint64_t ii=0 ; ii<zoom ; ii++){
 					this->address[iterationLineOffset + horizontalOffset+ii] = colorToDraw;
 				}
 			}

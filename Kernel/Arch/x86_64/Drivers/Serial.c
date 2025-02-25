@@ -138,7 +138,7 @@ static bool pushBackWriteBuffer(struct UARTDevice* dev, const uint8_t* str){
 
 	// Copy the string to the external buffer
 	size_t write_index = (dev->writeBeginIndex + dev->inWriteBuffer) % UARTDEVICE_EXT_BUFF_SIZE;
-	for(int i=0 ; i<n ; i++){
+	for(size_t i=0 ; i<n ; i++){
 		dev->externalWriteBuffer[write_index] = str[i];
 		write_index++;
 		if (write_index == UARTDEVICE_EXT_BUFF_SIZE) write_index = 0;
@@ -198,7 +198,7 @@ static bool pushBackReadBuffer(struct UARTDevice* dev, const uint8_t* str){
 
 	// Copy the string to the external buffer
 	size_t write_index = (dev->readBeginIndex + dev->inReadBuffer) % UARTDEVICE_EXT_BUFF_SIZE;
-	for(int i=0 ; i<n ; i++){
+	for(size_t i=0 ; i<n ; i++){
 		dev->externalReadBuffer[write_index] = str[i];
 		dev->inReadBuffer++;
 	}
