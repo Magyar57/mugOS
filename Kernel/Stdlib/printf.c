@@ -10,11 +10,12 @@
 // %[$][flags][width][.precision][length modifier]specifier
 // Supported options:
 // - flags: # + (space) -
-// - width: (number)
-// - width: h hh l ll
+// - width: (number) *
+// - .precision: (number) *
+// - length: h hh l ll
 // - specifier: c s % d i u o x X p
 
-// ALL integer functionnality is implemented, but the '*' specifier
+// ALL integer functionnalities are implemented !
 // NO floating point functionnality implemented
 
 // Tests printf
@@ -24,6 +25,7 @@
 // printf("%p %x %#x %X %#llX %#018llx '%# 18llx'\n", 0x123456789abcdef0, 0x1ffffffff, 0x1ffffffff, 0x1ffffffff, 0x80000000ffffffff, 0x7fffffffllu, 0x7fffffffllu);
 // printf("'%4d' '% 4d' '%+4d' %04d '% 04d' %+04d \n", -10, 10, 10, 10, -10, 10, 10, 10);
 // printf("'%8.4d' '%-8.4d' '%-08.4d' '%- 8.4d' '%-+8.4d' '%4.8d' '%.0d' '%.0d' \n", -10, -10, -10, 10, 10, -10, 0, 1);
+// printf("'%*d' '%.*d' '%*.*d' \n", 5, 10, 3, 10, 5, 3, 10);
 
 // Tests snprintf
 // void test_snprintf(int max_buff, const char* fmt, uint64_t value){
@@ -74,6 +76,7 @@
 // test_snprintf(2, "%d", 0); // 1 '0'
 // test_snprintf(1, "%.0d", 0); // 0 ''
 // test_snprintf(2, "%.0d", 1); // 1 '1'
+// snprintf(buff, 24, "'%*d' '%.*d' '%*.*d' \n", 5, 10, 3, 10, 5, 3, 10);
 
 // Enum for the printf state-machine state
 enum PRINTF_STATE {
@@ -103,7 +106,7 @@ struct specifierState {
 	bool padRight;			// Flag '-' => pad with spaces on the right instead of default left
 	bool padWithZeros;		// Flag '0' => pad with '0' instead of ' ' when width is specified
 	char sign;				// Flag '+' or ' ' => how to print the sign of positives number (\0 means nothing to print)
-	int64_t width;			// Width (number) => width specifier (padding)
+	uint64_t width;			// Width (number) => width specifier (padding)
 	int64_t precision;		// Precision (number) => number padding (minimum digits to print)
 	int length;				// Length (h, hh, l, ll) => size of the number to be poped
 	int radix;				// Specifier (d, x, o, ...) => print as decimal, hexadecimal, octal
@@ -202,12 +205,20 @@ static int printf_uint(int fd, unsigned long long number, struct specifierState*
 	padding_spaces -= (pos > spec->precision) ? pos : spec->precision;
 	if (spec->putPrefix) padding_spaces -= (spec->radix > 9) ? 2 : 1;
 	if (spec->sign) padding_spaces--; // leave one space for the sign
-	// padding_zeros: 
+	// padding_zeros:
 	int64_t padding_zeros = spec->precision;
 	padding_zeros -= pos;
-	if ( spec->padWithZeros && !spec->padRight && (spec->width > spec->precision) ){
-		padding_zeros += padding_spaces;
-		padding_spaces = 0;
+	if (spec->padWithZeros && !spec->padRight){
+		// Negative precision: all space padding should be 0 padding
+		if (spec->precision < 0){
+			padding_zeros = padding_spaces;
+			padding_spaces = 0;
+		}
+		// Width greater than precision: turn space padding into 0 padding
+		else if (spec->width > (uint64_t)spec->precision){
+			padding_zeros += padding_spaces;
+			padding_spaces = 0;
+		}
 	}
 
 	// Print left padding
@@ -373,7 +384,6 @@ static size_t getSizeOfNumberToPrint_signed(long long number, struct specifierSt
 	return getSizeOfNumberToPrint_unsigned(numberUnsigned, spec);
 }
 
-// Put the padding (width * padding_char) if the current padding_char_position (' ' or '0') is the right one
 static int sprintf_uint_putPadding(char* str, int n, char padding){
 	int printed;
 	for (printed=0 ; printed<n ; printed++){
@@ -422,12 +432,21 @@ static int sprintf_uint(char* str, unsigned long long number, struct specifierSt
 	padding_spaces -= (pos > spec->precision) ? pos : spec->precision;
 	if (spec->putPrefix) padding_spaces -= (spec->radix > 9) ? 2 : 1;
 	if (spec->sign) padding_spaces--; // leave one space for the sign
-	// padding_zeros: 
+	// padding_zeros = precision - pos
 	int64_t padding_zeros = spec->precision;
 	padding_zeros -= pos;
-	if ( spec->padWithZeros && !spec->padRight && (spec->width > spec->precision) ){
-		padding_zeros += padding_spaces;
-		padding_spaces = 0;
+	// If zero padding flag is present, turn space padding into zero padding
+	if (spec->padWithZeros && !spec->padRight){
+		// Negative precision: all space padding should be 0 padding
+		if (spec->precision < 0){
+			padding_zeros = padding_spaces;
+			padding_spaces = 0;
+		}
+		// Width greater than precision: turn space padding into 0 padding
+		else if (spec->width > (uint64_t)spec->precision){
+			padding_zeros += padding_spaces;
+			padding_spaces = 0;
+		}
 	}
 
 	// Print left padding
@@ -474,8 +493,9 @@ static int sprintf_int(char* str, long long number, struct specifierState* spec)
 #define snprintf_isBoundaryExceeded(size, i, checkSize)	\
 	( checkSize && (i > size-1) )
 
+// Note: we can cast i to size_t since we know it is the 'printed' variable and won't be negative unless we are returning an error
 #define vsnprintf_internal_checkBoundaries(size, i, checkSize) \
-	if (snprintf_isBoundaryExceeded(size, i, checkSize)) {printed=-1; goto end;}
+	if (snprintf_isBoundaryExceeded(size, (size_t) i, checkSize)) {printed=-1; goto end;}
 
 // ================ printf state-machines functions ================
 
@@ -532,38 +552,10 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 		case PRINTF_STATE_WIDTH:
 			PRINTF_STATE_WIDTH_:
 			switch (*format){
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-				case '8':
-				case '9':
-					spec_state.width *= 10;
-					spec_state.width += (*format - '0'); // convert '0' to '9' to their corresponding number 0-9
-					break;
-			default:
-				state = PRINTF_STATE_LENGTH;
-				goto PRINTF_STATE_PRECISION_SEP_;
-			}
-			break;
-
-		case PRINTF_STATE_PRECISION_SEP:
-		PRINTF_STATE_PRECISION_SEP_:
-			if (*format == '.'){
-				state = PRINTF_STATE_PRECISION;
+			case '*':
+				spec_state.width = va_arg(args, int);
+				state = PRINTF_STATE_PRECISION_SEP;
 				break;
-			}
-			else {
-				state = PRINTF_STATE_LENGTH;
-				goto PRINTF_STATE_LENGTH_;
-			}
-
-		case PRINTF_STATE_PRECISION:
-		switch (*format){
 			case '0':
 			case '1':
 			case '2':
@@ -574,15 +566,51 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 			case '7':
 			case '8':
 			case '9':
-				if (spec_state.precision < 0) spec_state.precision = 0; // precision defaults to -1
+				spec_state.width *= 10;
+				spec_state.width += (*format - '0'); // convert '0' to '9' to their corresponding number 0-9
+				break;
+			default:
+				state = PRINTF_STATE_PRECISION_SEP;
+				goto PRINTF_STATE_PRECISION_SEP_;
+			}
+			break;
+
+		case PRINTF_STATE_PRECISION_SEP:
+		PRINTF_STATE_PRECISION_SEP_:
+			if (*format == '.'){
+				spec_state.precision = 0;
+				state = PRINTF_STATE_PRECISION;
+				break;
+			}
+			else {
+				state = PRINTF_STATE_LENGTH;
+				goto PRINTF_STATE_LENGTH_;
+			}
+
+		case PRINTF_STATE_PRECISION:
+			switch (*format){
+			case '*':
+				spec_state.precision = va_arg(args, int);
+				state = PRINTF_STATE_LENGTH;
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
 				spec_state.precision *= 10;
 				spec_state.precision += (*format - '0');
 				break;
-		default:
-			state = PRINTF_STATE_LENGTH;
-			goto PRINTF_STATE_LENGTH_;
-		}
-		break;
+			default:
+				state = PRINTF_STATE_LENGTH;
+				goto PRINTF_STATE_LENGTH_;
+			}
+			break;
 
 		case PRINTF_STATE_LENGTH:
 			PRINTF_STATE_LENGTH_:
@@ -766,6 +794,10 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 		case PRINTF_STATE_WIDTH:
 		PRINTF_STATE_WIDTH_:
 			switch (*format){
+			case '*':
+				spec_state.width = va_arg(args, int);
+				state = PRINTF_STATE_PRECISION_SEP;
+				break;
 			case '0':
 			case '1':
 			case '2':
@@ -780,7 +812,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 				spec_state.width += (*format - '0'); // convert '0' to '9' to their corresponding number 0-9
 				break;
 			default:
-				state = PRINTF_STATE_LENGTH;
+				state = PRINTF_STATE_PRECISION_SEP;
 				goto PRINTF_STATE_PRECISION_SEP_;
 			}
 			break;
@@ -788,6 +820,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 		case PRINTF_STATE_PRECISION_SEP:
 		PRINTF_STATE_PRECISION_SEP_:
 			if (*format == '.'){
+				spec_state.precision = 0;
 				state = PRINTF_STATE_PRECISION;
 				break;
 			}
@@ -797,7 +830,11 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 			}
 
 		case PRINTF_STATE_PRECISION:
-		switch (*format){
+			switch (*format){
+			case '*':
+				spec_state.precision = va_arg(args, int);
+				state = PRINTF_STATE_LENGTH;
+				break;
 			case '0':
 			case '1':
 			case '2':
@@ -812,11 +849,11 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 				spec_state.precision *= 10;
 				spec_state.precision += (*format - '0');
 				break;
-		default:
-			state = PRINTF_STATE_LENGTH;
-			goto PRINTF_STATE_LENGTH_;
-		}
-		break;
+			default:
+				state = PRINTF_STATE_LENGTH;
+				goto PRINTF_STATE_LENGTH_;
+			}
+			break;
 
 		case PRINTF_STATE_LENGTH:
 			PRINTF_STATE_LENGTH_:
