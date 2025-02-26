@@ -5,12 +5,9 @@
 #include <stdbool.h>
 
 // Flags values for Gates (= ISR = Interrupt handlers)
-enum IDT_ATTRIBUTES {
-	IDT_ATTR_GATE_TASK =		0b00000101, // Gate is a Task Gate
-	IDT_ATTR_GATE_INTERRUPT16 =	0b00000110, // Gate is Interrupt Gate (16-bit code)
-	IDT_ATTR_GATE_TRAP16 =		0b00000111, // Gate is a Trap Gate (16-bit code)
-	IDT_ATTR_GATE_INTERRUPT32 =	0b00001110, // Gate is Interrupt Gate (32-bit code)
-	IDT_ATTR_GATE_TRAP32 =		0b00001111, // Gate is a Trap Gate (32-bit code)
+enum IDT_ATTRIBUTES_64 {
+	IDT_ATTR_GATE_INTERRUPT64 =	0b00001110, // Gate is Interrupt Gate (64-bit code)
+	IDT_ATTR_GATE_TRAP64 =		0b00001111, // Gate is a Trap Gate (64-bit code)
 
 	IDT_ATTR_RING0 =			0b00000000, // Gate is accessible from ring 0
 	IDT_ATTR_RING1 =			0b00100000, // Gate is accessible from ring <= 1
