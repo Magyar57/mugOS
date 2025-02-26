@@ -1,19 +1,15 @@
-# Arch x86 makefile
+# Arch x86 Userspace makefile
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
 SOURCES_ASM=$(wildcard *.asm)
 OBJECTS_ASM=$(patsubst %.asm, $(BUILD_SUBDIR)/%.obj, $(SOURCES_ASM))
 
-SUB_SOURCES=$(shell find . -mindepth 2 -type f)
-
-all: arch
+all: userspace
 
 .PHONY: all arch
 
-arch: $(OBJECTS_C) $(OBJECTS_ASM) $(SUB_SOURCES)
-	@$(MAKE) -C Drivers $(MAKE_FLAGS)
-	@$(MAKE) -C Userspace $(MAKE_FLAGS)
+userspace: $(OBJECTS_C) $(OBJECTS_ASM)
 
 # Generic object rules
 

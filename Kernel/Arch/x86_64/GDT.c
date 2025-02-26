@@ -46,7 +46,7 @@ enum GDTAccess {
 	GDT_ACCESS_RW_FORBID =			0b00000000, // (FOR CODE SEGMENTS) Read forbidden || (FOR DATA SEGMENTS) Write forbidden
 	GDT_ACCESS_RW_ALLOW =			0b00000010, // (FOR CODE SEGMENTS) Read allowed   || (FOR DATA SEGMENTS) Write allowed
 
-	GDT_ACCESS_BIT =				0b00000001  // Set this to 1 if the segment is read only, otherwise CPU will generate a page fault by trying to set this bit
+	GDT_ACCESS_BIT =				0b00000001  // CPU will set this bit (if cleared) when accessing the segment
 };
 
 // Flags, bits:
@@ -81,22 +81,29 @@ struct GDTLocationDescriptor {
 #define GDT_get_limit_16to19_and_flags(limit, flags)	(uint8_t)  (((limit >> 16) & 0x0f) | (((flags)<<4) & 0xf0))
 #define GDT_get_base_24to31(base)						(uint8_t)  ((base >> 24) & 0xff)
 
-#define GDT_get_GDTEntry(base, limit, access, flags) \
+#define getGDTEntry(base, limit, access, flags) \
 	{ GDT_get_limit_0to15(limit), GDT_get_base_0to15(base), GDT_get_base_16to23(base), access, GDT_get_limit_16to19_and_flags(limit, flags), GDT_get_base_24to31(base) }
 
 // =========== Declare GDT and assign GDT entries ===========
 
-#define GDT_KERNEL_CODE_ACCESS GDT_ACCESS_PRESENT|GDT_ACCESS_RING0|GDT_ACCESS_TYPE_CODE_OR_DATA|GDT_ACCESS_EXEC_ALLOW|GDT_ACCESS_DC_UP|GDT_ACCESS_RW_ALLOW
-#define GDT_KERNEL_DATA_ACCESS GDT_ACCESS_PRESENT|GDT_ACCESS_RING0|GDT_ACCESS_TYPE_CODE_OR_DATA|GDT_ACCESS_EXEC_FORBID|GDT_ACCESS_DC_UP|GDT_ACCESS_RW_ALLOW
-#define GDT_KERNEL_CODE_FLAGS  GDT_FLAG_GRANULARITY_4K|GDT_FLAG_LONG_MODE_ON
-#define GDT_KERNEL_DATA_FLAGS  GDT_FLAG_GRANULARITY_4K|GDT_FLAG_SIZE_32_PMODE|GDT_FLAG_LONG_MODE_OFF
+#define GDT_KTEXT_ACCESS GDT_ACCESS_PRESENT|GDT_ACCESS_RING0|GDT_ACCESS_TYPE_CODE_OR_DATA|GDT_ACCESS_EXEC_ALLOW|GDT_ACCESS_DC_UP|GDT_ACCESS_RW_ALLOW
+#define GDT_KTEXT_FLAGS  GDT_FLAG_GRANULARITY_4K|GDT_FLAG_LONG_MODE_ON
+#define GDT_KDATA_ACCESS GDT_ACCESS_PRESENT|GDT_ACCESS_RING0|GDT_ACCESS_TYPE_CODE_OR_DATA|GDT_ACCESS_EXEC_FORBID|GDT_ACCESS_DC_UP|GDT_ACCESS_RW_ALLOW
+#define GDT_KDATA_FLAGS  GDT_FLAG_GRANULARITY_4K|GDT_FLAG_SIZE_32_PMODE|GDT_FLAG_LONG_MODE_OFF
+
+#define GDT_UTEXT_ACCESS GDT_ACCESS_PRESENT|GDT_ACCESS_RING3|GDT_ACCESS_TYPE_CODE_OR_DATA|GDT_ACCESS_EXEC_ALLOW|GDT_ACCESS_DC_UP|GDT_ACCESS_RW_ALLOW
+#define GDT_UTEXT_FLAGS  GDT_FLAG_GRANULARITY_4K|GDT_FLAG_LONG_MODE_ON
+#define GDT_UDATA_ACCESS GDT_ACCESS_PRESENT|GDT_ACCESS_RING3|GDT_ACCESS_TYPE_CODE_OR_DATA|GDT_ACCESS_EXEC_FORBID|GDT_ACCESS_DC_UP|GDT_ACCESS_RW_ALLOW
+#define GDT_UDATA_FLAGS  GDT_FLAG_GRANULARITY_4K|GDT_FLAG_SIZE_32_PMODE|GDT_FLAG_LONG_MODE_OFF
 
 // Global GDT variable, in (kernel) memory
 // TODO replace hardcoded values with the macros above
 struct GDTEntry g_GDT[] = {
-	GDT_get_GDTEntry(0x0, 0x0, 0, 0),				// Null descriptor
-	GDT_get_GDTEntry(0x0, 0xffffffff, 0x9a, 0xa),	// Kernel 32-bit code segment
-	GDT_get_GDTEntry(0x0, 0xffffffff, 0x92, 0xc)	// Kernel 32-bit data segment
+	getGDTEntry(0x0, 0x0, 0, 0),														// Null descriptor
+	getGDTEntry(0x0, 0xffffffff, GDT_KTEXT_ACCESS, GDT_KTEXT_FLAGS),		// Kernel 64-bit code segment
+	getGDTEntry(0x0, 0xffffffff, GDT_KDATA_ACCESS, GDT_KDATA_FLAGS),		// Kernel 64-bit data segment
+	getGDTEntry(0x0, 0xffffffff, GDT_UTEXT_ACCESS, GDT_UTEXT_FLAGS),	// Usermode 64-bit code segment
+	getGDTEntry(0x0, 0xffffffff, GDT_UDATA_ACCESS, GDT_UDATA_FLAGS),	// Usermode 64-bit data segment
 };
 
 // Global GDT location descriptor, in (kernel) memory
