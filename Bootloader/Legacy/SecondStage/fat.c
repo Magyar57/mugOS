@@ -87,7 +87,7 @@ uint32_t __FAT_clusterToLba(uint32_t cluster){
 // Returns the next cluster of the currentCluster (by a lookup in the FAT)
 uint32_t __FAT_nextCluster(uint32_t currentCluster){
 	uint32_t fatIndex = currentCluster * 3/2;
-	if (currentCluster % 2 == 0) return (*(uint16_t*)(g_fat + fatIndex)) & 0x0fff; // todo tester de remplacer la somme de pointeurs par &g_fat[fatIndex]
+	if (currentCluster % 2 == 0) return (*(uint16_t*)(g_fat + fatIndex)) & 0x0fff; // tester de remplacer la somme de pointeurs par &g_fat[fatIndex]
 	else return (*(uint16_t*)(g_fat + fatIndex)) >> 4;
 }
 
@@ -143,7 +143,7 @@ bool __FAT_findFile(DISK* disk, FAT_File* file, const char* name, FAT_DirectoryE
 	for(int i=0 ; i<8 && name[i] && name+i<ext ; i++) fatName[i] = toupper(name[i]);
 	// if we have a file extension, copy it
 	if (ext != NULL) for(int i=0 ; i<3 && ext[i+1] ; i++) fatName[i+8] = toupper(ext[i+1]);
-	
+
 	// Search for the file
 
 	FAT_DirectoryEntry entry;
@@ -323,7 +323,6 @@ uint32_t FAT_read(DISK* disk, FAT_File* file, uint32_t byteCount, void* dataOut)
 			// read next sector
 			bool res = DISK_readSectors(disk, __FAT_clusterToLba(fd->curCluster) + fd->curSectorInCluster, 1, fd->buffer);
 			if (!res){
-				// TODO handle error
 				printf("FAT Error: couldn't read disk\n");
 				break;
 			}
@@ -347,7 +346,7 @@ void FAT_close(FAT_File* file){
 	if (file->handle == ROOT_DIR_HANDLE){
 		file->position = 0;
 		g_data->rootDir.curCluster = g_data->rootDir.firstCluster;
-		// TODO read first cluster into the buffer
+		// maybe read first cluster into the buffer ?
 		return;
 	}
 

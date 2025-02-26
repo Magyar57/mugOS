@@ -7,7 +7,6 @@
 
 #include "Fat.h"
 
-// TODO
 void printDir(BootSector bs, uint8_t* fat){
 	// DirectoryEntry entry;
 
@@ -46,7 +45,7 @@ int main(int argc, const char** argv){
 		fprintf(stderr, "Could not read '%s' boot sector !\n", argv[1]);
 		return 3;
 	}
-	
+
 	// printBootSectorInformations(bs);
 
 	// Read the disk's FAT
@@ -59,7 +58,7 @@ int main(int argc, const char** argv){
 	}
 
 	printf("Successfully read FAT !\n");
-	
+
 	// Read the disk's root directory
 	DirectoryEntry* directories = NULL;
 	couldRead = readRootDirectory(disk, bs, &directories);
@@ -73,7 +72,7 @@ int main(int argc, const char** argv){
 	printf("Successfully read root directory !\n");
 
 	printf("Welcome on the FAT CLI. Type 'help' for help informations.\n");
-	
+
 	char cwd[1024] = {'/'};
 	char buffer[1024];
 	while(true){
@@ -97,8 +96,6 @@ int main(int argc, const char** argv){
 		}
 
 		if (strcmp(buffer, "ls")==0 || strncmp(buffer, "ls ", 3)==0){
-			// TODO
-			printf("todo implement properly ls\n");
 			for(uint16_t i = 0 ; i<bs.DirEntryCount ; i++){
 				if (directories[i].Name[0] == '\0') break; // If the first byte of an entry is 0, we reached the end of the entries
 				printDirectoryEntryName(directories[i]);
@@ -111,8 +108,6 @@ int main(int argc, const char** argv){
 			// 	printf("Error, not file to concatenate provided. Usage: file <file.eg>\n");
 			// 	continue;
 			// }
-			// TODO
-			printf("todo implement file properly\n");
 			for(uint16_t i = 0 ; i<bs.DirEntryCount ; i++){
 				if (directories[i].Name[0] == '\0') break; // If the first byte of an entry is 0, we reached the end of the entries
 				printDirectoryEntryInformations(directories[i]);
@@ -126,8 +121,7 @@ int main(int argc, const char** argv){
 				printf("Error, not file to concatenate provided. Usage: cat <file.eg>\n");
 				continue;
 			}
-			// TODO
-			printf("todo implement cat\n");
+			printf("cat is unimplemented\n");
 			continue;
 		}
 

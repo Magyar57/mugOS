@@ -8,7 +8,7 @@
 ; 	=> It uses legacy booting.
 ; 	=> It is encoded in the FAT12 format.
 ;
-; Its role is to setup the data from the disk and the BIOS, 
+; Its role is to setup the data from the disk and the BIOS,
 ; then load and execute the Second Stage bootloader.
 ;
 ; ===================================================================================
@@ -62,7 +62,7 @@ start:
 ;	- cx [bits 6-15]: cylinder
 ;	- dh: head
 ; 	=>	so CX = 		---CH--- ---CL---
-;		where cylinder:	76543210 98      
+;		where cylinder:	76543210 98
 ; 		and sector:		           543210
 lba_to_chs:
 	; SPT means SectorPerTrack
@@ -71,7 +71,7 @@ lba_to_chs:
 	; cylinder 	= (LBA / SPT) / heads
 	push ax
 	push dx
-	
+
 	xor dx, dx							; dx = 0
 	div word [bdb_sectors_per_track]	; ax = ax/SPT <=> ax = LBA/SPT    AND    dx = ax % SPT <=> dx = LBA % SPT
 	inc dx								; dx++ so now dx = (LBA % SPT) + 1 = sector
@@ -98,14 +98,14 @@ lba_to_chs:
 ;	- dl: drive number
 ;	- es:bx: memory address where to store read data
 disk_read:
-	
+
 	; save registers that we use
 	push ax
 	push bx
 	push cx
 	push dx
 	push di
-	
+
 	push cx								; temporarily save cl (number of sectors to read)
 	call lba_to_chs						; compute CHS
 	pop ax								; ax (al) = ancien cx (cl) = n
@@ -118,7 +118,7 @@ disk_read:
 		stc								; set carry flag, some BIOS'es don't set it
 		int 13h							; call INT 13,2 : read disk sectors ; carry flag cleared => success
 		jnc .done						; jump if carry flag not set
-		
+
 		; failed
 		popa
 		call disk_reset
@@ -169,7 +169,7 @@ puts:
 		lodsb 			; loads next char in al
 		or al, al 		; verify if next char is null ?
 		jz .done 		; => break if it is
-		
+
 		; call BIOS function
 		mov ah, 0x0e	; set page number to 0
 		mov bh, 0		; write char in TTY mode
@@ -276,7 +276,7 @@ main:
 
 	; search for 2NDSTAGE.bin file
 	xor bx, bx ; bx will be our i of the for loop
-	mov di, buffer ; dx will be our current_directory_entry pointer. 
+	mov di, buffer ; dx will be our current_directory_entry pointer.
 	; As the name is the first entry in the FAT directories structure, it also points to the file/folder name
 
 	.search_second_stage:
@@ -289,13 +289,13 @@ main:
 		pop di
 		je .found_second_stage ; if the strings are equal, we found the file
 		; else, we move to the next directory entry, until there are none remaining
-		
+
 		add di, 32 ; we add the size of a directory entry to the current_directory_entry pointer
 		inc bx ; i++
 
 		cmp bx, [bdb_dir_entries_count] ; if i<nb_root_dir_entries (we still have entries to check)
 		jl .search_second_stage ; jump to search_second_stage
-		
+
 		; otherwise, second stage not found
 		jmp second_stage_not_found_error
 
@@ -321,14 +321,14 @@ main:
 
 		; first cluster = (second_stage_cluster - 2)*sectors_per_cluster + start_sector
 		; start sector = reserved + fats + root_directory_sioze = 1 + 18 + 134 = 33
-		; WARNING TODO fix: this is a hardcoded value that is ok for floppy but wrong for other types of disks. This will have to be fixed later
+		; WARNING: this is a hardcoded value that is ok for floppy but wrong for other types of disks
 		add ax, 31
 
 		mov cl, 1
 		mov dl, [ebr_drive_number]
 		call disk_read
 
-		add bx, [bdb_bytes_per_sector] ; WARNING TODO: this add will overflow if the 2ndStage.bin file we're reading is larger than 64 Ko
+		add bx, [bdb_bytes_per_sector] ; WARNING: this add will overflow if the 2ndStage.bin file we're reading is larger than 64 Ko
 
 		; compute location of next cluster
 		mov ax, [second_stage_cluster]
@@ -359,7 +359,7 @@ main:
 		jmp .load_second_stage_loop
 
 	.second_stage_loaded:
-	
+
 	; jump the second stage of the bootloader
 	mov dl, [ebr_drive_number] ; boot device in dl
 	mov ax, SECOND_STAGE_LOAD_SEGMENT ; set segment registers
@@ -369,7 +369,7 @@ main:
 
 	; We should not reach this bit of code
 	jmp wait_key_and_reboot
-	
+
 	; End of bootloader: infinite loop
 	cli	; mask interrupts, so we cannot be awaken
 	hlt ; stop (forever)
@@ -388,8 +388,8 @@ second_stage_cluster:		dw 0
 ; Memory addresses where to load the second stage's code
 ; Question is: where do we put the files in memory ?
 ; We are in 16 bits real mode, so we can't access memory above the 1Mo limit
-; so we can look at memory map and pick a location from there, 
-; without worrying about overriding something: 
+; so we can look at memory map and pick a location from there,
+; without worrying about overriding something:
 ; https://wiki.osdev.org/Memory_Map_(x86)#Overview
 ; We chose 0x00000500 to 0x00007BFF (29.75 KiB) - Conventional memory
 ; Note: "equ" directive: no memory will be allocated for the constants

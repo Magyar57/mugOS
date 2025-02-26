@@ -315,7 +315,8 @@ static EFI_GRAPHICS_OUTPUT_PROTOCOL* getGOP(){
 
 	puts(L"Located GOP protocol, here are available video modes:");
 
-	// TODO check that the current video mode PixelFormat is NOT PixelBltOnly (it means that linear frame buffer not supported)
+	// Note: if the current video mode PixelFormat is PixelBltOnly, it means that linear frame buffer not supported
+	// so we should not pass this framebuffer to the kernel
 	for(UINTN i=0 ; i<gop->Mode->MaxMode ; i++){
 		putNumberUnsigned_noCRLF(gop->Mode->Info->HorizontalResolution, 10);
 		puts_noCRLF(L"x");
