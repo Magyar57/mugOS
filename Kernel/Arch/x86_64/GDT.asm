@@ -29,3 +29,12 @@ setGDT:
 	pop rbp
 	ret
 ; END setGDT
+
+; void setTSS(uint16_t TSS_descriptor)
+global setTSS
+setTSS:
+	mov rax, rdi
+	ltr ax
+
+	ret
+; END setTSS
