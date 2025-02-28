@@ -1,16 +1,7 @@
-#ifndef __LIMINE_REQUESTS_H__
-#define __LIMINE_REQUESTS_H__
-
-// LimineRequests.h: limine boot protocol requests for the kernel startup
-// See https://github.com/limine-bootloader/limine/blob/trunk/PROTOCOL.md
-
-#include <stdint.h>
 #include <stddef.h>
 #include <limine.h>
 
-#define REQUESTED_LIMINE_REVISION 3
-
-// ================== Make the requests ==================
+#include "Boot/LimineRequests.h"
 
 volatile LIMINE_REQUESTS_START_MARKER;
 
@@ -18,8 +9,15 @@ volatile LIMINE_REQUESTS_START_MARKER;
 volatile LIMINE_BASE_REVISION(REQUESTED_LIMINE_REVISION)
 
 // Ask for Limine version
-volatile struct limine_bootloader_info_request limineInfo = {
+volatile struct limine_bootloader_info_request infoReq = {
 	.id = LIMINE_BOOTLOADER_INFO_REQUEST,
+	.revision = 0,
+	.response = NULL,
+};
+
+// Ask for the system's memory map
+volatile struct limine_memmap_request memmapReq = {
+	.id = LIMINE_MEMMAP_REQUEST,
 	.revision = 0,
 	.response = NULL,
 };
@@ -32,5 +30,3 @@ volatile struct limine_framebuffer_request framebufferReq = {
 };
 
 volatile LIMINE_REQUESTS_END_MARKER;
-
-#endif
