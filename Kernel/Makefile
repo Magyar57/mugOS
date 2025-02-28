@@ -3,15 +3,19 @@
 TARGET_CFLAGS+=-D $(ARCH)
 
 # Includes paths for the kernel
-export CPATH=$(abspath .):$(abspath Stdlib):$(abspath Arch/$(ARCH)):$(abspath $(TOOLCHAIN_PATH)/include)
+export CPATH=$(abspath .):$(abspath $(TOOLCHAIN_PATH)/include):$(abspath Stdlib):$(abspath Arch/$(ARCH))
 
 BUILD_SUBDIR:=$(BUILD_DIR)/kernel
+BUILD_SUBDIRS:=$(patsubst ./%, $(BUILD_SUBDIR)/%, $(shell find . -mindepth 1 -type d))
 
-SOURCES_C=$(wildcard *.c)
-OBJECTS_C=$(patsubst %.c, $(BUILD_SUBDIR)/%.o, $(SOURCES_C))
+# Source files: include all subdirectories, excluding Arch, but including Arch/$(ARCH) ; and append Arch/*.{c,asm}
+SOURCES_C=$(shell find . -type f -name "*.c" -and \( -not -path "./Arch/*" -or -path "./Arch/$(ARCH)/*" \))
+SOURCES_C+=$(shell find ./Arch -maxdepth 1 -type f -name "*.c")
+SOURCES_ASM=$(shell find . -type f -name "*.asm" -and \( -not -path "./Arch/*" -or -path "./Arch/$(ARCH)/*" \))
+SOURCES_ASM+=$(shell find ./Arch -maxdepth 1 -type f -name "*.asm")
 
-ARCH_SOURCES=$(shell find Arch/$(ARCH)/** -type f)
-SUB_SOURCES=$(shell find . -mindepth 2 ! -path "./Arch/*" -type f) # All files in all subdirs EXCEPT Arch
+OBJECTS_C=$(patsubst ./%, $(BUILD_SUBDIR)/%, $(SOURCES_C:.c=.o))
+OBJECTS_ASM=$(patsubst ./%, $(BUILD_SUBDIR)/%, $(SOURCES_ASM:.asm=.obj))
 
 all: kernel
 
@@ -19,27 +23,19 @@ all: kernel
 
 kernel: $(BUILD_DIR)/kernel.elf
 
-$(BUILD_DIR)/kernel.elf: $(OBJECTS_C) $(OBJECTS_ASM) $(BUILD_SUBDIR)/HAL.o Arch/HAL.h $(ARCH_SOURCES) $(SUB_SOURCES)
-	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Arch/$(ARCH)
-	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Boot
-	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Drivers
-	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Drivers/Graphics
-	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Memory
-	@$(MAKE) $(MAKE_FLAGS) BUILD_SUBDIR=$(BUILD_SUBDIR) -C Stdlib
-	$(TARGET_LD) $(TARGET_LDFLAGS) -T Kernel.ld -Map=$(BUILD_DIR)/kernel.map -o $@ $(BUILD_SUBDIR)/*.{o,obj} $(TARGET_LIBS)
-
-$(BUILD_SUBDIR)/HAL.o: Arch/HAL.c | $(BUILD_SUBDIR)
-	$(TARGET_CC) $(TARGET_CFLAGS) -c $< -o $@
+$(BUILD_DIR)/kernel.elf: $(OBJECTS_C) $(OBJECTS_ASM)
+	@echo "LD $@"
+	@$(TARGET_LD) $(TARGET_LDFLAGS) -T Kernel.ld -Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
 
 # Generic object rules
 
-$(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIR)
-	$(TARGET_CC) $(TARGET_CFLAGS) -c $< -o $@
+$(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIRS)
+	@echo "CC $< => $@"
+	@$(TARGET_CC) $(TARGET_CFLAGS) -c $< -o $@
 
-$(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIR)
-	$(TARGET_ASM) $(TARGET_ASMFLAGS) $< -o $@
+$(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIRS)
+	@echo "AS $< => $@"
+	@$(TARGET_ASM) $(TARGET_ASMFLAGS) $< -o $@
 
-# Build dir
-
-$(BUILD_SUBDIR):
+$(BUILD_SUBDIRS):
 	@mkdir -p $@

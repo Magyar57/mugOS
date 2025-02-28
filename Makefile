@@ -11,14 +11,16 @@ all: image
 image: $(IMAGE)
 
 $(IMAGE): $(IMAGE_FILES) | $(TEMP_IMAGE) $(TEMP_PARTITION1)
-	mcopy -i $(TEMP_PARTITION1) -o $^ ::boot
+	@mcopy -i $(TEMP_PARTITION1) -o $^ ::boot
 	@if [ ! -f $@ ]; then cp $(TEMP_IMAGE) $@ ; fi
 	@dd if=$(TEMP_PARTITION1) of=$@ bs=512 seek=$(PARTITION1_OFFSET) status=none
+	@echo "Formatted $@"
 
 $(TEMP_IMAGE):
 	@dd if=/dev/zero of=$@ bs=1M count=20 status=none
-	sgdisk $@ --clear --new 1:2048 --type 1:ef00 >/dev/null
+	@sgdisk $@ --clear --new 1:2048 --type 1:ef00 >/dev/null
 	@limine bios-install $@ >/dev/null 2>&1
+	@echo "Created and formatted $@"
 
 $(TEMP_PARTITION1): | $(TEMP_IMAGE) $(LIMINE_UEFI_EXEC) $(LIMINE_BIOS_EXEC)
 	@dd if=$(TEMP_IMAGE) of=$@ bs=512 skip=$(PARTITION1_OFFSET) status=none
@@ -26,6 +28,7 @@ $(TEMP_PARTITION1): | $(TEMP_IMAGE) $(LIMINE_UEFI_EXEC) $(LIMINE_BIOS_EXEC)
 	@mmd -i $@ ::boot ::EFI ::EFI/BOOT
 	@mcopy -i $@ $(LIMINE_BIOS_EXEC) Bootloader/limine.conf ::boot
 	@mcopy -i $@ $(LIMINE_UEFI_EXEC) ::EFI/BOOT
+	@echo "Created and formatted $@"
 
 #
 # Kernel
