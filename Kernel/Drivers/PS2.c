@@ -5,7 +5,7 @@
 #include "assert.h"
 #include "io.h"
 #include "Logging.h"
-#include "Drivers/PS2Controller.h"
+#include "HAL/PS2Controller.h"
 #include "Drivers/Keycodes.h"
 #include "Drivers/Keyboard.h"
 
@@ -701,11 +701,11 @@ void PS2_notifyMouse(){
 
 	switch (packet_index){
 	case 0:
-		flags = data;	
+		flags = data;
 		packet_index++;
 		break;
 	case 1:
-		dx = data;	
+		dx = data;
 		packet_index++;
 		break;
 	case 2:

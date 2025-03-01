@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "Preprocessor.h"
-#include "CPU.h"
+#include "HAL/CPU.h"
 #include "ISR.h"
 
 typedef ISR IRQHandler;

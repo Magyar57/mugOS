@@ -1,7 +1,7 @@
 #ifndef __PS2_CONTROLLER_H__
 #define __PS2_CONTROLLER_H__
 
-#include "Drivers/i8042.h"
+#include "Arch/x86_64/Drivers/i8042.h"
 
 #define PS2Controller_initialize i8042_initialize
 

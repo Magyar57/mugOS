@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "string.h"
-#include "CPU.h"
+#include "HAL/CPU.h"
 
 #include "GDT.h"
 

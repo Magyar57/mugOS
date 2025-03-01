@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "CPU.h"
+#include "HAL/CPU.h"
 #include "GDT.h"
 #include "IDT.h"
 

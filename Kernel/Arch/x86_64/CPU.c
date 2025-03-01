@@ -3,7 +3,7 @@
 #include "string.h"
 #include "Logging.h"
 
-#include "CPU.h"
+#include "HAL/CPU.h"
 
 extern void cpuidWrapper(unsigned int code, uint64_t* rax, uint64_t* rbx, uint64_t* rcx, uint64_t* rdx); // CPU.asm
 

@@ -27,7 +27,7 @@ ISR_%1:
 	jmp ISR_asmPrehandler		; jump to common handler code
 %endmacro
 
-%include "Arch/x86_64/ISR_defs.s"
+%include "ISR_defs.s"
 
 ISR_asmPrehandler:
 	; CPU pushed SS:RSP, RFLAGS, cs, rip

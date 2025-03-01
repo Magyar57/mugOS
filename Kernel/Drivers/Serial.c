@@ -2,8 +2,8 @@
 #include "string.h"
 #include "io.h"
 #include "assert.h"
-#include "CPU.h"
-#include "IRQ.h"
+#include "HAL/CPU.h"
+#include "Arch/x86_64/IRQ.h" // TODO abstract
 #include "Logging.h"
 
 #include "Serial.h"

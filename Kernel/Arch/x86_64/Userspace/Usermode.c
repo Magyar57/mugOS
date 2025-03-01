@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "GDT.h"
 
-#include "Usermode.h"
+#include "HAL/Usermode.h"
 
 // Usermode.asm
 extern void x86_jumpToUsermode(uint64_t ucodeSegment, uint64_t udataSegment);

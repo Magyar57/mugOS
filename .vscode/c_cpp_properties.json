@@ -1,13 +1,18 @@
 {
+	"env": {
+		"ARCH": "x86_64"
+	},
     "configurations": [
 		{
-            "name": "x86_64",
+            "name": "Kernel",
             "includePath": [
-                // "${workspaceFolder}/Bootloader/**",
-                "${workspaceFolder}/Kernel/**",
-				"${workspaceFolder}/toolchain/**"
+                "${workspaceFolder}/Kernel",
+                "${workspaceFolder}/Kernel/Stdlib",
+                "${workspaceFolder}/Kernel/Arch/${ARCH}/Include",
+				"${workspaceFolder}/toolchain/include",
+                "${workspaceFolder}/Kernel/Arch/${ARCH}" // Included in each arch only
             ],
-            "defines": ["x86_64="],
+            "defines": ["${ARCH}="],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c23",
             "cppStandard": "c++23",

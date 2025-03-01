@@ -1,8 +1,8 @@
 #include <stddef.h>
 #include "Logging.h"
-
-#include "HAL.h"
 #include "IRQ.h"
+
+#include "HAL/HAL.h"
 
 // ================ x86_64 ================
 #ifdef x86_64

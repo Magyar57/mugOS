@@ -1,5 +1,7 @@
 section .text
 
+; #include "io.h"
+
 ; void x86_outb(uint16_t port, uint8_t value);
 global outb
 outb:

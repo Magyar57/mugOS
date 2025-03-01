@@ -16,9 +16,9 @@
 // Global array of [un]registered IRQ handlers
 IRQHandler g_IRQHandlers[16];
 
-#define IRQ_TIMER		0x00
-#define IRQ_KEYBOARD	0x01
-#define IRQ_PS2_MOUSE	0x0c
+#define IRQ_TIMER			0x00
+#define IRQ_PS2_KEYBOARD	0x01
+#define IRQ_PS2_MOUSE		0x0c
 
 static const char* const g_IRQTypes[] = {
     "Programmable Interrupt Timer Interrupt",
@@ -95,7 +95,7 @@ void IRQ_initialize(){
 
 	// Register our IRQ handlers
 	IRQ_registerHandler(IRQ_TIMER, IRQ_timer);
-	IRQ_registerHandler(IRQ_KEYBOARD, IRQ_keyboard);
+	IRQ_registerHandler(IRQ_PS2_KEYBOARD, IRQ_keyboard);
 	IRQ_registerHandler(IRQ_PS2_MOUSE, IRQ_mouse);
 
 	i8259_enableAllIRQ();

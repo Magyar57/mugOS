@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "Logging.h"
-#include "CPU.h"
+#include "HAL/CPU.h"
 #include "GDT.h"
 #include "IDT.h"
 #include "Panic.h"
@@ -89,7 +89,7 @@ void ISR_doubleFault(struct ISR_Params* params){
 	log(PANIC, NULL, "vector=%p rflags=%p err=%p", params->vector, params->rflags, params->err);
 	log(PANIC, NULL, "\trax=%p rbx=%p rcx=%p rdx=%p", params->rax, params->rbx, params->rcx, params->rdx);
 	log(PANIC, NULL, "\trsi=%p rdi=%p", params->rsi, params->rdi);
-	log(PANIC, NULL, "\tr15=%p r14=%p r13=%p r12=%p r11=%p r10=%p r9=%p r8=%p", 
+	log(PANIC, NULL, "\tr15=%p r14=%p r13=%p r12=%p r11=%p r10=%p r9=%p r8=%p",
 		params->r15, params->r14, params->r13, params->r12, params->r11, params->r10, params->r9, params->r8);
 	log(PANIC, NULL, "\trip=%p rsp=%p rbp=%p", params->rip, params->rsp, params->rbp);
 	log(PANIC, NULL, "\tcs=%p ds=%p ss=%p", params->cs, params->ds, params->ss);
@@ -98,7 +98,7 @@ void ISR_doubleFault(struct ISR_Params* params){
 
 void ISR_segmentNotPresent(struct ISR_Params* params){
 	// https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-220.html
-	
+
 	const char* origin = (params->err & 0x0001) ? "External" : "Internal";
 	uint8_t table = (params->err & 0x0006) >> 1;
 	uint16_t descriptor = (params->err & (0xfffc)) >> 3 ;
