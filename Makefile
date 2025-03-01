@@ -10,8 +10,8 @@ all: image
 #
 image: $(IMAGE)
 
-$(IMAGE): $(IMAGE_FILES) | $(TEMP_IMAGE) $(TEMP_PARTITION1)
-	@mcopy -i $(TEMP_PARTITION1) -o $^ ::boot
+$(IMAGE): $(IMAGE_FILES) $(TEMP_IMAGE) $(TEMP_PARTITION1)
+	@mcopy -i $(TEMP_PARTITION1) -o $(IMAGE_FILES) ::boot
 	@if [ ! -f $@ ]; then cp $(TEMP_IMAGE) $@ ; fi
 	@dd if=$(TEMP_PARTITION1) of=$@ bs=512 seek=$(PARTITION1_OFFSET) status=none
 	@echo "Formatted $@"
@@ -22,7 +22,7 @@ $(TEMP_IMAGE):
 	@limine bios-install $@ >/dev/null 2>&1
 	@echo "Created and formatted $@"
 
-$(TEMP_PARTITION1): | $(TEMP_IMAGE) $(LIMINE_UEFI_EXEC) $(LIMINE_BIOS_EXEC)
+$(TEMP_PARTITION1): $(LIMINE_CONF) | $(TEMP_IMAGE) $(LIMINE_UEFI_EXEC) $(LIMINE_BIOS_EXEC)
 	@dd if=$(TEMP_IMAGE) of=$@ bs=512 skip=$(PARTITION1_OFFSET) status=none
 	@mkfs.fat $@ -F 12 -n "MUGOS" >/dev/null
 	@mmd -i $@ ::boot ::EFI ::EFI/BOOT

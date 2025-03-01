@@ -28,6 +28,7 @@ export TARGET_LIBS:=
 export MAKE_FLAGS:=--no-print-directory ARCH=$(ARCH)
 
 # Output files & configurations
+LIMINE_CONF:=Bootloader/limine.conf
 IMAGE:=$(BUILD_DIR)/disk.img
 IMAGE_FILES:=$(BUILD_DIR)/kernel.elf
 PARTITION1_OFFSET=2048
