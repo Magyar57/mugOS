@@ -18,13 +18,13 @@ struct SegmentDescriptor {
 	uint8_t accessByte;					// Access byte (see SDAccess or SSDAccess)
 	uint8_t limit_16to19_and_flags;		// Limit (bit 16-19) followed by flags (on 4 bits)
 	uint8_t base_24to31;				// Base (bit 24-31)
-} __attribute__((packed));
+} packed;
 
 struct SystemSegmentDescriptor {
 	struct SegmentDescriptor common; // this is the same as segment descriptors, so we reuse the struct
 	uint32_t base_32to63;
 	uint32_t reserved;
-} __attribute__((packed));
+} packed;
 
 // [System] Segment Descriptor Access byte
 enum Access {
@@ -67,7 +67,7 @@ enum Flags {
 struct GDTDescriptor {
 	uint16_t size;		// GDT size -1
 	uint64_t offset;	// GDT address in memory
-} __attribute__((packed));
+} packed;
 
 // =========== [System] Segment descriptor generation maccros ===========
 
@@ -139,7 +139,7 @@ struct TSS {
 	uint64_t reserved2;
 	uint16_t reserved3;
 	uint16_t iobp;		// IO map base address (a 16 bit offset from the base of the TSS to the IO permission bit map)
-} __attribute__((packed));
+} packed;
 
 // 4 KiB stacks (TODO change for kmalloc allocations when kmalloc implemented)
 uint8_t stack0[4096];

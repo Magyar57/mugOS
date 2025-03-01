@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "Preprocessor.h"
 
 #include "IDT.h"
 
@@ -16,7 +17,7 @@ struct IDTEntry {
 	uint16_t offset_16to31;				// Offset (bit 15-31)
 	uint32_t offset_32to63;				// Offset (bit 32-63)
 	uint32_t reserved1;					// Unused, set to 0
-} __attribute__((packed)) IDTEntry;
+} packed;
 
 // ================ Descriptor ================
 
@@ -24,7 +25,7 @@ struct IDTEntry {
 struct IDTLocationDescriptor {
 	uint16_t size;		// IDT size -1
 	uint64_t offset;	// IDT linear address in memory (paging applies)
-} __attribute__((packed)) IDTLocationDescriptor;
+} packed;
 
 // ================ Declare IDT ================
 

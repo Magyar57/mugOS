@@ -9,7 +9,7 @@ struct ISR_Params {
 	uint64_t rdi, rsi, rbp, rbx, rdx, rcx, rax;
 	uint64_t vector, err;
 	uint64_t rip, cs, rflags, rsp, ss;
-} __attribute__((packed));
+} packed;
 
 typedef void (*ISR)(struct ISR_Params*);
 
