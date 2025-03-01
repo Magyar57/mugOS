@@ -3,7 +3,7 @@
 #include "io.h"
 #include "assert.h"
 #include "HAL/CPU.h"
-#include "Arch/x86_64/IRQ.h" // TODO abstract
+#include "IRQ.h"
 #include "Logging.h"
 
 #include "Serial.h"
@@ -354,7 +354,7 @@ static void handleDeviceInterrupt(struct UARTDevice* dev){
 	} while (iir != SERIAL_IIR_INT_PENDING);
 }
 
-static void handleInterrupt(struct ISR_Params* params){
+static void handleInterrupt(void*){
 	// Determine which device sent the interrupt
 
 	// For all present devices, trigger IRQ handling
@@ -476,8 +476,8 @@ void Serial_initialize(){
 		return;
 	}
 
-	IRQ_registerHandler(3, handleInterrupt); // IRQ3: COM2 or COM4 port
-	IRQ_registerHandler(4, handleInterrupt); // IRQ4: COM1 or COM3 port
+	IRQ_registerHandler(IRQ_COM2, handleInterrupt); // ISA IRQ 3: COM2 or COM4 port
+	IRQ_registerHandler(IRQ_COM1, handleInterrupt); // ISA IRQ 4: COM1 or COM3 port
 	for(int i=0 ; i<N_PORTS ; i++){
 		if (m_devices[i].present){
 			enableDeviceInterrupts(m_devices[i].port);

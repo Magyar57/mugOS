@@ -147,7 +147,7 @@ void i8042_initialize(){
 	// 	// Retry once
 	// 	log(WARNING, MODULE, "Controller self-test returned failure (%p), retrying", buff);
 	// 	sendToPort(PS2C_PORT_COMMAND, PS2C_CMD_SELF_TEST);
-	// 	buff = readPort(PS2C_PORT_DATA);		
+	// 	buff = readPort(PS2C_PORT_DATA);
 	// 	if (buff != PS2C_RES_SELF_TEST_SUCCESS){
 	// 		m_enabled = false;
 	// 		log(ERROR, MODULE, "Initalization failed, chip self-test failed (%p)", buff);

@@ -31,7 +31,6 @@
 
 ## Modifications
 
-- Refactor: abstract the IRQs from the PIC driver
 - Refactor: abstract the Serial ports from the Serial driver
 
 These are modifications to be done, that are dependent on other techs to be implemented first.

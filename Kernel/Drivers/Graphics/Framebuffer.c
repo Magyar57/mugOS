@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include "string.h"
 #include "assert.h"
-#include "Arch/x86_64/IRQ.h" // TODO abstract
+#include "IRQ.h"
 #include "Logging.h"
 #include "Drivers/Graphics/Font.h"
 

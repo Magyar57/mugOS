@@ -29,25 +29,6 @@ struct CPU {
 /// @brief Stops DEFINITELY the processor (interrupts are masked)
 #define haltAndCatchFire() __asm__ volatile("cli; 1: hlt; jmp 1b")
 
-/// @brief Disable interrupts (cli)
-#define CPU_IRQDisable() __asm__ volatile("cli")
-
-/// @brief Enable interrupts (sti)
-#define CPU_IRQEnable() __asm__ volatile("sti; nop")
-
-static always_inline unsigned long getFlags(){
-	unsigned long flags;
-
-	// "=rm": compiler can place flags_var in registers or memory
-	__asm__ volatile("pushf ; pop %[flags_var]"
-		: [flags_var] "=rm" (flags)
-		:
-		: "memory"
-	);
-
-	return flags;
-}
-
 /// @returns Whether the cpu supports the cpuid instruction
 extern bool CPU_supportsCpuid();
 

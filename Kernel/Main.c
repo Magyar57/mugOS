@@ -2,6 +2,7 @@
 #include "Logging.h"
 #include "Boot/LimineRequests.h"
 #include "Memory/PMM.h"
+#include "IRQ.h"
 #include "HAL/HAL.h"
 #include "HAL/CPU.h"
 #include "Drivers/Graphics/Graphics.h"
@@ -28,6 +29,10 @@ void kmain(){
 
 	// Memory managers initialization
 	// PMM_printMemoryMap();
+
+	// Initialize IRQs
+	IRQ_initialize();
+	IRQ_enable();
 
 	// Drivers initialization
 	Serial_initialize();
