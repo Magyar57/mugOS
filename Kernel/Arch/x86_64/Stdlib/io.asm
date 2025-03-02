@@ -25,8 +25,7 @@ inb:
 ; void io_wait();
 global io_wait
 io_wait:
-	mov rdi, 0x80	; 0x80 is an unused port
-	mov rsi, 0
-	call outb		; outb(0x80, 0)
+	xor rax, rax
+	out 0x80, al
 	ret
 ; END io_wait
