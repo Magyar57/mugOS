@@ -13,45 +13,41 @@
 
 #define MODULE "PS/2 driver"
 
-// https://wiki.osdev.org/PS/2_Keyboard
-// ASCII table: https://www.asciitable.com/
-
 // Note 1: we support only keyboard on port 1 and mouse on port 2
 // This is similar to other OSes
 // Note 2: we assume that the PS/2 Controller disabled translation for port 1
 
 // Commands (prefixes: KB=Keyboard, MOUSE=Mouse, None=Both)
+#define PS2_CMD_IDENTIFY				0xf2
+#define PS2_CMD_ENABLE_SCANNING			0xf4
+#define PS2_CMD_DISABLE_SCANNING		0xf5
+#define PS2_CMD_SET_DEFAULT_PARAMS		0xf6
+#define PS2_CMD_RESET					0xff
 #define PS2_KB_CMD_SET_LED				0xed
 #define PS2_KB_CMD_ECHO					0xee
 #define PS2_KB_CMD_SET_KEYSET			0xf0 // Get/Set scancode set
-#define PS2_CMD_IDENTIFY				0xf2
 #define PS2_KB_CMD_SET_DELAY_AND_RATE	0xf3
-#define PS2_KB_CMD_ENABLE_SCANNING		0xf4
-#define PS2_KB_CMD_DISABLE_SCANNING		0xf5
-#define PS2_KB_CMD_SET_DEFAULT_PARAMS	0xf6
-#define PS2_KB_CMD_RESEND				0xfe // Resend last byte
-#define PS2_KB_CMD_RESET				0xff
 #define PS2_MOUSE_CMD_SET_SAMPLERATE	0xf3
 #define PS2_MOUSE_CMD_ENABLE_STREAMING	0xf4 // Automatic packets
 #define PS2_MOUSE_CMD_DISABLE_STREAMING	0xf5 // Automatic packets
 #define PS2_MOUSE_CMD_SET_RESOLUTION	0xe8
 // Commands data byte
-#define PS2_KB_DATA_SCANCODE_GET		0x00
-#define PS2_KB_DATA_SCANCODE_SET1		0x01
-#define PS2_KB_DATA_SCANCODE_SET2		0x02
-#define PS2_KB_DATA_SCANCODE_SET3		0x03
-#define PS2_KB_DATA_LED_SCROLLLOCK		0b00000001
-#define PS2_KB_DATA_LED_NUMLOCK			0b00000010
-#define PS2_KB_DATA_LED_CAPSLOCK		0b00000100
+#define PS2_KB_SCANCODE_GET				0x00
+#define PS2_KB_SCANCODE_SET1			0x01
+#define PS2_KB_SCANCODE_SET2			0x02
+#define PS2_KB_SCANCODE_SET3			0x03
+#define PS2_KB_LED_SCROLLLOCK			0b00000001
+#define PS2_KB_LED_NUMLOCK				0b00000010
+#define PS2_KB_LED_CAPSLOCK				0b00000100
 // Special Bytes responses
-#define PS2_KB_RES_ERROR0				0x00
-#define PS2_KB_RES_SELF_TEST_PASSED		0xaa
-#define PS2_KB_RES_ECHO					0xee
-#define PS2_KB_RES_ACK					0xfa
-#define PS2_KB_RES_SELF_TEST_FAILED0	0xfc
-#define PS2_KB_RES_SELF_TEST_FAILED1	0xfd
-#define PS2_KB_RES_RESEND				0xfe
-#define PS2_KB_RES_ERROR1				0xff // Same as KB_RESPONSE_ERROR0, other scan code
+#define PS2_RES_ERROR0					0x00
+#define PS2_RES_SELFTEST_PASSED			0xaa
+#define PS2_RES_ECHO					0xee
+#define PS2_RES_ACK						0xfa
+#define PS2_RES_SELFTEST_FAILED0		0xfc
+#define PS2_RES_SELFTEST_FAILED1		0xfd
+#define PS2_RES_RESEND					0xfe
+#define PS2_RES_ERROR1					0xff // Same as KB_RESPONSE_ERROR0, other scan code
 
 struct PS2Keyboard {
 	bool enabled;
@@ -77,34 +73,34 @@ static struct PS2Mouse m_PS2Mouse;
 
 // We need these keyboard-related definitions here for the PS/2 driver intialization
 static void setLEDs(uint8_t leds);
-static uint8_t g_leds = 0; // The low 3 bits represent each led's status
+static uint8_t m_LEDs = 0; // The low 3 bits represent each LED's status
 
-// Send a byte to device 1, and resends (max 3 times) if response is Resend
-// Returns: response on success, PS2_KB_RES_RESEND on failure
+/// @brief Send a byte to device 1, and resends (max 3 times) if response is Resend
+/// @returns response on success, PS2_KB_RES_RESEND on failure
 static inline uint8_t sendByteToDevice1_HandleResend(uint8_t byte){
 	uint8_t buff;
 	for(int i=0 ; i<3 ; i++){
 		bool success;
 		success = PS2Controller_sendByteToDevice1(byte);
-		if (!success) return PS2_KB_RES_RESEND;
+		if (!success) return PS2_RES_RESEND;
 		success = PS2Controller_receiveByte(&buff);
-		if (!success) return PS2_KB_RES_RESEND;
-		if (buff != PS2_KB_RES_RESEND) break;
+		if (!success) return PS2_RES_RESEND;
+		if (buff != PS2_RES_RESEND) break;
 	}
 	return buff;
 }
 
-// Send a byte to device 2, and resends (max 3 times) if response is Resend
-// Returns: response on success, PS2_KB_RES_RESEND on failure
+/// @brief Send a byte to device 2, and resends (max 3 times) if response is Resend
+/// @returns response on success, PS2_RES_RESEND on failure
 static inline uint8_t sendByteToDevice2_HandleResend(uint8_t byte){
 	uint8_t buff;
 	for(int i=0 ; i<3 ; i++){
 		bool success;
 		success = PS2Controller_sendByteToDevice2(byte);
-		if (!success) return PS2_KB_RES_RESEND;
+		if (!success) return PS2_RES_RESEND;
 		success = PS2Controller_receiveByte(&buff);
-		if (!success) return PS2_KB_RES_RESEND;
-		if (buff != PS2_KB_RES_RESEND) break;
+		if (!success) return PS2_RES_RESEND;
+		if (buff != PS2_RES_RESEND) break;
 	}
 	return buff;
 }
@@ -319,14 +315,14 @@ static inline int cyclePauseSequence(int pauseSequenceIndex, uint8_t scancode){
 }
 
 static inline bool isResponseCode(uint8_t code){
-	if ((code == PS2_KB_RES_ERROR0)
-		|| (code == PS2_KB_RES_SELF_TEST_PASSED)
-		|| (code == PS2_KB_RES_ECHO)
-		|| (code == PS2_KB_RES_ACK)
-		|| (code == PS2_KB_RES_SELF_TEST_FAILED0)
-		|| (code == PS2_KB_RES_SELF_TEST_FAILED1)
-		|| (code == PS2_KB_RES_RESEND)
-		|| (code == PS2_KB_RES_ERROR1)){
+	if ((code == PS2_RES_ERROR0)
+		|| (code == PS2_RES_SELFTEST_PASSED)
+		|| (code == PS2_RES_ECHO)
+		|| (code == PS2_RES_ACK)
+		|| (code == PS2_RES_SELFTEST_FAILED0)
+		|| (code == PS2_RES_SELFTEST_FAILED1)
+		|| (code == PS2_RES_RESEND)
+		|| (code == PS2_RES_ERROR1)){
 		return true;
 	}
 	return false;
@@ -442,18 +438,18 @@ static inline void handleScancode(uint8_t scancode){
 			return;
 		case KEY_NUMLOCK:
 			if(g_isBreakedState) break;
-			g_leds ^= PS2_KB_DATA_LED_NUMLOCK; // flip numlock bit
-			setLEDs(g_leds);
+			m_LEDs ^= PS2_KB_LED_NUMLOCK; // flip numlock bit
+			setLEDs(m_LEDs);
 			break;
 		case KEY_SCROLLLOCK:
 			if(g_isBreakedState) break;
-			g_leds ^= PS2_KB_DATA_LED_SCROLLLOCK;
-			setLEDs(g_leds);
+			m_LEDs ^= PS2_KB_LED_SCROLLLOCK;
+			setLEDs(m_LEDs);
 			break;
 		case KEY_CAPSLOCK:
 			if(g_isBreakedState) break;
-			g_leds ^= PS2_KB_DATA_LED_CAPSLOCK;
-			setLEDs(g_leds);
+			m_LEDs ^= PS2_KB_LED_CAPSLOCK;
+			setLEDs(m_LEDs);
 			break;
 		default:
 			// Key was recognized
@@ -544,7 +540,7 @@ static const char* getKeyboardName(){
 	uint8_t buff, byte1, byte2;
 
 	buff = sendByteToDevice1_HandleResend(PS2_CMD_IDENTIFY);
-	if (buff != PS2_KB_RES_ACK) return NULL;
+	if (buff != PS2_RES_ACK) return NULL;
 
 	bool byte1_present = PS2Controller_receiveByte(&byte1);
 	if (!byte1_present){
@@ -573,7 +569,7 @@ static const char* getKeyboardName(){
 			}
 		case 0xac:
 			switch (byte2){
-				case 0xa1: return "PS/2 NCD Sun Keyboard";
+				case 0xa1: return "PS/2 NCD Sun keyboard";
 				default: break;
 			}
 		default:
@@ -589,12 +585,35 @@ static enum PS2MouseType getMouseType(){
 	uint8_t buff;
 
 	buff = sendByteToDevice2_HandleResend(PS2_CMD_IDENTIFY);
-	if (buff != PS2_KB_RES_ACK) return 0xff;
+	if (buff != PS2_RES_ACK) return 0xff;
 
 	bool byte_present = PS2Controller_receiveByte(&buff);
 	if (!byte_present) return 0xff;
 
 	return buff;
+}
+
+static inline bool resetDevice(int device){
+	assert(device == 1 || device == 2);
+	uint8_t buff;
+	bool res;
+
+	uint8_t (*sendByte)(uint8_t);
+	sendByte = (device == 1) ?
+		sendByteToDevice1_HandleResend : sendByteToDevice2_HandleResend;
+
+	// Reset
+	buff = sendByte(PS2_CMD_RESET);
+	if (buff != PS2_RES_ACK) return false;
+
+	// We should have another byte next: self-test passed or failed
+	res = PS2Controller_receiveByte(&buff);
+	if ( !res || (buff != PS2_RES_SELFTEST_PASSED) ) return false;
+
+	// Mouse then sends an identification byte, consume it
+	if (device == 2) PS2Controller_receiveByte(&buff);
+
+	return true;
 }
 
 // Note: check that port 1 is available and populated before calling this method
@@ -603,8 +622,14 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 	keyboard->enabled = false;
 
 	// Disable scanning for initialization
-	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_DISABLE_SCANNING);
-	if (buff1 != PS2_KB_RES_ACK) return;
+	buff1 = sendByteToDevice1_HandleResend(PS2_CMD_DISABLE_SCANNING);
+	if (buff1 != PS2_RES_ACK) return;
+
+	// Reset the device, and check self-test
+	if (!resetDevice(1)){
+		log(WARNING, MODULE, "PS/2 Keyboard self-test failed, deactivated");
+		return;
+	}
 
 	// Get the keyboard name string
 	keyboard->name = getKeyboardName();
@@ -614,9 +639,9 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 
 	// Switch to scan code set 2
 	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_KEYSET);
-	buff2 = sendByteToDevice1_HandleResend(PS2_KB_DATA_SCANCODE_SET2);
-	if (buff1!=PS2_KB_RES_ACK || buff2!=PS2_KB_RES_ACK){
-		log(WARNING, MODULE, "PS/2 Keyboard doesn't support scan code set 2, deactivated.");
+	buff2 = sendByteToDevice1_HandleResend(PS2_KB_SCANCODE_SET2);
+	if (buff1!=PS2_RES_ACK || buff2!=PS2_RES_ACK){
+		log(WARNING, MODULE, "PS/2 Keyboard doesn't support scan code set 2, deactivated");
 		keyboard->enabled = false;
 		return;
 	}
@@ -628,8 +653,8 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 	sendByteToDevice1_HandleResend(0b00000000 | 0b00010110); // Default 10.9 Hz (22) + 500 ms repeat
 
 	// Set LEDs: by default, only NUMLOCK is set
-	g_leds = PS2_KB_DATA_LED_NUMLOCK;
-	setLEDs(g_leds);
+	m_LEDs = PS2_KB_LED_NUMLOCK;
+	setLEDs(m_LEDs);
 
 	// Finally, we can register our IRQ handler
 	IRQ_registerHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
@@ -640,6 +665,12 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 // Note: check that port 2 is available and populated before calling this method
 void PS2_initializeMouse(struct PS2Mouse* mouse){
 	mouse->enabled = false;
+
+	// Reset the device, and check self-test
+	if (!resetDevice(2)){
+		log(WARNING, MODULE, "PS/2 Mouse self-test failed, deactivated");
+		return;
+	}
 
 	mouse->type = getMouseType();
 	if (mouse->type == 0xff){
@@ -727,12 +758,12 @@ void PS2_initialize(){
 	// After intialization, we can re-enable scanning
 	uint8_t buff;
 	if (m_PS2Keyboard.enabled) {
-		buff = sendByteToDevice1_HandleResend(PS2_KB_CMD_ENABLE_SCANNING);
-		if (buff != PS2_KB_RES_ACK) m_PS2Keyboard.enabled = false;
+		buff = sendByteToDevice1_HandleResend(PS2_CMD_ENABLE_SCANNING);
+		if (buff != PS2_RES_ACK) m_PS2Keyboard.enabled = false;
 	}
 	if (m_PS2Mouse.enabled) {
-		buff = sendByteToDevice2_HandleResend(PS2_KB_CMD_ENABLE_SCANNING);
-		if (buff != PS2_KB_RES_ACK) m_PS2Mouse.enabled = false;
+		buff = sendByteToDevice2_HandleResend(PS2_CMD_ENABLE_SCANNING);
+		if (buff != PS2_RES_ACK) m_PS2Mouse.enabled = false;
 	}
 
 	PS2Controller_enableDevicesInterrupts(m_PS2Keyboard.enabled, m_PS2Mouse.enabled);
