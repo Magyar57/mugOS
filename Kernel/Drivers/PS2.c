@@ -87,7 +87,7 @@ static inline uint8_t sendByteToDevice1_HandleResend(uint8_t byte){
 		bool success;
 		success = PS2Controller_sendByteToDevice1(byte);
 		if (!success) return PS2_KB_RES_RESEND;
-		success = PS2Controller_receiveDeviceByte(&buff);
+		success = PS2Controller_receiveByte(&buff);
 		if (!success) return PS2_KB_RES_RESEND;
 		if (buff != PS2_KB_RES_RESEND) break;
 	}
@@ -102,7 +102,7 @@ static inline uint8_t sendByteToDevice2_HandleResend(uint8_t byte){
 		bool success;
 		success = PS2Controller_sendByteToDevice2(byte);
 		if (!success) return PS2_KB_RES_RESEND;
-		success = PS2Controller_receiveDeviceByte(&buff);
+		success = PS2Controller_receiveByte(&buff);
 		if (!success) return PS2_KB_RES_RESEND;
 		if (buff != PS2_KB_RES_RESEND) break;
 	}
@@ -475,9 +475,8 @@ static void keyboardIRQ(void*){
 	// else debug("%p ", code);
 	// return;
 
-	bool res = PS2Controller_receiveDeviceByte(&code);
-	// this check should not be needed on x86, but might be
-	// on other plateforms ? so it's here just in case
+	bool res = PS2Controller_receiveByte(&code);
+	// Ignore spurious IRQ
 	if (!res) return;
 
 	// Verify that it IS a keycode and not a response from a command (should not happen though)
@@ -509,7 +508,7 @@ static void mouseIRQ(void*){
 	static uint8_t flags, dx, dy;
 	uint8_t data;
 
-	bool res = PS2Controller_receiveDeviceByte(&data);
+	bool res = PS2Controller_receiveByte(&data);
 	if (!res) return;
 
 	switch (packet_index){
@@ -547,12 +546,12 @@ static const char* getKeyboardName(){
 	buff = sendByteToDevice1_HandleResend(PS2_CMD_IDENTIFY);
 	if (buff != PS2_KB_RES_ACK) return NULL;
 
-	bool byte1_present = PS2Controller_receiveDeviceByte(&byte1);
+	bool byte1_present = PS2Controller_receiveByte(&byte1);
 	if (!byte1_present){
 		return "AT Keyboard";
 	}
 
-	bool byte2_present = PS2Controller_receiveDeviceByte(&byte2);
+	bool byte2_present = PS2Controller_receiveByte(&byte2);
 
 	// Only one byte: mouse
 	if (!byte2_present){
@@ -567,19 +566,22 @@ static const char* getKeyboardName(){
 				case 0x84: return "PS/2 short keyboard";
 				case 0x85: return "PS/2 NCD N-97 keyboard";
 				case 0x86: return "PS/2 122-key keyboard";
-				case 0x90: return "PS/2 Japanse 'G' Keyboard";
-				case 0x91: return "PS/2 Japanse 'P' Keyboard";
-				case 0x92: return "PS/2 Japanse 'A' Keyboard";
-				default: return NULL;
+				case 0x90: return "PS/2 Japanse 'G' keyboard";
+				case 0x91: return "PS/2 Japanse 'P' keyboard";
+				case 0x92: return "PS/2 Japanse 'A' keyboard";
+				default: break;
 			}
 		case 0xac:
 			switch (byte2){
 				case 0xa1: return "PS/2 NCD Sun Keyboard";
-				default: return NULL;
+				default: break;
 			}
 		default:
-			return NULL;
+			break;
 	}
+
+	log(ERROR, MODULE, "Unknown keyboard identify sequence '%#hhx, %#hhx'", byte1, byte2);
+	return NULL;
 }
 
 // Detect a mouse on port 2 and returns its id (0xff if unrecognized or is a keyboard)
@@ -589,7 +591,7 @@ static enum PS2MouseType getMouseType(){
 	buff = sendByteToDevice2_HandleResend(PS2_CMD_IDENTIFY);
 	if (buff != PS2_KB_RES_ACK) return 0xff;
 
-	bool byte_present = PS2Controller_receiveDeviceByte(&buff);
+	bool byte_present = PS2Controller_receiveByte(&buff);
 	if (!byte_present) return 0xff;
 
 	return buff;
@@ -607,13 +609,14 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 	// Get the keyboard name string
 	keyboard->name = getKeyboardName();
 	if (keyboard->name == NULL)	return;
+
 	keyboard->enabled = true;
 
 	// Switch to scan code set 2
 	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_KEYSET);
 	buff2 = sendByteToDevice1_HandleResend(PS2_KB_DATA_SCANCODE_SET2);
 	if (buff1!=PS2_KB_RES_ACK || buff2!=PS2_KB_RES_ACK){
-		Logging_log(INFO, MODULE, "PS/2 Keyboard doesn't support scan code set 2, deactivated.");
+		log(WARNING, MODULE, "PS/2 Keyboard doesn't support scan code set 2, deactivated.");
 		keyboard->enabled = false;
 		return;
 	}
@@ -631,7 +634,7 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 	// Finally, we can register our IRQ handler
 	IRQ_registerHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
 
-	Logging_log(INFO, MODULE, "Indentified keyboard as '%s'", keyboard->name);
+	log(INFO, MODULE, "Indentified keyboard as '%s'", keyboard->name);
 }
 
 // Note: check that port 2 is available and populated before calling this method
@@ -639,6 +642,10 @@ void PS2_initializeMouse(struct PS2Mouse* mouse){
 	mouse->enabled = false;
 
 	mouse->type = getMouseType();
+	if (mouse->type == 0xff){
+		log(INFO, MODULE, "No mouse detected, deactivated");
+		return;
+	}
 
 	// Try to enable scroll wheel
 	// Magic sequence: set sample rate to 200, then 100, then 80
@@ -671,28 +678,28 @@ void PS2_initializeMouse(struct PS2Mouse* mouse){
 
 	// Set the mouse name
 	switch (mouse->type){
-		case PS2MOUSETYPE_STD:
-			mouse->name = "Standard PS/2 mouse";
-			mouse->packetSize = 3;
-			break;
-		case PS2MOUSETYPE_WHEEL:
-			mouse->name = "PS/2 Mouse with scroll wheel";
-			mouse->packetSize = 4;
-			break;
-		case PS2MOUSETYPE_5BUTTONS:
-			mouse->name = "PS/2 5-button mouse";
-			mouse->packetSize = 4;
-			break;
-		default:
-			Logging_log(INFO, MODULE, "Couldn't initialize PS/2 mouse (invalid mouse id)");
-			return;
+	case PS2MOUSETYPE_STD:
+		mouse->name = "Standard PS/2 mouse";
+		mouse->packetSize = 3;
+		break;
+	case PS2MOUSETYPE_WHEEL:
+		mouse->name = "PS/2 mouse with scroll wheel";
+		mouse->packetSize = 4;
+		break;
+	case PS2MOUSETYPE_5BUTTONS:
+		mouse->name = "PS/2 5-button mouse";
+		mouse->packetSize = 4;
+		break;
+	default:
+		log(WARNING, MODULE, "Couldn't initialize PS/2 mouse (invalid mouse id)");
+		return;
 	}
 
 	// Finally, we can register our IRQ handler
 	IRQ_registerHandler(IRQ_PS2_MOUSE, mouseIRQ);
 
 	mouse->enabled = true;
-	Logging_log(INFO, MODULE, "Identified mouse as '%s'", mouse->name);
+	log(INFO, MODULE, "Identified mouse as '%s'", mouse->name);
 }
 
 void PS2_initialize(){
@@ -708,11 +715,12 @@ void PS2_initialize(){
 		m_enabled = false;
 		m_PS2Keyboard.enabled = false;
 		m_PS2Mouse.enabled = false;
-		Logging_log(ERROR, MODULE, "Initalization failed, PS/2 Controller driver is disabled");
+		log(ERROR, MODULE, "Initalization failed, PS/2 Controller driver is disabled");
 		return;
 	}
 	m_enabled = true;
 
+	// Note: the initialize function print necessary informations already
 	if (port1_enabled) PS2_initializeKeyboard(&m_PS2Keyboard);
 	if (port2_enabled) PS2_initializeMouse(&m_PS2Mouse);
 
@@ -727,9 +735,9 @@ void PS2_initialize(){
 		if (buff != PS2_KB_RES_ACK) m_PS2Mouse.enabled = false;
 	}
 
-	PS2Controller_enableDevicesInterrupts();
+	PS2Controller_enableDevicesInterrupts(m_PS2Keyboard.enabled, m_PS2Mouse.enabled);
+	log(SUCCESS, MODULE, "Initialization success");
 	IRQ_enable();
-	Logging_log(SUCCESS, MODULE, "Initialization success");
 }
 
 #pragma endregion PS/2 Initialize

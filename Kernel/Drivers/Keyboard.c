@@ -589,7 +589,8 @@ void Keyboard_initialize(){
 		g_callbacks[i] = NULL;
 	}
 
-	Logging_log(SUCCESS, MODULE, "Initialization success");
+	Keyboard_registerKeyCallback(keyCallback_printKey);
+	log(SUCCESS, MODULE, "Initialization success");
 }
 
 void Keyboard_notifyReleased(Keycode keycode){
@@ -800,7 +801,7 @@ void Keyboard_notifyPressed(Keycode keycode){
 
 void Keyboard_NotifySysRq(){
 	// For now, sysrq just enables keyboard print
-	static bool callbackOn = false;
+	static bool callbackOn = true;
 
 	callbackOn ?
 		Keyboard_unregisterKeyCallback(keyCallback_printKey) :
