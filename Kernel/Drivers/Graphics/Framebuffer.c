@@ -10,6 +10,12 @@
 
 #define MODULE "Framebuffer"
 
+// At first, we were assuming that pitch != width * (bpp/8)
+// To fix this, we compute the line offset (in number of pixels) instead:
+// offset = pitch / (bpp/8)
+// Note: we assume that pitch is a multiple of the pixel byte size (aka 4 bytes for 32 bpp)
+#define getLineOffset() 8*(this->pitch/this->bpp)
+
 void Framebuffer_clearTerminal(Framebuffer* this){
 	assert(this);
 	memset(this->text, '\0', TERMINAL_SIZE);
@@ -33,16 +39,17 @@ void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom){
 	this->textHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
 }
 
-void Framebuffer_setClearColor(Framebuffer* this, uint32_t clearColor){
+void Framebuffer_setClearColor(Framebuffer* this, color_t clearColor){
 	assert(this);
 	this->clearColor = clearColor;
 }
 
 void Framebuffer_clearScreen(Framebuffer* this){
 	assert(this);
+	const int one_line_offset = getLineOffset();
 
 	for(uint64_t j=0 ; j<this->height ; j++){
-		size_t lineOffset = this->width*j;
+		size_t lineOffset = j*one_line_offset;
 		for (uint64_t i=0 ; i<this->width ; i++){
 			this->address[lineOffset + i] = this->clearColor;
 		}
@@ -56,18 +63,18 @@ void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fo
 
 	uint8_t* bitmap = m_defaultFont[letter];
 	int mask; // bit mask, will be shifted right every iteration
-	gop_color_t colorToDraw;
+	color_t colorToDraw;
 
 	// Cache as many things as possible, since this is a critical section (performance-wise)
-	uint64_t pixelsPerScanLine = this->width;
-	uint64_t zoom = this->zoom;
-	uint64_t zoomedOffsetX = zoom * offsetX;
+	const uint64_t one_line_offet = getLineOffset();
+	const uint64_t zoom = this->zoom;
+	const uint64_t zoomedOffsetX = zoom * offsetX;
+	uint64_t baseLineOffset;
 
 	// i, j: indexes in the bitmap character
 	for (int j=0 ; j<BITMAP_CHAR_HEIGHT ; j++){
 
-		uint64_t baseLineOffset = pixelsPerScanLine * zoom * (j+offsetY);
-
+		baseLineOffset = one_line_offet * zoom * (j+offsetY);
 		mask = 0b10000000;
 		for (int i=0 ; i<BITMAP_CHAR_WIDTH ; i++){
 			// Draw pixel if the bit is set in the bitmap
@@ -77,7 +84,7 @@ void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fo
 
 			// ii, jj: pixel indexes in the framebuffer
 			for (uint64_t jj=0 ; jj<zoom ; jj++){
-				uint64_t iterationLineOffset = baseLineOffset + jj*pixelsPerScanLine;
+				uint64_t iterationLineOffset = baseLineOffset + jj*one_line_offet;
 				for (uint64_t ii=0 ; ii<zoom ; ii++){
 					this->address[iterationLineOffset + horizontalOffset+ii] = colorToDraw;
 				}

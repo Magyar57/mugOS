@@ -4,12 +4,18 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef uint32_t gop_color_t;
+typedef uint32_t color_t;
 #define COLOR_32BPP(r, g, b)	(r<<16 | g<<8 | b)			// r, g, b: 255 values (bounds not checked!)
+#define BLACK					COLOR_32BPP(  0,  0,  0)
+#define DARK_GREY				COLOR_32BPP( 24, 24, 24)
+#define LIGHT_GREY				COLOR_32BPP( 31, 31, 31)
 #define WHITE					COLOR_32BPP(255,255,255)
-#define LIGHT_GREY				COLOR_32BPP(31,31,31)
-#define DARK_GREY				COLOR_32BPP(24,24,24)
-#define BLACK					COLOR_32BPP(0,0,0)
+#define GREEN					COLOR_32BPP(  0,255,  0)
+#define RED						COLOR_32BPP(255,  0,  0)
+#define BLUE					COLOR_32BPP(  0,  0,255)
+#define YELLOW					COLOR_32BPP(255,255,  0)
+#define CYAN					COLOR_32BPP(  0,255,255)
+#define MAGENTA					COLOR_32BPP(255,  0,255)
 
 #define MAX_TERMINAL_WIDTH		256
 #define MAX_TERMINAL_HEIGHT		512
@@ -26,7 +32,7 @@ typedef struct s_Framebuffer {
 	uint16_t bpp;				// Bits per pixel
 
 	// Drawing stuff
-	gop_color_t clearColor;		// Framebufer's background/clear color
+	color_t clearColor;			// Framebufer's background/clear color
 	uint32_t drawOffsetX;		// Character X offset to the border of the screen
 	uint32_t drawOffsetY;		// Character Y offset to the border of the screen
 	uint32_t zoom;				// Font zoom level (multiplier)
@@ -43,7 +49,7 @@ typedef struct s_Framebuffer {
 } Framebuffer;
 
 void Framebuffer_clearTerminal(Framebuffer* this);
-void Framebuffer_setClearColor(Framebuffer* this, uint32_t clearColor);
+void Framebuffer_setClearColor(Framebuffer* this, color_t clearColor);
 void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom);
 void Framebuffer_clearScreen(Framebuffer* this);
 void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, unsigned int offsetX, unsigned int offsetY);

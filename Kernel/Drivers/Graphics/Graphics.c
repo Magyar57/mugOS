@@ -2,8 +2,6 @@
 #include <stddef.h>
 #include "Logging.h"
 #include "Panic.h"
-// #include "Drivers/VGA.h"
-// #include "EFI/Protocols/GraphicsOutputProtocol.h"
 #include "limine.h"
 #include "Drivers/Graphics/Framebuffer.h"
 
@@ -22,30 +20,30 @@ void Graphics_initialize(enum GraphicsSource graphics, void* pointer){
 	m_driverType = graphics;
 
 	switch (graphics){
-		case GRAPHICS_NONE:
-			m_driver = NULL;
-			m_initialized = false; // request for no graphics, we just un-initialize
-			break;
-		case GRAPHICS_LIMINE_FRAMEBUFFER:
-			m_driver = &m_framebuffer;
-			struct limine_framebuffer* fb = (struct limine_framebuffer*) pointer;
-			m_framebuffer.address = fb->address;
-			m_framebuffer.width = fb->width;
-			m_framebuffer.height = fb->height;
-			m_framebuffer.pitch = fb->pitch;
-			m_framebuffer.bpp = fb->bpp;
-			m_initialized = Framebuffer_initialize(&m_framebuffer);
-			if (!m_initialized)
-				log(WARNING, MODULE, "Failed to initialize, framebuffer error");
-			break;
-		// All of those are unsupported/deprecated
-		case GRAPHICS_BIOS_VGA:
-		case GRAPHICS_UEFI_GOP:
-		default:
-			m_driver = NULL;
-			m_initialized = false;
-			log(PANIC, MODULE, "Requested video mode is unsupported or deprecated");
-			panic();
+	case GRAPHICS_NONE:
+		m_driver = NULL;
+		m_initialized = false; // request for no graphics, we just un-initialize
+		break;
+	case GRAPHICS_LIMINE_FRAMEBUFFER:
+		m_driver = &m_framebuffer;
+		struct limine_framebuffer* fb = (struct limine_framebuffer*) pointer;
+		m_framebuffer.address = fb->address;
+		m_framebuffer.width = fb->width;
+		m_framebuffer.height = fb->height;
+		m_framebuffer.pitch = fb->pitch;
+		m_framebuffer.bpp = fb->bpp;
+		m_initialized = Framebuffer_initialize(&m_framebuffer);
+		if (!m_initialized)
+			log(WARNING, MODULE, "Failed to initialize, framebuffer error");
+		break;
+	// All of those are unsupported/deprecated
+	case GRAPHICS_BIOS_VGA:
+	case GRAPHICS_UEFI_GOP:
+	default:
+		m_driver = NULL;
+		m_initialized = false;
+		log(PANIC, MODULE, "Requested video mode is unsupported or deprecated");
+		panic();
 	}
 }
 
