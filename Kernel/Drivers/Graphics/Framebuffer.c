@@ -263,9 +263,8 @@ void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y
 	assert(this);
 	const unsigned int final_x = x+sizeX;
 	const unsigned int final_y = y+sizeY;
-	// Note: we tolerate the equality because the for loops draw STRICTLY under the final_x/y values
-	assert(final_x <= this->width);
-	assert(final_y <= this->height);
+	assert(final_x < this->width);
+	assert(final_y < this->height);
 
 	const int offset = getLineOffset();
 	int line_cache;
