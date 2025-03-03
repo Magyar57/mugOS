@@ -250,6 +250,34 @@ void Framebuffer_puts(Framebuffer* this, const char* str){
 	Framebuffer_putchar(this, '\n');
 }
 
+void Framebuffer_putPixel(Framebuffer* this, unsigned int x, unsigned int y, color_t pixel){
+	assert(this);
+	assert( (x>0) && (x < this->width) );
+	assert( (y>0) && (y < this->height) );
+
+	const int offset = getLineOffset();
+	this->address[offset*y + x] = pixel;
+}
+
+void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int sizeX, unsigned int sizeY, color_t c){
+	assert(this);
+	const unsigned int final_x = x+sizeX;
+	const unsigned int final_y = y+sizeY;
+	// Note: we tolerate the equality because the for loops draw STRICTLY under the final_x/y values
+	assert(final_x <= this->width);
+	assert(final_y <= this->height);
+
+	const int offset = getLineOffset();
+	int line_cache;
+
+	for (int j=y ; j<final_y ; j++) {
+		line_cache = offset*j;
+		for (int i=x ; i<final_x ; i++) {
+			this->address[line_cache + i] = c;
+		}
+	}
+}
+
 bool Framebuffer_initialize(Framebuffer* this){
 	// Sanitize check the needed variables were intialized correctly beforehand
 	if (this->address == NULL || this->width==0 || this->height==0 || this->pitch==0 || this->bpp==0)

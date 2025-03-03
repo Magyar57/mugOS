@@ -58,6 +58,14 @@ void Framebuffer_putchar(Framebuffer* this, const char c);
 void Framebuffer_puts_noLF(Framebuffer* this, const char* str);
 void Framebuffer_puts(Framebuffer* this, const char* str);
 
+/// @brief Put a pixel in the framebuffer at the given coordinates
+/// @note This method should be avoided at all cost if drawing lots of pixels in a row !!!
+/// It is very costly, as it will recompute a lof of checks and flags before putting the pixel
+void Framebuffer_putPixel(Framebuffer* this, unsigned int x, unsigned int y, color_t pixel);
+
+/// @brief Draw a rectangle if size `(sizeX, sizeY)` starting at offset `(x, y)`
+void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int sizeX, unsigned int sizeY, color_t c);
+
 /// @brief Initialize the Framebuffer driver (from a GOP or Bios obtained memory-mapped framebuffer)
 /// @param this Framebuffer object to initialize. Note: it HAS to be pre-initialized with
 ///        fields `framebuffer`, `width`, `height`, `pitch` and `bpp` set
