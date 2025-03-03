@@ -64,7 +64,10 @@ void Framebuffer_puts(Framebuffer* this, const char* str);
 void Framebuffer_putPixel(Framebuffer* this, unsigned int x, unsigned int y, color_t pixel);
 
 /// @brief Draw a rectangle if size `(sizeX, sizeY)` starting at offset `(x, y)`
-void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int sizeX, unsigned int sizeY, color_t c);
+void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int width, unsigned int height, color_t c);
+
+/// @brief Draw a filled rectangle if size `(sizeX, sizeY)` starting at offset `(x, y)`
+void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int width, unsigned int height, color_t c);
 
 /// @brief Initialize the Framebuffer driver (from a GOP or Bios obtained memory-mapped framebuffer)
 /// @param this Framebuffer object to initialize. Note: it HAS to be pre-initialized with

@@ -84,7 +84,7 @@ void timer(struct ISR_Params* params){
 	static bool clock = false;
 	const int rect_size = 4;
 	color_t color = (clock) ? GREEN : LIGHT_GREY;
-	Framebuffer_drawRectangle(&m_framebuffer, m_framebuffer.width-rect_size-1, m_framebuffer.height-rect_size-1, rect_size, rect_size, color);
+	Framebuffer_fillRectangle(&m_framebuffer, m_framebuffer.width-rect_size-1, m_framebuffer.height-rect_size-1, rect_size, rect_size, color);
 	clock = !clock;
 }
 
