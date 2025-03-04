@@ -52,7 +52,7 @@
 struct PS2Keyboard {
 	bool enabled;
 	const char* name;
-} PS2Keyboard;
+};
 
 enum PS2MouseType {
 	PS2MOUSETYPE_STD = 0x00,
@@ -557,6 +557,8 @@ static const char* getKeyboardName(){
 	switch (byte1){
 		case 0xab:
 			switch (byte2){
+				case 0x41:
+					log(WARNING, MODULE, "Received translated ID value 0xab 0x41, wtf?");
 				case 0x83: return "PS/2 MF2 keyboard";
 				case 0xc1: return "PS/2 MF2 keyboard";
 				case 0x84: return "PS/2 short keyboard";
@@ -622,8 +624,8 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 	keyboard->enabled = false;
 
 	// Disable scanning for initialization
-	buff1 = sendByteToDevice1_HandleResend(PS2_CMD_DISABLE_SCANNING);
-	if (buff1 != PS2_RES_ACK) return;
+	// Note that we ignore any error, to let the self-test message pop instead
+	sendByteToDevice1_HandleResend(PS2_CMD_DISABLE_SCANNING);
 
 	// Reset the device, and check self-test
 	if (!resetDevice(1)){
@@ -631,11 +633,8 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 		return;
 	}
 
-	// Get the keyboard name string
-	keyboard->name = getKeyboardName();
-	if (keyboard->name == NULL)	return;
-
-	keyboard->enabled = true;
+	// Re-disable scanning (might have been enabled by the reset)
+	sendByteToDevice1_HandleResend(PS2_CMD_DISABLE_SCANNING);
 
 	// Switch to scan code set 2
 	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_KEYSET);
@@ -645,6 +644,12 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 		keyboard->enabled = false;
 		return;
 	}
+
+	// Get the keyboard name string (any error is printed by getKeyboardName)
+	keyboard->name = getKeyboardName();
+	if (keyboard->name == NULL)	return;
+
+	keyboard->enabled = true;
 
 	// Set typematic byte (repeat rate/delay) NOTE: DOESN'T SEEM TO WORK
 	// Search x number to send for a wanted rate = -28/31*x + 30

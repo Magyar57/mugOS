@@ -60,7 +60,9 @@ static bool m_enabled = false;
 static bool g_isPort1Valid = false; // works
 static bool g_isPort2Valid = false; // is present AND works
 
-#define TIMEOUT 1<<16 // TIMEOUT is a counter used when waiting for responses (such as sendCommand)
+// TIMEOUT is a counter used when waiting for responses (such as sendCommand)
+// TODO: replace by an actual timer (which does not vary on the CPU speed...)
+#define TIMEOUT 1<<20
 
 static bool sendCommand(uint8_t command);
 static inline bool waitUntilBitValueOrTimeout(uint8_t mask, uint8_t value);
