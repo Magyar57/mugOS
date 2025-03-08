@@ -12,7 +12,8 @@ export PATH:=$(PATH):$(TOOLCHAIN_PATH)/bin
 export ARCH?=x86_64
 include BuildScripts/Arch.mk
 
-# Toolchain
+# Download links
+OVMF_URL:=https://cdn.download.clearlinux.org/image/OVMF.fd
 # Get the latest versions: https://ftp.gnu.org/gnu/binutils/ and https://gcc.gnu.org/releases.html
 BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz
 GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-14.1.0/gcc-14.1.0.tar.gz
@@ -28,6 +29,7 @@ export TARGET_LIBS:=
 export MAKE_FLAGS:=--no-print-directory ARCH=$(ARCH)
 
 # Output files & configurations
+UEFI_FIRMWARE:=$(TOOLCHAIN_PATH)/share/edk2/x64/OVMF.fd
 LIMINE_CONF:=Bootloader/limine.conf
 IMAGE:=$(BUILD_DIR)/disk.img
 IMAGE_FILES:=$(BUILD_DIR)/kernel.elf

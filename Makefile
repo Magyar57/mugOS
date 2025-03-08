@@ -50,7 +50,7 @@ tools:
 #
 run:
 	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
-		-drive if=pflash,file=/usr/share/edk2/x64/OVMF.4m.fd,format=raw,readonly=on \
+		-drive if=pflash,file=$(UEFI_FIRMWARE),format=raw,readonly=on \
 		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
 
 #
