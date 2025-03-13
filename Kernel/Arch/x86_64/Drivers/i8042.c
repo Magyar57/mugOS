@@ -57,8 +57,9 @@
 #define PS2C_RES_PORT2_TEST_SUCCESS			0x00
 
 static bool m_enabled = false;
-static bool g_isPort1Valid = false; // works
-static bool g_isPort2Valid = false; // is present AND works
+static bool m_isPort1Valid = false; // works
+static bool m_isPort2Valid = false; // is present AND works
+static bool m_translation; // Whether port 1 translation is on
 
 // TIMEOUT is a counter used when waiting for responses (such as sendCommand)
 // TODO: replace by an actual timer (which does not vary on the CPU speed...)
@@ -108,7 +109,9 @@ void i8042_initialize(){
 
 	// 5. Set Controller Configuration Byte
 	buff = readControllerConfigurationByte();
-	buff &= ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT1_TRANSLATION|PS2C_CONFBYTE_PORT1_CLOCK);
+	// Note: we keep translation as it is by default
+	m_translation = (buff & PS2C_CONFBYTE_PORT1_TRANSLATION);
+	buff &= ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT1_CLOCK);
 	writeControllerConfigurationByte(buff);
 
 	// 6. Perform self-test
@@ -123,29 +126,29 @@ void i8042_initialize(){
 	// The port 2 is present if the clock was cleared (disabled) when we enabled the port
 	if ( (buff & PS2C_CONFBYTE_PORT2_CLOCK) == 0 ){
 		// If it is present, configure it: set controller config byte, and disable port 2
-		g_isPort2Valid = true; // temp, we'll test it before actually setting it to valid
+		m_isPort2Valid = true; // temp, we'll test it before actually setting it to valid
 		sendCommand(PS2C_CMD_DISABLE_PORT2);
 		// Disable IRQ2 and enable port2 clock
 		buff &= ~(PS2C_CONFBYTE_PORT2_INTERRUPT|PS2C_CONFBYTE_PORT2_CLOCK);
 		writeControllerConfigurationByte(buff);
 	}
 	else {
-		g_isPort2Valid = false;
+		m_isPort2Valid = false;
 	}
 
 	// 8. Perform interface tests
 	// Port 1
 	sendCommand(PS2C_CMD_TEST_PORT1);
 	i8042_receiveByte(&buff);
-	g_isPort1Valid = (buff == PS2C_RES_PORT1_TEST_SUCCESS);
+	m_isPort1Valid = (buff == PS2C_RES_PORT1_TEST_SUCCESS);
 	// Port 2
-	if (g_isPort2Valid) {
+	if (m_isPort2Valid) {
 		sendCommand(PS2C_CMD_TEST_PORT2);
 		i8042_receiveByte(&buff);
-		g_isPort2Valid = (buff == PS2C_RES_PORT2_TEST_SUCCESS);
+		m_isPort2Valid = (buff == PS2C_RES_PORT2_TEST_SUCCESS);
 	}
 	// Update driver state
-	m_enabled = (g_isPort1Valid || g_isPort2Valid);
+	m_enabled = (m_isPort1Valid || m_isPort2Valid);
 	if (!m_enabled){
 		log(ERROR, MODULE, "Initalization failed, no functionning PS/2 port found.");
 		return;
@@ -153,23 +156,24 @@ void i8042_initialize(){
 
 	// Re-enable devices and interrupts for available devices
  	buff = readControllerConfigurationByte();
-	if (g_isPort1Valid) {
+	if (m_isPort1Valid) {
 		sendCommand(PS2C_CMD_ENABLE_PORT1);
 		buff |= PS2C_CONFBYTE_PORT1_INTERRUPT;
 	}
-	if (g_isPort2Valid){
+	if (m_isPort2Valid){
 		sendCommand(PS2C_CMD_ENABLE_PORT2);
 		buff |= PS2C_CONFBYTE_PORT2_INTERRUPT;
 	}
 	writeControllerConfigurationByte(buff);
 
-	log(SUCCESS, MODULE, "Initalization success (port 1 %s, port 2 %s)", g_isPort1Valid ? "ON":"OFF", g_isPort2Valid ? "ON":"OFF");
+	log(SUCCESS, MODULE, "Initalization success (port 1 %s, port 2 %s)", m_isPort1Valid ? "ON":"OFF", m_isPort2Valid ? "ON":"OFF");
 }
 
-void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out){
+void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out, bool* translationOut){
 	*isEnabled_out = m_enabled;
-	*port1Available_out = g_isPort1Valid;
-	*port2Available_out = g_isPort2Valid;
+	*port1Available_out = m_isPort1Valid;
+	*port2Available_out = m_isPort2Valid;
+	*translationOut = m_translation;
 }
 
 void i8042_enableDevicesInterrupts(bool device1, bool device2){

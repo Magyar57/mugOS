@@ -47,11 +47,14 @@
 #define PS2_RES_SELFTEST_FAILED0		0xfc
 #define PS2_RES_SELFTEST_FAILED1		0xfd
 #define PS2_RES_RESEND					0xfe
-#define PS2_RES_ERROR1					0xff // Same as KB_RESPONSE_ERROR0, other scan code
+#define PS2_RES_ERROR1					0xff // Same as KB_RESPONSE_ERROR0, other scancode
 
 struct PS2Keyboard {
 	bool enabled;
+	bool translated;
+	uint8_t scancodeSet; // 1, 2 or 3
 	const char* name;
+	uint8_t LEDs; // The low 3 bits represent each LED's status
 };
 
 enum PS2MouseType {
@@ -70,10 +73,6 @@ struct PS2Mouse {
 static bool m_enabled;
 static struct PS2Keyboard m_PS2Keyboard;
 static struct PS2Mouse m_PS2Mouse;
-
-// We need these keyboard-related definitions here for the PS/2 driver intialization
-static void setLEDs(uint8_t leds);
-static uint8_t m_LEDs = 0; // The low 3 bits represent each LED's status
 
 /// @brief Send a byte to device 1, and resends (max 3 times) if response is Resend
 /// @returns response on success, PS2_KB_RES_RESEND on failure
@@ -438,18 +437,18 @@ static inline void handleScancode(uint8_t scancode){
 			return;
 		case KEY_NUMLOCK:
 			if(g_isBreakedState) break;
-			m_LEDs ^= PS2_KB_LED_NUMLOCK; // flip numlock bit
-			setLEDs(m_LEDs);
+			m_PS2Keyboard.LEDs ^= PS2_KB_LED_NUMLOCK; // flip numlock bit
+			setLEDs(m_PS2Keyboard.LEDs);
 			break;
 		case KEY_SCROLLLOCK:
 			if(g_isBreakedState) break;
-			m_LEDs ^= PS2_KB_LED_SCROLLLOCK;
-			setLEDs(m_LEDs);
+			m_PS2Keyboard.LEDs ^= PS2_KB_LED_SCROLLLOCK;
+			setLEDs(m_PS2Keyboard.LEDs);
 			break;
 		case KEY_CAPSLOCK:
 			if(g_isBreakedState) break;
-			m_LEDs ^= PS2_KB_LED_CAPSLOCK;
-			setLEDs(m_LEDs);
+			m_PS2Keyboard.LEDs ^= PS2_KB_LED_CAPSLOCK;
+			setLEDs(m_PS2Keyboard.LEDs);
 			break;
 		default:
 			// Key was recognized
@@ -629,21 +628,22 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 
 	// Reset the device, and check self-test
 	if (!resetDevice(1)){
-		log(WARNING, MODULE, "PS/2 Keyboard self-test failed, deactivated");
+		log(WARNING, MODULE, "PS/2 keyboard self-test failed, deactivated");
 		return;
 	}
 
 	// Re-disable scanning (might have been enabled by the reset)
 	sendByteToDevice1_HandleResend(PS2_CMD_DISABLE_SCANNING);
 
-	// Switch to scan code set 2
+	// Switch to scancode set 2
 	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_KEYSET);
 	buff2 = sendByteToDevice1_HandleResend(PS2_KB_SCANCODE_SET2);
 	if (buff1!=PS2_RES_ACK || buff2!=PS2_RES_ACK){
-		log(WARNING, MODULE, "PS/2 Keyboard doesn't support scan code set 2, deactivated");
+		log(WARNING, MODULE, "PS/2 keyboard error when setting scancode set 2, deactivated");
 		keyboard->enabled = false;
 		return;
 	}
+	keyboard->scancodeSet = (keyboard->translated) ? 1 : 2;
 
 	// Get the keyboard name string (any error is printed by getKeyboardName)
 	keyboard->name = getKeyboardName();
@@ -658,13 +658,13 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 	sendByteToDevice1_HandleResend(0b00000000 | 0b00010110); // Default 10.9 Hz (22) + 500 ms repeat
 
 	// Set LEDs: by default, only NUMLOCK is set
-	m_LEDs = PS2_KB_LED_NUMLOCK;
-	setLEDs(m_LEDs);
+	m_PS2Keyboard.LEDs = PS2_KB_LED_NUMLOCK;
+	setLEDs(m_PS2Keyboard.LEDs);
 
 	// Finally, we can register our IRQ handler
 	IRQ_registerHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
 
-	log(INFO, MODULE, "Indentified keyboard as '%s'", keyboard->name);
+	log(INFO, MODULE, "Indentified keyboard as '%s' (using scancode set %d)", keyboard->name, keyboard->scancodeSet);
 }
 
 // Note: check that port 2 is available and populated before calling this method
@@ -746,7 +746,7 @@ void PS2_initialize(){
 	PS2Controller_disableDevicesInterrupts();
 
 	bool enabled, port1_enabled, port2_enabled;
-	PS2Controller_getStatus(&enabled, &port1_enabled, &port2_enabled);
+	PS2Controller_getStatus(&enabled, &port1_enabled, &port2_enabled, &m_PS2Keyboard.translated);
 	if (!enabled){
 		m_enabled = false;
 		m_PS2Keyboard.enabled = false;
