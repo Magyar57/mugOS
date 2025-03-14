@@ -122,11 +122,11 @@ typedef unsigned int Keycode;
 #define KEY_MUTE				113
 #define KEY_VOLUMEDOWN			114
 #define KEY_VOLUMEUP			115
-#define KEY_POWER				116 // System Control System Power Down 
+#define KEY_POWER				116 // System Control System Power Down
 #define KEY_NUMPAD_EQUAL		117
 #define KEY_NUMPAD_PLUSMINUS	118
 #define KEY_PAUSE				119
-#define KEY_SCALE				120 // Application Launch Compiz Scale (Expose) 
+#define KEY_SCALE				120 // Application Launch Compiz Scale (Expose)
 
 #define KEY_NUMPAD_COMMA		121
 #define KEY_HANGEUL				122
@@ -137,29 +137,29 @@ typedef unsigned int Keycode;
 #define KEY_RMETA				126
 #define KEY_COMPOSE				127
 
-#define KEY_STOP				128 // Application Control Stop 
+#define KEY_STOP				128 // Application Control Stop
 #define KEY_AGAIN				129
-#define KEY_PROPS				130 // Application Control Properties 
-#define KEY_UNDO				131 // Application Control Undo 
+#define KEY_PROPS				130 // Application Control Properties
+#define KEY_UNDO				131 // Application Control Undo
 #define KEY_FRONT				132
-#define KEY_COPY				133 // Application Control Copy 
-#define KEY_OPEN				134 // Application Control Open 
-#define KEY_PASTE				135 // Application Control Paste 
-#define KEY_FIND				136 // Application Control Search 
-#define KEY_CUT					137 // Application Control Cut 
-#define KEY_HELP				138 // Application Launch Integrated Help Center 
-#define KEY_MENU				139 // Menu (show menu) 
-#define KEY_CALC				140 // Application Launch Calculator 
+#define KEY_COPY				133 // Application Control Copy
+#define KEY_OPEN				134 // Application Control Open
+#define KEY_PASTE				135 // Application Control Paste
+#define KEY_FIND				136 // Application Control Search
+#define KEY_CUT					137 // Application Control Cut
+#define KEY_HELP				138 // Application Launch Integrated Help Center
+#define KEY_MENU				139 // Menu (show menu)
+#define KEY_CALC				140 // Application Launch Calculator
 #define KEY_SETUP				141
-#define KEY_SLEEP				142 // System Control System Sleep 
-#define KEY_WAKEUP				143 // System Wake Up 
-#define KEY_FILE				144 // Application Launch Local Machine Browser 
+#define KEY_SLEEP				142 // System Control System Sleep
+#define KEY_WAKEUP				143 // System Wake Up
+#define KEY_FILE				144 // Application Launch Local Machine Browser
 #define KEY_SENDFILE			145
 #define KEY_DELETEFILE			146
 #define KEY_XFER				147
 #define KEY_PROG1				148
 #define KEY_PROG2				149
-#define KEY_WWW					150 // Application Launch Internet Browser 
+#define KEY_WWW					150 // Application Launch Internet Browser
 #define KEY_MSDOS				151
 #define KEY_COFFEE				152 /* Application Launch Terminal Lock/Screensaver */
 #define KEY_SCREENLOCK			KEY_COFFEE
@@ -167,10 +167,10 @@ typedef unsigned int Keycode;
 #define KEY_DIRECTION			KEY_ROTATE_DISPLAY
 #define KEY_CYCLEWINDOWS		154
 #define KEY_MAIL				155
-#define KEY_BOOKMARKS			156 // Application Control Bookmarks 
+#define KEY_BOOKMARKS			156 // Application Control Bookmarks
 #define KEY_COMPUTER			157
-#define KEY_BACK				158 // Application Control Back 
-#define KEY_FORWARD				159 // Application Control Forward 
+#define KEY_BACK				158 // Application Control Back
+#define KEY_FORWARD				159 // Application Control Forward
 #define KEY_CLOSECD				160
 #define KEY_EJECTCD				161
 #define KEY_EJECTCLOSECD		162
@@ -180,19 +180,19 @@ typedef unsigned int Keycode;
 #define KEY_STOPCD				166
 #define KEY_RECORD				167
 #define KEY_REWIND				168
-#define KEY_PHONE				169 // Media Select Telephone 
+#define KEY_PHONE				169 // Media Select Telephone
 #define KEY_ISO					170
-#define KEY_CONFIG				171 // Application Launch Consumer Control Configuration 
-#define KEY_HOMEPAGE			172 // Application Control Home 
-#define KEY_REFRESH				173 // Application Control Refresh 
-#define KEY_EXIT				174 // Application Control Exit 
+#define KEY_CONFIG				171 // Application Launch Consumer Control Configuration
+#define KEY_HOMEPAGE			172 // Application Control Home
+#define KEY_REFRESH				173 // Application Control Refresh
+#define KEY_EXIT				174 // Application Control Exit
 #define KEY_MOVE				175
 #define KEY_EDIT				176
 #define KEY_SCROLLUP			177
 #define KEY_SCROLLDOWN			178
 #define KEY_NUMPAD_LPAREN		179
 #define KEY_NUMPAD_RPAREN		180
-#define KEY_NEW					181 // Application Control New 
+#define KEY_NEW					181 // Application Control New
 #define KEY_REDO				182 /* Application Control Redo/Repeat */
 
 #define KEY_F13					183
@@ -212,14 +212,14 @@ typedef unsigned int Keycode;
 #define KEY_PAUSECD				201
 #define KEY_PROG3				202
 #define KEY_PROG4				203
-#define KEY_ALL_APPLICATIONS	204 // Application Control Desktop Show All Applications 
+#define KEY_ALL_APPLICATIONS	204 // Application Control Desktop Show All Applications
 #define KEY_DASHBOARD			KEY_ALL_APPLICATIONS
 #define KEY_SUSPEND				205
-#define KEY_CLOSE				206 // Application Control Close 
+#define KEY_CLOSE				206 // Application Control Close
 #define KEY_PLAY				207
 #define KEY_FASTFORWARD			208
 #define KEY_BASSBOOST			209
-#define KEY_PRINT				210 // Application Control Print 
+#define KEY_PRINT				210 // Application Control Print
 #define KEY_HP					211
 #define KEY_CAMERA				212
 #define KEY_SOUND				213
@@ -232,7 +232,7 @@ typedef unsigned int Keycode;
 #define KEY_SPORT				220
 #define KEY_SHOP				221
 #define KEY_ALTERASE			222
-#define KEY_CANCEL				223 // Application Control Cancel 
+#define KEY_CANCEL				223 // Application Control Cancel
 #define KEY_BRIGHTNESSDOWN		224
 #define KEY_BRIGHTNESSUP		225
 #define KEY_MEDIA				226
@@ -242,10 +242,10 @@ typedef unsigned int Keycode;
 #define KEY_KBDILLUMDOWN		229
 #define KEY_KBDILLUMUP			230
 
-#define KEY_SEND				231 // Application Control Send 
-#define KEY_REPLY				232 // Application Control Reply 
-#define KEY_FORWARDMAIL			233 // Application Control Forward Msg 
-#define KEY_SAVE				234 // Application Control Save 
+#define KEY_SEND				231 // Application Control Send
+#define KEY_REPLY				232 // Application Control Reply
+#define KEY_FORWARDMAIL			233 // Application Control Forward Msg
+#define KEY_SAVE				234 // Application Control Save
 #define KEY_DOCUMENTS			235
 
 #define KEY_BATTERY				236
@@ -256,20 +256,20 @@ typedef unsigned int Keycode;
 
 #define KEY_UNKNOWN				240
 
-#define KEY_VIDEO_NEXT			241 // drive next video source 
-#define KEY_VIDEO_PREV			242 // drive previous video source 
-#define KEY_BRIGHTNESS_CYCLE	243 // brightness up, after max is min 
-#define KEY_BRIGHTNESS_AUTO		244 // Set Auto Brightness: manual brightness control is off, rely on ambient 
+#define KEY_VIDEO_NEXT			241 // drive next video source
+#define KEY_VIDEO_PREV			242 // drive previous video source
+#define KEY_BRIGHTNESS_CYCLE	243 // brightness up, after max is min
+#define KEY_BRIGHTNESS_AUTO		244 // Set Auto Brightness: manual brightness control is off, rely on ambient
 #define KEY_BRIGHTNESS_ZERO		KEY_BRIGHTNESS_AUTO
-#define KEY_DISPLAY_OFF			245 // display device to off state 
+#define KEY_DISPLAY_OFF			245 // display device to off state
 
 #define KEY_WWAN				246 // Wireless WAN (LTE, UMTS, GSM, etc.)
 #define KEY_WIMAX				KEY_WWAN
-#define KEY_RFKILL				247 // Key that controls all radios 
+#define KEY_RFKILL				247 // Key that controls all radios
 
 #define KEY_MICMUTE				248	// Mute/unmute the microphone
 
-// Code 255 is reserved for special needs of AT keyboard driver 
+// Code 255 is reserved for special needs of AT keyboard driver
 
 #define BTN_MISC						0x100
 #define BTN_0							0x100

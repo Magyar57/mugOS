@@ -109,7 +109,8 @@ static inline uint8_t sendByteToDevice2_HandleResend(uint8_t byte){
 #define PS2_KB_SCANCODE_ESCAPE					0xe0
 #define PS2_KB_SCANCODE_ESCAPE_PAUSE			0xe1
 #define PS2_KB_SCANCODE_BREAK					0xf0
-#define PS2_KB_SCANCODE_SYSRQ					0x84
+#define PS2_KB_SCANCODE1_SYSRQ					0x54
+#define PS2_KB_SCANCODE2_SYSRQ					0x84
 
 // This keyboard driver is implemented as a state machine
 // These are its states
@@ -125,7 +126,191 @@ static inline void setLEDs(uint8_t leds){
 	sendByteToDevice1_HandleResend(leds);
 }
 
-static inline void resetKeyboardState(){
+// Translates the PS/2 scancode into mugOS Keycode. Returns KEY_RESERVED on unrecognized keycode
+static Keycode getKeycodeSet1(uint8_t scancode){
+	switch (scancode){
+		case 0x00: return KEY_RESERVED;
+		case 0x01: return KEY_ESC;
+		case 0x02: return KEY_1;
+		case 0x03: return KEY_2;
+		case 0x04: return KEY_3;
+		case 0x05: return KEY_4;
+		case 0x06: return KEY_5;
+		case 0x07: return KEY_6;
+		case 0x08: return KEY_7;
+		case 0x09: return KEY_8;
+		case 0x0a: return KEY_9;
+		case 0x0b: return KEY_0;
+		case 0x0c: return KEY_MINUS;
+		case 0x0d: return KEY_EQUAL;
+		case 0x0e: return KEY_BACKSPACE;
+		case 0x0f: return KEY_TAB;
+		case 0x10: return KEY_Q;
+		case 0x11: return KEY_W;
+		case 0x12: return KEY_E;
+		case 0x13: return KEY_R;
+		case 0x14: return KEY_T;
+		case 0x15: return KEY_Y;
+		case 0x16: return KEY_U;
+		case 0x17: return KEY_I;
+		case 0x18: return KEY_O;
+		case 0x19: return KEY_P;
+		case 0x1a: return KEY_LBRACKET;
+		case 0x1b: return KEY_RBRACKET;
+		case 0x1c: return KEY_ENTER;
+		case 0x1d: return KEY_LCTRL;
+		case 0x1e: return KEY_A;
+		case 0x1f: return KEY_S;
+		case 0x20: return KEY_D;
+		case 0x21: return KEY_F;
+		case 0x22: return KEY_G;
+		case 0x23: return KEY_H;
+		case 0x24: return KEY_J;
+		case 0x25: return KEY_K;
+		case 0x26: return KEY_L;
+		case 0x27: return KEY_SEMICOLON;
+		case 0x28: return KEY_QUOTE;
+		case 0x29: return KEY_GRAVE;
+		case 0x2a: return KEY_LSHIFT;
+		case 0x2b: return KEY_BACKSLASH;
+		case 0x2c: return KEY_Z;
+		case 0x2d: return KEY_X;
+		case 0x2e: return KEY_C;
+		case 0x2f: return KEY_V;
+		case 0x30: return KEY_B;
+		case 0x31: return KEY_N;
+		case 0x32: return KEY_M;
+		case 0x33: return KEY_COMMA;
+		case 0x34: return KEY_DOT;
+		case 0x35: return KEY_SLASH;
+		case 0x36: return KEY_RSHIFT;
+		case 0x37: return KEY_NUMPAD_ASTERISK;
+		case 0x38: return KEY_LALT;
+		case 0x39: return KEY_SPACE;
+		case 0x3a: return KEY_CAPSLOCK;
+		case 0x3b: return KEY_F1;
+		case 0x3c: return KEY_F2;
+		case 0x3d: return KEY_F3;
+		case 0x3e: return KEY_F4;
+		case 0x3f: return KEY_F5;
+		case 0x40: return KEY_F6;
+		case 0x41: return KEY_F7;
+		case 0x42: return KEY_F8;
+		case 0x43: return KEY_F9;
+		case 0x44: return KEY_F10;
+		case 0x45: return KEY_NUMLOCK;
+		case 0x46: return KEY_SCROLLLOCK;
+		case 0x47: return KEY_NUMPAD_7;
+		case 0x48: return KEY_NUMPAD_8;
+		case 0x49: return KEY_NUMPAD_9;
+		case 0x4a: return KEY_NUMPAD_MINUS;
+		case 0x4b: return KEY_NUMPAD_4;
+		case 0x4c: return KEY_NUMPAD_5;
+		case 0x4d: return KEY_NUMPAD_6;
+		case 0x4e: return KEY_NUMPAD_PLUS;
+		case 0x4f: return KEY_NUMPAD_1;
+		case 0x50: return KEY_NUMPAD_2;
+		case 0x51: return KEY_NUMPAD_3;
+		case 0x52: return KEY_NUMPAD_0;
+		case 0x53: return KEY_NUMPAD_DOT;
+		case 0x54: return KEY_RESERVED; // SysRq
+		case 0x56: return KEY_LESSTHAN;
+		case 0x57: return KEY_F11;
+		case 0x58: return KEY_F12;
+		case 0x5d: return KEY_F13;
+		case 0x5e: return KEY_F14;
+		case 0x5f: return KEY_F15;
+
+		default: return KEY_RESERVED;
+	}
+}
+
+// Same as getKeycodeSet2, but for escaped characters
+static Keycode getKeycodeEscapedSet1(uint8_t scancode){
+	switch (scancode){
+		case 0x1c: return KEY_NUMPAD_ENTER;
+		case 0x1d: return KEY_RCTRL;
+		case 0x2a: return KEY_LSHIFT; // fake LShift
+		case 0x35: return KEY_NUMPAD_SLASH;
+		case 0x36: return KEY_RSHIFT; // fake RShift
+		case 0x37: return KEY_RESERVED; // Ctrl+PrintScreen (ignored)
+		case 0x38: return KEY_RALT;
+		case 0x46: return KEY_RESERVED; // Ctrl+Break (ignored)
+		case 0x47: return KEY_HOME;
+		case 0x48: return KEY_UP;
+		case 0x49: return KEY_PAGEUP;
+		case 0x4b: return KEY_LEFT;
+		case 0x4d: return KEY_RIGHT;
+		case 0x4f: return KEY_END;
+		case 0x50: return KEY_DOWN;
+		case 0x51: return KEY_PAGEDOWN;
+		case 0x52: return KEY_INSERT;
+		case 0x53: return KEY_DELETE;
+		case 0x5b: return KEY_LMETA;
+		case 0x5c: return KEY_RMETA;
+		case 0x5d: return KEY_MENU;
+
+		default: return KEY_RESERVED;
+	}
+}
+
+static inline void resetKeyboardStateSet1(){
+	g_isEscapedState = false;
+}
+
+static inline void handleScancodeSet1(uint8_t scancode){
+	static bool released = false;
+
+	if (scancode == PS2_KB_SCANCODE_ESCAPE){
+		g_isEscapedState = true;
+		return;
+	}
+
+	// If first bit is set, key is released
+	if (scancode & 0x80){
+		scancode &= 0x7f;
+		released = true;
+	}
+
+	if (scancode == PS2_KB_SCANCODE1_SYSRQ){
+		if (!released) Keyboard_NotifySysRq();
+		return;
+	}
+
+	Keycode keycode;
+	keycode = (g_isEscapedState) ? getKeycodeEscapedSet1(scancode) : getKeycodeSet1(scancode);
+
+	switch (keycode){
+		case KEY_RESERVED: // Driver did not recognize the scancode
+			log(ERROR, MODULE, "Unrecognized scancode %p", scancode);
+			resetKeyboardStateSet1();
+			return;
+		case KEY_NUMLOCK:
+			m_PS2Keyboard.LEDs ^= PS2_KB_LED_NUMLOCK; // flip numlock bit
+			setLEDs(m_PS2Keyboard.LEDs);
+			break;
+		case KEY_SCROLLLOCK:
+			m_PS2Keyboard.LEDs ^= PS2_KB_LED_SCROLLLOCK;
+			setLEDs(m_PS2Keyboard.LEDs);
+			break;
+		case KEY_CAPSLOCK:
+			m_PS2Keyboard.LEDs ^= PS2_KB_LED_CAPSLOCK;
+			setLEDs(m_PS2Keyboard.LEDs);
+			break;
+		default:
+			// Key was recognized
+			break;
+	}
+
+	// Update the keyboard driver
+	(released) ? Keyboard_notifyReleased(keycode) : Keyboard_notifyPressed(keycode);
+
+	//  Reset keyboard state
+	resetKeyboardStateSet1();
+	released = false;
+}
+
+static inline void resetKeyboardState2(){
 	g_isEscapedState = false;
 	g_isBreakedState = false;
 	g_pressedPrintScreenSequence = 0;
@@ -133,9 +318,8 @@ static inline void resetKeyboardState(){
 	g_pauseSequence = 0;
 }
 
-// Returns the universal keycode corresponding to the provided PS/2 scancode.
-// Returns KEY_RESERVED on unrecognized keycode
-static Keycode getKeycode(uint8_t scancode){
+// Translates the PS/2 scancode into mugOS Keycode. Returns KEY_RESERVED on unrecognized keycode
+static Keycode getKeycodeSet2(uint8_t scancode){
 	switch (scancode){
 		case 0x01: return KEY_F9;
 		case 0x03: return KEY_F5;
@@ -232,9 +416,8 @@ static Keycode getKeycode(uint8_t scancode){
 	}
 }
 
-// Returns the universal keycode corresponding to the provided PS/2 scancode.
-// This is in the case the keyscan was escaped
-static Keycode getKeycodeEscaped(uint8_t scancode){
+// Same as getKeycodeSet2, but for escaped characters
+static Keycode getKeycodeEscapedSet2(uint8_t scancode){
 	switch (scancode){
 		case 0x10: return KEY_WWW; // "(multimedia) WWW search";
 		case 0x11: return KEY_RALT;
@@ -313,21 +496,7 @@ static inline int cyclePauseSequence(int pauseSequenceIndex, uint8_t scancode){
 	return 0;
 }
 
-static inline bool isResponseCode(uint8_t code){
-	if ((code == PS2_RES_ERROR0)
-		|| (code == PS2_RES_SELFTEST_PASSED)
-		|| (code == PS2_RES_ECHO)
-		|| (code == PS2_RES_ACK)
-		|| (code == PS2_RES_SELFTEST_FAILED0)
-		|| (code == PS2_RES_SELFTEST_FAILED1)
-		|| (code == PS2_RES_RESEND)
-		|| (code == PS2_RES_ERROR1)){
-		return true;
-	}
-	return false;
-}
-
-static inline void handleScancode(uint8_t scancode){
+static inline void handleScancodeSet2(uint8_t scancode){
 	// Check for Print Screen sequence PRESSED=[0xe0,0x12,0xe0,0x7c]
 	if (g_pressedPrintScreenSequence > 0){
 		switch (g_pressedPrintScreenSequence) {
@@ -414,7 +583,7 @@ static inline void handleScancode(uint8_t scancode){
 	// actually got two presses of alt in a row from the user. Since this would be costly to implement, we chose
 	// instead to implement it so that we simply sends spurious alt presses to the keyboard subsystem.
 	// These won't matter anyway, since the user pressed sysrq (alt+print_screen) key, which includes the alt key.
-	if (scancode == PS2_KB_SCANCODE_SYSRQ){
+	if (scancode == PS2_KB_SCANCODE2_SYSRQ){
 		// Do note notify on release
 		// Note: we don't invert the g_isBreakedState to manipulate the incomming fake alt presses from the sysrq sequence
 		// This way, we invert 0xf0,0x11,0x11 break alt make alt => make alt release alt, and end up with a released alt key
@@ -425,15 +594,15 @@ static inline void handleScancode(uint8_t scancode){
 
 	Keycode keycode;
 	if (g_isEscapedState) {
-		keycode = getKeycodeEscaped(scancode);
+		keycode = getKeycodeEscapedSet2(scancode);
 		g_isEscapedState = false;
 	}
-	else keycode = getKeycode(scancode);
+	else keycode = getKeycodeSet2(scancode);
 
 	switch (keycode){
 		case KEY_RESERVED: // Driver did not recognize the scancode
 			log(ERROR, MODULE, "Unrecognized scancode %p", scancode);
-			resetKeyboardState();
+			resetKeyboardState2();
 			return;
 		case KEY_NUMLOCK:
 			if(g_isBreakedState) break;
@@ -457,7 +626,7 @@ static inline void handleScancode(uint8_t scancode){
 
 	// Update the keyboard driver
 	(g_isBreakedState) ? Keyboard_notifyReleased(keycode) : Keyboard_notifyPressed(keycode);
-	resetKeyboardState();
+	resetKeyboardState2();
 }
 
 static void keyboardIRQ(void*){
@@ -471,16 +640,18 @@ static void keyboardIRQ(void*){
 	// return;
 
 	bool res = PS2Controller_receiveByte(&code);
-	// Ignore spurious IRQ
-	if (!res) return;
+	if (!res) return; // Ignore spurious IRQ
 
-	// Verify that it IS a keycode and not a response from a command (should not happen though)
-	if (isResponseCode(code)){
-		log(WARNING, MODULE, "Got a reponse byte instead of a keycode, ignoring (byte=%p)", code);
-		return;
+	switch (m_PS2Keyboard.scancodeSet){
+	case 1:
+		handleScancodeSet1(code);
+		break;
+	case 2:
+		handleScancodeSet2(code);
+		break;
+	default: // 3 or invalid value
+		break;
 	}
-
-	handleScancode(code);
 }
 
 #pragma endregion PS/2 Keyboard
@@ -556,16 +727,16 @@ static const char* getKeyboardName(){
 	switch (byte1){
 		case 0xab:
 			switch (byte2){
-				case 0x41:
-					log(WARNING, MODULE, "Received translated ID value 0xab 0x41, wtf?");
+				case 0x41: return "PS/2 MF2 keyboard";
+				case 0x54: return "PS/2 short keyboard";
 				case 0x83: return "PS/2 MF2 keyboard";
-				case 0xc1: return "PS/2 MF2 keyboard";
 				case 0x84: return "PS/2 short keyboard";
 				case 0x85: return "PS/2 NCD N-97 keyboard";
 				case 0x86: return "PS/2 122-key keyboard";
 				case 0x90: return "PS/2 Japanse 'G' keyboard";
 				case 0x91: return "PS/2 Japanse 'P' keyboard";
 				case 0x92: return "PS/2 Japanse 'A' keyboard";
+				case 0xc1: return "PS/2 MF2 keyboard";
 				default: break;
 			}
 		case 0xac:
