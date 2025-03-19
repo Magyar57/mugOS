@@ -15,7 +15,6 @@
 
 // Note 1: we support only keyboard on port 1 and mouse on port 2
 // This is similar to other OSes
-// Note 2: we assume that the PS/2 Controller disabled translation for port 1
 
 // Commands (prefixes: KB=Keyboard, MOUSE=Mouse, None=Both)
 #define PS2_CMD_IDENTIFY				0xf2
@@ -25,11 +24,11 @@
 #define PS2_CMD_RESET					0xff
 #define PS2_KB_CMD_SET_LED				0xed
 #define PS2_KB_CMD_ECHO					0xee
-#define PS2_KB_CMD_SET_KEYSET			0xf0 // Get/Set scancode set
+#define PS2_KB_CMD_SET_SCANCODE_SET		0xf0 // Get/Set scancode set
 #define PS2_KB_CMD_SET_DELAY_AND_RATE	0xf3
 #define PS2_MOUSE_CMD_SET_SAMPLERATE	0xf3
-#define PS2_MOUSE_CMD_ENABLE_STREAMING	0xf4 // Automatic packets
-#define PS2_MOUSE_CMD_DISABLE_STREAMING	0xf5 // Automatic packets
+#define PS2_MOUSE_CMD_ENABLE_STREAMING	0xf4 // Automatic packets on
+#define PS2_MOUSE_CMD_DISABLE_STREAMING	0xf5 // Automatic packets off
 #define PS2_MOUSE_CMD_SET_RESOLUTION	0xe8
 // Commands data byte
 #define PS2_KB_SCANCODE_GET				0x00
@@ -212,6 +211,11 @@ static Keycode getKeycodeSet1(uint8_t scancode){
 		case 0x5d: return KEY_F13;
 		case 0x5e: return KEY_F14;
 		case 0x5f: return KEY_F15;
+		case 0x70: return KEY_KATAKANAHIRAGANA;
+		case 0x77: return KEY_HIRAGANA;
+		case 0x79: return KEY_HENKAN;
+		case 0x7b: return KEY_MUHENKAN;
+		case 0x7d: return KEY_YEN;
 
 		default: return KEY_RESERVED;
 	}
@@ -220,14 +224,23 @@ static Keycode getKeycodeSet1(uint8_t scancode){
 // Same as getKeycodeSet2, but for escaped characters
 static Keycode getKeycodeEscapedSet1(uint8_t scancode){
 	switch (scancode){
+		case 0x10: return KEY_PREVIOUSSONG;
+		case 0x19: return KEY_NEXTSONG;
 		case 0x1c: return KEY_NUMPAD_ENTER;
 		case 0x1d: return KEY_RCTRL;
-		case 0x2a: return KEY_LSHIFT; // fake LShift
+		case 0x20: return KEY_MUTE;
+		case 0x21: return KEY_CALC;
+		case 0x22: return KEY_PLAYPAUSE;
+		case 0x24: return KEY_STOPCD;
+		case 0x2a: return KEY_IGNORE; // Fake LShift
+		case 0x2e: return KEY_VOLUMEDOWN;
+		case 0x30: return KEY_VOLUMEUP;
+		case 0x32: return KEY_HOMEPAGE;
 		case 0x35: return KEY_NUMPAD_SLASH;
-		case 0x36: return KEY_RSHIFT; // fake RShift
-		case 0x37: return KEY_RESERVED; // Ctrl+PrintScreen (ignored)
+		case 0x36: return KEY_IGNORE; // Fake RShift
+		case 0x37: return KEY_IGNORE; // Ctrl+PrintScreen
 		case 0x38: return KEY_RALT;
-		case 0x46: return KEY_RESERVED; // Ctrl+Break (ignored)
+		case 0x46: return KEY_IGNORE; // Ctrl+Break
 		case 0x47: return KEY_HOME;
 		case 0x48: return KEY_UP;
 		case 0x49: return KEY_PAGEUP;
@@ -241,6 +254,18 @@ static Keycode getKeycodeEscapedSet1(uint8_t scancode){
 		case 0x5b: return KEY_LMETA;
 		case 0x5c: return KEY_RMETA;
 		case 0x5d: return KEY_MENU;
+		case 0x5e: return KEY_POWER;
+		case 0x5f: return KEY_SLEEP;
+		case 0x63: return KEY_WAKEUP;
+		case 0x65: return KEY_SEARCH;
+		case 0x66: return KEY_BOOKMARKS;
+		case 0x67: return KEY_REFRESH;
+		case 0x68: return KEY_STOP;
+		case 0x69: return KEY_FORWARD;
+		case 0x6a: return KEY_BACK;
+		case 0x6b: return KEY_COMPUTER;
+		case 0x6c: return KEY_MAIL;
+		case 0x6d: return KEY_MEDIA;
 
 		default: return KEY_RESERVED;
 	}
@@ -253,6 +278,7 @@ static inline void handleScancodeSet1(uint8_t scancode){
 	static int print_screen_sequence_pressed = 0;
 	static int print_screen_sequence_released = 0;
 	static int pause_sequence = 0;
+	static bool numlock_was_set=false, capslock_was_set=false, scrolllock_was_set=false;
 
 	// 1. Check for sequences progression
 	// Check for print screen pressed sequence : 0xe0, 0x2a, 0xe0, 0x37
@@ -269,7 +295,7 @@ static inline void handleScancodeSet1(uint8_t scancode){
 		print_screen_sequence_pressed++;
 		return;
 	case 3:
-		if (scancode != 0x37) {print_screen_sequence_pressed = 0; break;}
+		if (scancode != 0x37) {print_screen_sequence_pressed = 0; escaped_state = true; break;}
 		Keyboard_notifyPressed(KEY_PRINTSCREEN);
 		goto reset_state;
 	default:
@@ -360,17 +386,28 @@ static inline void handleScancodeSet1(uint8_t scancode){
 		log(ERROR, MODULE, "Unrecognized scancode %p", scancode);
 		goto reset_state;
 	case KEY_NUMLOCK:
+		if (released) { numlock_was_set = false; break; } // when released, unlock flip
+		if (numlock_was_set) break; // toggle led only at the first press
 		m_PS2Keyboard.LEDs ^= PS2_KB_LED_NUMLOCK; // flip numlock bit
 		setLEDs(m_PS2Keyboard.LEDs);
+		numlock_was_set = true;
 		break;
 	case KEY_SCROLLLOCK:
+		if (released) { scrolllock_was_set = false; break; }
+		if (scrolllock_was_set) break;
 		m_PS2Keyboard.LEDs ^= PS2_KB_LED_SCROLLLOCK;
 		setLEDs(m_PS2Keyboard.LEDs);
+		scrolllock_was_set = true;
 		break;
 	case KEY_CAPSLOCK:
+		if (released) { capslock_was_set = false; break; }
+		if (capslock_was_set) break;
 		m_PS2Keyboard.LEDs ^= PS2_KB_LED_CAPSLOCK;
 		setLEDs(m_PS2Keyboard.LEDs);
+		capslock_was_set = true;
 		break;
+	case KEY_IGNORE:
+		goto reset_state;
 	default:
 		// Key was recognized
 		break;
@@ -404,6 +441,7 @@ static Keycode getKeycodeSet2(uint8_t scancode){
 		case 0x0e: return KEY_GRAVE;
 		case 0x11: return KEY_LALT;
 		case 0x12: return KEY_LSHIFT;
+		case 0x13: return KEY_KATAKANAHIRAGANA;
 		case 0x14: return KEY_LCTRL;
 		case 0x15: return KEY_Q;
 		case 0x16: return KEY_1;
@@ -459,8 +497,12 @@ static Keycode getKeycodeSet2(uint8_t scancode){
 		case 0x5b: return KEY_RBRACKET;
 		case 0x5d: return KEY_BACKSLASH;
 		case 0x61: return KEY_LESSTHAN;
+		case 0x62: return KEY_HIRAGANA;
+		case 0x64: return KEY_HENKAN;
 		case 0x66: return KEY_BACKSPACE;
+		case 0x67: return KEY_MUHENKAN;
 		case 0x69: return KEY_NUMPAD_1;
+		case 0x6a: return KEY_YEN;
 		case 0x6b: return KEY_NUMPAD_4;
 		case 0x6c: return KEY_NUMPAD_7;
 		case 0x70: return KEY_NUMPAD_0;
@@ -488,26 +530,28 @@ static Keycode getKeycodeSet2(uint8_t scancode){
 // Same as getKeycodeSet2, but for escaped characters
 static Keycode getKeycodeEscapedSet2(uint8_t scancode){
 	switch (scancode){
-		case 0x10: return KEY_WWW; // "(multimedia) WWW search";
+		case 0x10: return KEY_WWW;
 		case 0x11: return KEY_RALT;
 		case 0x14: return KEY_RCTRL;
-		case 0x15: return KEY_PREVIOUSSONG; // (multimedia) previous track
+		case 0x15: return KEY_PREVIOUSSONG;
+		case 0x18: return KEY_BOOKMARKS;
 		case 0x1f: return KEY_LMETA;
-		case 0x20: return KEY_REFRESH; // (multimedia) WWW refresh
+		case 0x20: return KEY_REFRESH;
 		case 0x21: return KEY_VOLUMEDOWN;
 		case 0x23: return KEY_MUTE;
 		case 0x27: return KEY_RMETA;
-		case 0x28: return KEY_STOP; // (multimedia) WWW stop
+		case 0x28: return KEY_STOP;
 		case 0x2b: return KEY_CALC;
 		case 0x2f: return KEY_MENU;
-		case 0x30: return KEY_FORWARD; // (multimedia) WWW forward
+		case 0x30: return KEY_FORWARD;
 		case 0x32: return KEY_VOLUMEUP;
 		case 0x34: return KEY_PLAYPAUSE;
 		case 0x37: return KEY_POWER;
-		case 0x38: return KEY_BACK; // (multimedia) WWW back
+		case 0x38: return KEY_BACK;
+		case 0x3a: return KEY_HOMEPAGE;
 		case 0x3b: return KEY_STOP;
 		case 0x3f: return KEY_SLEEP;
-		case 0x48: return KEY_EMAIL;
+		case 0x48: return KEY_MAIL;
 		case 0x4a: return KEY_NUMPAD_SLASH;
 		case 0x4d: return KEY_NEXTSONG;
 		case 0x50: return KEY_MEDIA;
@@ -536,6 +580,7 @@ static inline void handleScancodeSet2(uint8_t scancode){
 	static int print_screen_sequence_pressed = 0;
 	static int print_screen_sequence_released = 0;
 	static int pause_sequence = 0;
+	static bool numlock_was_set=false, capslock_was_set=false, scrolllock_was_set=false;
 
 	// Note: See handleScancodeSet1 for full commented function
 
@@ -654,17 +699,20 @@ static inline void handleScancodeSet2(uint8_t scancode){
 			log(ERROR, MODULE, "Unrecognized scancode %p", scancode);
 			goto reset_state;
 		case KEY_NUMLOCK:
-			if(breaked_state) break;
-			m_PS2Keyboard.LEDs ^= PS2_KB_LED_NUMLOCK; // flip numlock bit
+			if (breaked_state) { scrolllock_was_set = false; break; }
+			if (scrolllock_was_set) break;
+			m_PS2Keyboard.LEDs ^= PS2_KB_LED_NUMLOCK;
 			setLEDs(m_PS2Keyboard.LEDs);
 			break;
 		case KEY_SCROLLLOCK:
-			if(breaked_state) break;
+			if (breaked_state) { scrolllock_was_set = false; break; }
+			if (scrolllock_was_set) break;
 			m_PS2Keyboard.LEDs ^= PS2_KB_LED_SCROLLLOCK;
 			setLEDs(m_PS2Keyboard.LEDs);
 			break;
 		case KEY_CAPSLOCK:
-			if(breaked_state) break;
+			if (breaked_state) { capslock_was_set = false; break; }
+			if (capslock_was_set) break;
 			m_PS2Keyboard.LEDs ^= PS2_KB_LED_CAPSLOCK;
 			setLEDs(m_PS2Keyboard.LEDs);
 			break;
@@ -687,14 +735,10 @@ static void keyboardIRQ(void*){
 	if(!m_PS2Keyboard.enabled) return;
 	uint8_t code;
 
-	// Debug print
-	// code = inb(0x60);
-	// if (code == 0x5a) debug("");
-	// else debug("%p ", code);
-	// return;
-
 	bool res = PS2Controller_receiveByte(&code);
 	if (!res) return; // Ignore spurious IRQ
+
+	// debug("Received keycode %#.2hhx", code);
 
 	switch (m_PS2Keyboard.scancodeSet){
 	case 1:
@@ -861,7 +905,7 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 	sendByteToDevice1_HandleResend(PS2_CMD_DISABLE_SCANNING);
 
 	// Switch to scancode set 2
-	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_KEYSET);
+	buff1 = sendByteToDevice1_HandleResend(PS2_KB_CMD_SET_SCANCODE_SET);
 	buff2 = sendByteToDevice1_HandleResend(PS2_KB_SCANCODE_SET2);
 	if (buff1!=PS2_RES_ACK || buff2!=PS2_RES_ACK){
 		log(WARNING, MODULE, "PS/2 keyboard error when setting scancode set 2, deactivated");

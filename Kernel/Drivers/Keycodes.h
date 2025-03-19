@@ -6,6 +6,8 @@ typedef unsigned int Keycode;
 // Keycodes that the keyboard subsystem can return
 // Most of the keys/buttons are modeled after USB HUT 1.12 (see https://www.usb.org/hid)
 
+#define KEY_IGNORE				0xffffffff
+
 #define KEY_RESERVED			0
 #define KEY_ESC					1
 #define KEY_1					2
@@ -174,10 +176,10 @@ typedef unsigned int Keycode;
 #define KEY_CLOSECD				160
 #define KEY_EJECTCD				161
 #define KEY_EJECTCLOSECD		162
-#define KEY_NEXTSONG			163
-#define KEY_PLAYPAUSE			164
-#define KEY_PREVIOUSSONG		165
-#define KEY_STOPCD				166
+#define KEY_NEXTSONG			163 // Media Next
+#define KEY_PLAYPAUSE			164 // Media Pause
+#define KEY_PREVIOUSSONG		165 // Media Previous
+#define KEY_STOPCD				166 // Media Stop
 #define KEY_RECORD				167
 #define KEY_REWIND				168
 #define KEY_PHONE				169 // Media Select Telephone
