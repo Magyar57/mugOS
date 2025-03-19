@@ -553,10 +553,29 @@ const char* Keyboard_getKeyString(Keycode keycode){
 		case KEY_PAGEDOWN: 		return "PAGEDOWN";
 		case KEY_INSERT: 		return "INSERT";
 		case KEY_DELETE: 		return "DELETE";
+		case KEY_MUTE:			return "MUTE";
+		case KEY_VOLUMEDOWN:	return "VOLUMEDOWN";
+		case KEY_VOLUMEUP:		return "VOLUMEUP";
+		case KEY_POWER:			return "POWER";
 		case KEY_PAUSE: 		return "PAUSE";
 		case KEY_LMETA:			return "LMETA";
 		case KEY_RMETA:			return "RMETA";
+		case KEY_STOP:			return "STOP";
 		case KEY_MENU:			return "MENU";
+		case KEY_CALC:			return "CALCULATOR";
+		case KEY_SLEEP:			return "SLEEP";
+		case KEY_WAKEUP:		return "WAKEUP";
+		case KEY_MAIL:			return "MAIL";
+		case KEY_BOOKMARKS:		return "BOOKMARKS";
+		case KEY_COMPUTER:		return "COMPUTER";
+		case KEY_BACK:			return "BACK";
+		case KEY_FORWARD:		return "FORWARD";
+		case KEY_NEXTSONG:		return "NEXTSONG";
+		case KEY_PLAYPAUSE:		return "PLAYPAUSE";
+		case KEY_PREVIOUSSONG:	return "PREVIOUSSONG";
+		case KEY_STOPCD:		return "STOPSONG";
+		case KEY_HOMEPAGE:		return "HOMEPAGE";
+		case KEY_REFRESH:		return "REFRESH";
 		case KEY_F13: 			return "F13";
 		case KEY_F14: 			return "F14";
 		case KEY_F15: 			return "F15";
@@ -568,6 +587,8 @@ const char* Keyboard_getKeyString(Keycode keycode){
 		case KEY_F22: 			return "F22";
 		case KEY_F23: 			return "F23";
 		case KEY_F24: 			return "F24";
+		case KEY_SEARCH:		return "SEARCH";
+		case KEY_MEDIA:			return "MEDIA";
 	}
 
 	return NULL;
@@ -673,9 +694,11 @@ void Keyboard_notifyReleased(Keycode keycode){
 				}
 				break;
 			case KEY_NUMPAD_5:
-				if (g_numlockKeyWasFunction[4])
+				if (g_numlockKeyWasFunction[4]){
 					g_numlockKeyWasFunction[4] = false;
-				return;
+					return;
+				}
+				break;
 			case KEY_NUMPAD_6:
 				if (g_numlockKeyWasFunction[5] || !g_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
