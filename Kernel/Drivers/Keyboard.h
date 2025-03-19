@@ -46,6 +46,6 @@ const char* Keyboard_getKeyString(Keycode keycode);
 void Keyboard_initialize();
 void Keyboard_notifyReleased(Keycode keycode);
 void Keyboard_notifyPressed(Keycode keycode);
-void Keyboard_NotifySysRq(); // Notify SysRq key pressed (special case)
+void Keyboard_notifySysRq();
 
 #endif

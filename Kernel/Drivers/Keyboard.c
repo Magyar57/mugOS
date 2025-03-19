@@ -799,7 +799,7 @@ void Keyboard_notifyPressed(Keycode keycode){
 	executeCallbacks(keycode, (int) c, KB_KEYMODE_KEY_PRESSED, g_modifierKeys);
 }
 
-void Keyboard_NotifySysRq(){
+void Keyboard_notifySysRq(){
 	// For now, sysrq just enables keyboard print
 	static bool callbackOn = true;
 
