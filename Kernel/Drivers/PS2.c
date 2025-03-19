@@ -699,22 +699,25 @@ static inline void handleScancodeSet2(uint8_t scancode){
 			log(ERROR, MODULE, "Unrecognized scancode %p", scancode);
 			goto reset_state;
 		case KEY_NUMLOCK:
-			if (breaked_state) { scrolllock_was_set = false; break; }
-			if (scrolllock_was_set) break;
+			if (breaked_state) { numlock_was_set = false; break; }
+			if (numlock_was_set) break;
 			m_PS2Keyboard.LEDs ^= PS2_KB_LED_NUMLOCK;
 			setLEDs(m_PS2Keyboard.LEDs);
+			numlock_was_set = true;
 			break;
 		case KEY_SCROLLLOCK:
 			if (breaked_state) { scrolllock_was_set = false; break; }
 			if (scrolllock_was_set) break;
 			m_PS2Keyboard.LEDs ^= PS2_KB_LED_SCROLLLOCK;
 			setLEDs(m_PS2Keyboard.LEDs);
+			scrolllock_was_set = true;
 			break;
 		case KEY_CAPSLOCK:
 			if (breaked_state) { capslock_was_set = false; break; }
 			if (capslock_was_set) break;
 			m_PS2Keyboard.LEDs ^= PS2_KB_LED_CAPSLOCK;
 			setLEDs(m_PS2Keyboard.LEDs);
+			capslock_was_set = true;
 			break;
 		default:
 			// Key was recognized
