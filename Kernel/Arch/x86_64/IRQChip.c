@@ -79,7 +79,7 @@ static void prehandler(struct ISR_Params* params){
 
 // Simple blinking timer on the bottom right of the screen
 #include "Drivers/Graphics/Framebuffer.h"
-void timer(struct ISR_Params* params){
+void timer(void*){
 	extern Framebuffer m_framebuffer;
 	static bool clock = false;
 	const int rect_size = 4;
@@ -99,7 +99,7 @@ void IRQChip_initialize(){
 	}
 
 	// Temporary, until we have a Timer subsystem or whatever
-	IRQ_registerHandler(IRQ_TIMER, (void (*)(void*)) timer);
+	IRQ_registerHandler(IRQ_TIMER, timer);
 
 	i8259_enableAllIRQ();
 }

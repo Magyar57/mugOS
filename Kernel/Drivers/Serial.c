@@ -493,37 +493,55 @@ bool Serial_isEnabled(){
 	return m_enabled;
 }
 
+static inline bool sendByteInternal(int device, uint8_t byte){
+	// Checks are done in the outer API functions (Serial_sendByte, Serial_sendByteDefault)
+	unsigned char toSend[] = { byte, '\0' };
+	return pushBackWriteBuffer(&m_devices[device-1], toSend);
+}
+
 bool Serial_sendByte(int device, uint8_t byte){
 	if (!m_enabled || device<=0 || device>N_PORTS) return false;
 
-	unsigned char toSend[] = { byte, '\0' };
-	bool res = pushBackWriteBuffer(&m_devices[device-1], toSend);
+	return sendByteInternal(device, byte);
+}
 
-	return res;
+bool Serial_sendByteDefault(uint8_t byte){
+	if (!m_enabled) return false;
+
+	return sendByteInternal(m_devices[m_defaultDevice].identifier, byte);
+}
+
+static inline bool sendStringInternal(int device, const char* str){
+	// Checks are done in the outer API functions (Serial_sendString, Serial_sendStringDefault)
+	return pushBackWriteBuffer(&m_devices[device-1], (uint8_t*) str);
 }
 
 bool Serial_sendString(int device, const char* str){
 	if (!m_enabled || device<=0 || device>N_PORTS) return false;
 
-	bool res = pushBackWriteBuffer(&m_devices[device-1], (uint8_t*) str);
+	return sendStringInternal(device, str);
+}
 
-	return res;
+bool Serial_sendStringDefault(const char* str){
+	if (!m_enabled) return false;
+
+	return sendStringInternal(m_devices[m_defaultDevice].identifier, str);
+}
+
+// Receive bytes
+
+static inline uint8_t receiveByteInternal(int device){
+	return popFrontReadBuffer(&m_devices[device-1]);
 }
 
 uint8_t Serial_receiveByte(int device){
 	if (!m_enabled || device<=0 || device>N_PORTS) return 0;
 
-	return popFrontReadBuffer(&m_devices[device-1]);
-}
-
-bool Serial_sendByteDefault(uint8_t byte){
-	return Serial_sendByte(m_devices[m_defaultDevice].identifier, byte);
-}
-
-bool Serial_sendStringDefault(const char* str){
-	return Serial_sendString(m_devices[m_defaultDevice].identifier, str);
+	return receiveByteInternal(device);
 }
 
 uint8_t Serial_receiveByteDefault(){
-	return Serial_receiveByte(m_devices[m_defaultDevice].identifier);
+	if (!m_enabled) return 0;
+
+	return receiveByteInternal(m_devices[m_defaultDevice].identifier);
 }
