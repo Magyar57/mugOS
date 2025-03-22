@@ -5,9 +5,6 @@
 
 #include "i8259.h"
 
-// Intel 8259 PIC Driver
-// https://wiki.osdev.org/8259_PIC
-
 #define PIC_MASTER_CMD		0x0020	// Master's PIC Command port
 #define PIC_MASTER_DATA		0x0021	// Master's PIC Data port
 #define PIC_SLAVE_CMD		0x00a0	// Slave's PIC Command port
@@ -22,8 +19,6 @@
 #define PIC_ICW4_8086		0x01	// 8086/88 (MCS-80/85) mode
 #define PIC_ICW4_AUTO_EOI	0x02	// Auto (normal) EOI
 #define PIC_ICW4_BUF_MASTER	0x04	//
-// #define PIC_ICW4_BUF_SLAVE	0x08	// Buffered mode/slave
-// #define PIC_ICW4_BUF_MASTER	0x0c	// Buffered mode/master
 #define PIC_ICW4_SFNM		0x10	// Special fully nested (not)
 // PIC Commands
 #define PIC_CMD_EOI			0x20	// EOI End Of Interrupt

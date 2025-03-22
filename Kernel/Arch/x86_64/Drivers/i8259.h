@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+// i8259.h: Intel 8259 PIC Driver
+
 // Initialize/configure (remap) the PIC. Offsets must be divisable by 8 !!
 void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC);
 
@@ -26,7 +28,7 @@ void i8259_sendEIO(int irq);
 // [ bit 15-8 Slave's IRR - bit 8-0 Master's IRR ]
 uint16_t i8259_getCombinedIRR();
 
-// Returns the combined ISR (In-Service Register) values: 
+// Returns the combined ISR (In-Service Register) values:
 // [ bit 15-8 Slave's ISR - bit 8-0 Master's ISR ]
 uint16_t i8259_getCombinedISR();
 

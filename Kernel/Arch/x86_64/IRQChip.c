@@ -34,14 +34,30 @@ static const char* const g_IRQTypes[] = {
     "Secondary ATA Hard Disk",
 };
 
-void IRQChip_registerHandler(uint8_t irq, IRQHandler handler){
-	if (irq > 16) return; // ignore invalid IRQ number
+#define isInvalidIRQ(irq) (irq<0 && irq>=16)
+
+void IRQChip_registerHandler(int irq, IRQHandler handler){
+	if (isInvalidIRQ(irq)) return;
+
 	g_IRQHandlers[irq] = handler;
 }
 
-void IRQChip_deregisterHandler(uint8_t irq){
-	if (irq > 16) return; // ignore invalid IRQ number
+void IRQChip_deregisterHandler(int irq){
+	if (isInvalidIRQ(irq)) return;
+
 	g_IRQHandlers[irq] = NULL;
+}
+
+void IRQChip_enableSpecific(int irq){
+	if (isInvalidIRQ(irq)) return;
+
+	i8259_enableIRQ(irq);
+}
+
+void IRQChip_disableSpecific(int irq){
+	if (isInvalidIRQ(irq)) return;
+
+	i8259_disableIRQ(irq);
 }
 
 // ================ IRQ Handlers ================
