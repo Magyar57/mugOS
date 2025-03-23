@@ -62,6 +62,16 @@ void ISR_deregisterHandler(uint8_t vector){
 	g_ISR[vector] = NULL;
 }
 
+static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
+	log(logLevel, NULL, "vector=%#.2hhx rflags=%#.16llx err=%p", params->vector, params->rflags, params->err);
+	log(logLevel, NULL, "\trip=%#.16llx rsp=%#.16llx rbp=%#.16llx", params->rip, params->rsp, params->rbp);
+	log(logLevel, NULL, "\trax=%#.16llx rbx=%#.16llx rcx=%#.16llx rdx=%#.16llx", params->rax, params->rbx, params->rcx, params->rdx);
+	log(logLevel, NULL, "\trsi=%#.16llx rdi=%#.16llx", params->rsi, params->rdi);
+	log(logLevel, NULL, "\t r8=%#.16llx  r9=%#.16llx r10=%#.16llx r11=%#.16llx", params->r8, params->r9, params->r10, params->r11);
+	log(logLevel, NULL, "\tr12=%#.16llx r13=%#.16llx r14=%#.16llx r15=%#.16llx", params->r12, params->r13, params->r14, params->r15);
+	log(logLevel, NULL, "\tcs=%#.2hhx ds=%#.2hhx ss=%#.2hhx", params->cs, params->ds, params->ss);
+}
+
 // ================ ISR Handlers ================
 
 // All ISR lead to a common ISR_Asm_Prehandler function, which calls this function
@@ -75,7 +85,8 @@ void ISR_C_prehandler(struct ISR_Params* params){
 
 	// Otherwise we PANIC !
 	const char* interrupt_type = (params->vector < 32) ? g_ExceptionTypes[params->vector] : "Interrupt";
-	log(PANIC, MODULE, "Unhandled %s ! (vector=%p err=%p)", interrupt_type, params->vector, params->err);
+	log(PANIC, MODULE, "Unhandled %s !", interrupt_type);
+	dumpRegisters(PANIC, params);
 	panic();
 }
 
@@ -86,13 +97,7 @@ void ISR_divisionByZeroError(struct ISR_Params* params){
 
 void ISR_doubleFault(struct ISR_Params* params){
 	log(PANIC, NULL, "Double fault !!");
-	log(PANIC, NULL, "vector=%p rflags=%p err=%p", params->vector, params->rflags, params->err);
-	log(PANIC, NULL, "\trax=%p rbx=%p rcx=%p rdx=%p", params->rax, params->rbx, params->rcx, params->rdx);
-	log(PANIC, NULL, "\trsi=%p rdi=%p", params->rsi, params->rdi);
-	log(PANIC, NULL, "\tr15=%p r14=%p r13=%p r12=%p r11=%p r10=%p r9=%p r8=%p",
-		params->r15, params->r14, params->r13, params->r12, params->r11, params->r10, params->r9, params->r8);
-	log(PANIC, NULL, "\trip=%p rsp=%p rbp=%p", params->rip, params->rsp, params->rbp);
-	log(PANIC, NULL, "\tcs=%p ds=%p ss=%p", params->cs, params->ds, params->ss);
+	dumpRegisters(PANIC, params);
 	panic();
 }
 
