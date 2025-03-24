@@ -2,6 +2,7 @@
 #include "Logging.h"
 #include "assert.h"
 #include "io.h"
+#include "IRQ.h"
 
 #include "i8042.h"
 
@@ -60,6 +61,7 @@ static bool m_enabled = false;
 static bool m_isPort1Valid = false; // works
 static bool m_isPort2Valid = false; // is present AND works
 static bool m_translation; // Whether port 1 translation is on
+static uint8_t m_configByte; // Bufferized configuration byte (used after initialization)
 
 // TIMEOUT is a counter used when waiting for responses (such as sendCommand)
 // TODO: replace by an actual timer (which does not vary on the CPU speed...)
@@ -94,6 +96,9 @@ static inline bool writeControllerConfigurationByte(uint8_t byte){
 
 void i8042_initialize(){
 	uint8_t buff;
+	IRQ_disable();
+	IRQ_disableSpecific(IRQ_PS2_KEYBOARD);
+	// IRQ_disableSpecific(IRQ_PS2_MOUSE); // messes up the PS/2 mouse initialize, for unknown reasons
 
 	// 1. Disable Legacy USB (see USB driver, if present)
 
@@ -105,7 +110,7 @@ void i8042_initialize(){
 	sendCommand(PS2C_CMD_DISABLE_PORT2);
 
 	// 4. Flush output buffer (discard data) if there is any
-	i8042_receiveByte(&buff);
+	inb(PS2C_PORT_DATA);
 
 	// 5. Set Controller Configuration Byte
 	buff = readControllerConfigurationByte();
@@ -128,7 +133,7 @@ void i8042_initialize(){
 		// If it is present, configure it: set controller config byte, and disable port 2
 		m_isPort2Valid = true; // temp, we'll test it before actually setting it to valid
 		sendCommand(PS2C_CMD_DISABLE_PORT2);
-		// Disable IRQ2 and enable port2 clock
+		// Disable port 2's IRQ and enable its clock
 		buff &= ~(PS2C_CONFBYTE_PORT2_INTERRUPT|PS2C_CONFBYTE_PORT2_CLOCK);
 		writeControllerConfigurationByte(buff);
 	}
@@ -154,19 +159,18 @@ void i8042_initialize(){
 		return;
 	}
 
-	// Re-enable devices and interrupts for available devices
- 	buff = readControllerConfigurationByte();
-	if (m_isPort1Valid) {
-		sendCommand(PS2C_CMD_ENABLE_PORT1);
-		buff |= PS2C_CONFBYTE_PORT1_INTERRUPT;
-	}
-	if (m_isPort2Valid){
-		sendCommand(PS2C_CMD_ENABLE_PORT2);
-		buff |= PS2C_CONFBYTE_PORT2_INTERRUPT;
-	}
-	writeControllerConfigurationByte(buff);
+	// Re-enable devices
+	if (m_isPort1Valid) sendCommand(PS2C_CMD_ENABLE_PORT1);
+	if (m_isPort2Valid)	sendCommand(PS2C_CMD_ENABLE_PORT2);
+
+	// For now on, we can bufferize the configuration byte, as no command
+	// will be sent to the controller that could change it
+	m_configByte = readControllerConfigurationByte();
 
 	log(SUCCESS, MODULE, "Initalization success (port 1 %s, port 2 %s)", m_isPort1Valid ? "ON":"OFF", m_isPort2Valid ? "ON":"OFF");
+	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
+	// IRQ_enableSpecific(IRQ_PS2_MOUSE);
+	IRQ_enable();
 }
 
 void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out, bool* translationOut){
@@ -176,17 +180,20 @@ void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2A
 	*translationOut = m_translation;
 }
 
-void i8042_enableDevicesInterrupts(bool device1, bool device2){
-	uint8_t ccb = readControllerConfigurationByte();
-	if (device1) ccb |= PS2C_CONFBYTE_PORT1_INTERRUPT;
-	if (device2) ccb |= PS2C_CONFBYTE_PORT2_INTERRUPT;
-	writeControllerConfigurationByte(ccb);
-}
+void i8042_setDevicesIRQ(bool device1, bool device2){
+	if (device1)
+		m_configByte |=  PS2C_CONFBYTE_PORT1_INTERRUPT; // Set IRQ bit for device 1
+	else
+		m_configByte &= ~PS2C_CONFBYTE_PORT1_INTERRUPT; // Clear IRQ bit for device 1
 
-void i8042_disableDevicesInterrupts(){
-	uint8_t ccb = readControllerConfigurationByte();
-	ccb &= ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT);
-	writeControllerConfigurationByte(ccb);
+	if (device2){
+		m_configByte |=  PS2C_CONFBYTE_PORT2_INTERRUPT;
+	}
+	else{
+		m_configByte &= ~PS2C_CONFBYTE_PORT2_INTERRUPT;
+	}
+
+	writeControllerConfigurationByte(m_configByte);
 }
 
 // Wait until a bit (given by the 'mask') in the status register evaluates to 'value', or we hit the timeout
@@ -213,19 +220,20 @@ static inline bool sendCommand(uint8_t command){
 	return true;
 }
 
-bool i8042_sendByteToDevice1(uint8_t byte){
+bool i8042_sendByteToDevice(int device, uint8_t byte){
+	assert(device == 1 || device == 2);
+	bool res;
+
+	if (device == 2){
+		res = sendCommand(PS2C_CMD_WRITE_PORT2_INPUT_BUFF);
+		if (!res) return false;
+	}
+
 	if (!waitUntilBitValueOrTimeout(PS2C_STATUS_INPUT_BUFF, 0))
 		return false;
 
 	outb(PS2C_PORT_DATA, byte);
 	return true;
-}
-
-bool i8042_sendByteToDevice2(uint8_t byte){
-	if (!sendCommand(PS2C_CMD_WRITE_PORT2_INPUT_BUFF))
-		return false;
-
-	return i8042_sendByteToDevice1(byte);
 }
 
 bool i8042_receiveByte(uint8_t* byte_out){

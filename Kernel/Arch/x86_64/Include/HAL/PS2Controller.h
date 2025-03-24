@@ -20,14 +20,8 @@ always_inline void PS2Controller_setDevicesIRQ(bool device1, bool device2){
 
 // Send a byte to the PS/2 device 1
 // Returns: true on success, false on failure
-always_inline bool PS2Controller_sendByteToDevice1(uint8_t byte){
-	return i8042_sendByteToDevice1(byte);
-}
-
-/// @brief Send a byte to the PS/2 device 2
-/// @returns true on success, false on failure
-always_inline bool PS2Controller_sendByteToDevice2(uint8_t byte){
-	return i8042_sendByteToDevice2(byte);
+always_inline bool PS2Controller_sendByteToDevice(int device, uint8_t byte){
+	return i8042_sendByteToDevice(device, byte);
 }
 
 /// @brief Receive a byte from a previously sent command
