@@ -235,6 +235,36 @@ static Keycode getKeycodeEscapedSet1(uint8_t scancode){
 	}
 }
 
+static bool cycleLedSequence(bool startSequence, uint8_t leds, bool acked){
+	static int led_sequence = 0;
+
+	if (startSequence)
+		led_sequence = 1;
+
+	if (acked)
+		led_sequence++;
+
+	switch (led_sequence){
+	case 0:
+		return false;
+	case 1:
+		// Send SET_LED command
+		PS2Controller_sendByteToDevice(1, PS2_KB_CMD_SET_LED);
+		return false;
+	case 2:
+		// Send LEDs value
+		PS2Controller_sendByteToDevice(1, leds);
+		return false;
+	case 3:
+		led_sequence = 0;
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
 static inline void handleScancodeSet1(uint8_t scancode){
 	// Scancode handler states
 	static bool released = false;
@@ -243,7 +273,7 @@ static inline void handleScancodeSet1(uint8_t scancode){
 	static int print_screen_sequence_released = 0;
 	static int pause_sequence = 0;
 	static bool numlock_was_set=false, capslock_was_set=false, scrolllock_was_set=false;
-	static bool wanted_leds = 0;
+	static uint8_t wanted_leds = 0;
 
 	// 1. Check for sequences progression
 	// Check for print screen pressed sequence : 0xe0, 0x2a, 0xe0, 0x37
@@ -334,26 +364,22 @@ static inline void handleScancodeSet1(uint8_t scancode){
 		// Ignore released
 		return;
 	case PS2_RES_ACK:
-		static int ack_count = 0;
-		ack_count++;
-		// Keyboard ACKed the SET_LED command
-		if (ack_count == 1){
-			PS2Controller_sendByteToDevice(1, wanted_leds);
-		}
-		// Keyboard ACKed the "value to set the LEDs" command
-		if (ack_count == 2){
+		if (cycleLedSequence(false, wanted_leds, true)){
 			// Since keyboard ACKed the leds, they are set
 			// We can now update our buffered value, and notify the keyboard subsystem
 			m_PS2Keyboard.LEDs = wanted_leds;
 			if (numlock_was_set) Keyboard_notifyPressed(KEY_NUMLOCK);
 			if (scrolllock_was_set) Keyboard_notifyPressed(KEY_SCROLLLOCK);
 			if (capslock_was_set) Keyboard_notifyPressed(KEY_CAPSLOCK);
-			ack_count = 0;
 		}
 		return;
 	case PS2_RES_RESEND:
-		log(WARNING, MODULE, "Keyboard asked to resend a command, ignored");
-		goto reset_state;
+		static int resend_count = 0;
+		resend_count++;
+		// We limit the number of resend allowed to avoid infinite loops
+		if (resend_count == 3) { resend_count = 0; goto reset_state; }
+		cycleLedSequence(false, wanted_leds, false);
+		return;
 	default:
 		// If first bit is set, key is released
 		if (scancode & 0x80){
@@ -375,21 +401,21 @@ static inline void handleScancodeSet1(uint8_t scancode){
 		if (released) { numlock_was_set = false; break; } // when released, unlock flip
 		if (numlock_was_set) break; // toggle led only at the first press
 		wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_NUMLOCK; // flip numlock bit
-		PS2Controller_sendByteToDevice(1, PS2_KB_CMD_SET_LED);
+		cycleLedSequence(true, wanted_leds, false);
 		numlock_was_set = true;
 		return;
 	case KEY_SCROLLLOCK:
 		if (released) { scrolllock_was_set = false; break; }
 		if (scrolllock_was_set) break;
 		wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_SCROLLLOCK;
-		PS2Controller_sendByteToDevice(1, PS2_KB_CMD_SET_LED);
+		cycleLedSequence(true, wanted_leds, false);
 		scrolllock_was_set = true;
 		return;
 	case KEY_CAPSLOCK:
 		if (released) { capslock_was_set = false; break; }
 		if (capslock_was_set) break;
 		wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_CAPSLOCK;
-		PS2Controller_sendByteToDevice(1, PS2_KB_CMD_SET_LED);
+		cycleLedSequence(true, wanted_leds, false);
 		capslock_was_set = true;
 		return;
 	case KEY_IGNORE:
@@ -567,7 +593,7 @@ static inline void handleScancodeSet2(uint8_t scancode){
 	static int print_screen_sequence_released = 0;
 	static int pause_sequence = 0;
 	static bool numlock_was_set=false, capslock_was_set=false, scrolllock_was_set=false;
-	static bool wanted_leds = 0;
+	static uint8_t wanted_leds = 0;
 
 	// Note: See handleScancodeSet1 for full commented function
 
@@ -675,22 +701,20 @@ static inline void handleScancodeSet2(uint8_t scancode){
 		breaked_state = true;
 		return;
 	case PS2_RES_ACK:
-		static int ack_count = 0;
-		ack_count++;
-		if (ack_count == 1){
-			PS2Controller_sendByteToDevice(1, wanted_leds);
-		}
-		if (ack_count == 2){
+		if (cycleLedSequence(false, wanted_leds, true)){
 			m_PS2Keyboard.LEDs = wanted_leds;
 			if (numlock_was_set) Keyboard_notifyPressed(KEY_NUMLOCK);
 			if (scrolllock_was_set) Keyboard_notifyPressed(KEY_SCROLLLOCK);
 			if (capslock_was_set) Keyboard_notifyPressed(KEY_CAPSLOCK);
-			ack_count = 0;
 		}
 		return;
 	case PS2_RES_RESEND:
-		log(WARNING, MODULE, "Keyboard asked to resend a command, ignored");
-		goto reset_state;
+		static int resend_count = 0;
+		resend_count++;
+		// We limit the number of resend allowed to avoid infinite loops
+		if (resend_count == 3) { resend_count = 0; goto reset_state; }
+		cycleLedSequence(false, wanted_leds, false);
+		return;
 	default:
 		break;
 	}
@@ -706,21 +730,21 @@ static inline void handleScancodeSet2(uint8_t scancode){
 			if (breaked_state) { numlock_was_set = false; break; }
 			if (numlock_was_set) break;
 			wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_NUMLOCK;
-			PS2Controller_sendByteToDevice(1, PS2_KB_CMD_SET_LED);
+			cycleLedSequence(true, wanted_leds, false);
 			numlock_was_set = true;
 			break;
 		case KEY_SCROLLLOCK:
 			if (breaked_state) { scrolllock_was_set = false; break; }
 			if (scrolllock_was_set) break;
 			wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_SCROLLLOCK;
-			PS2Controller_sendByteToDevice(1, PS2_KB_CMD_SET_LED);
+			cycleLedSequence(true, wanted_leds, false);
 			scrolllock_was_set = true;
 			break;
 		case KEY_CAPSLOCK:
 			if (breaked_state) { capslock_was_set = false; break; }
 			if (capslock_was_set) break;
 			wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_CAPSLOCK;
-			PS2Controller_sendByteToDevice(1, PS2_KB_CMD_SET_LED);
+			cycleLedSequence(true, wanted_leds, false);
 			capslock_was_set = true;
 			break;
 		default:
