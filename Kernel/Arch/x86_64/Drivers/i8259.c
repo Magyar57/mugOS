@@ -66,7 +66,7 @@ void i8259_disableIRQ(uint8_t irq){
 	}
 	// Slave PIC
 	else {
-		port = PIC_SLAVE_CMD;
+		port = PIC_SLAVE_DATA;
 		irq -= 8;
 	}
 

@@ -96,9 +96,8 @@ static inline bool writeControllerConfigurationByte(uint8_t byte){
 
 void i8042_initialize(){
 	uint8_t buff;
-	IRQ_disable();
 	IRQ_disableSpecific(IRQ_PS2_KEYBOARD);
-	// IRQ_disableSpecific(IRQ_PS2_MOUSE); // messes up the PS/2 mouse initialize, for unknown reasons
+	IRQ_disableSpecific(IRQ_PS2_MOUSE);
 
 	// 1. Disable Legacy USB (see USB driver, if present)
 
@@ -169,8 +168,7 @@ void i8042_initialize(){
 
 	log(SUCCESS, MODULE, "Initalization success (port 1 %s, port 2 %s)", m_isPort1Valid ? "ON":"OFF", m_isPort2Valid ? "ON":"OFF");
 	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
-	// IRQ_enableSpecific(IRQ_PS2_MOUSE);
-	IRQ_enable();
+	IRQ_enableSpecific(IRQ_PS2_MOUSE);
 }
 
 void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out, bool* translationOut){
