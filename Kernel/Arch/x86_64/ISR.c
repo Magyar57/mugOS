@@ -90,7 +90,7 @@ void ISR_C_prehandler(struct ISR_Params* params){
 	panic();
 }
 
-void ISR_divisionByZeroError(struct ISR_Params* params){
+void ISR_divisionByZeroError(struct ISR_Params*){
 	log(PANIC, NULL, "Division by zero error !!");
 	panic();
 }

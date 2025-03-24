@@ -266,24 +266,24 @@ void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y
 	assert(final_x < this->width);
 	assert(final_y < this->height);
 
-	const int offset = getLineOffset();
-	int line_cache;
+	const unsigned int offset = getLineOffset();
+	unsigned int line_cache;
 
 	// Top line
 	line_cache = y*offset;
-	for (int i=line_cache+x ; i<line_cache+final_x ; i++) this->address[i] = c;
+	for (unsigned int i=line_cache+x ; i<line_cache+final_x ; i++) this->address[i] = c;
 
 	// Left line
 	// line_cache = y*offset; // but line_cache is the same, no need to recompute it
-	for (int j=line_cache+x ; j<offset*final_y ; j+=offset) this->address[j] = c;
+	for (unsigned int j=line_cache+x ; j<offset*final_y ; j+=offset) this->address[j] = c;
 
 	// Right line
 	// line_cache is still the same
-	for (int j=line_cache+final_x-1 ; j<offset*final_y ; j+=offset) this->address[j] = c;
+	for (unsigned int j=line_cache+final_x-1 ; j<offset*final_y ; j+=offset) this->address[j] = c;
 
 	// Bottom line
 	line_cache = (final_y-1)*offset;
-	for (int i=line_cache+x ; i<line_cache+final_x ; i++) this->address[i] = c;
+	for (unsigned int i=line_cache+x ; i<line_cache+final_x ; i++) this->address[i] = c;
 }
 
 void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int width, unsigned int height, color_t c){
@@ -296,9 +296,9 @@ void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y
 	const int offset = getLineOffset();
 	int line_cache;
 
-	for (int j=y ; j<final_y ; j++) {
+	for (unsigned int j=y ; j<final_y ; j++) {
 		line_cache = offset*j;
-		for (int i=x ; i<final_x ; i++) {
+		for (unsigned int i=x ; i<final_x ; i++) {
 			this->address[line_cache + i] = c;
 		}
 	}

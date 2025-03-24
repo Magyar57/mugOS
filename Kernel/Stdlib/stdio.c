@@ -36,7 +36,9 @@ int fputs(const char* restrict s, FILE* restrict stream){
 	size_t size = strlen(s);
 	ssize_t written = write(fd, s, size);
 
-	if (written != size) return EOF;
+	if (written < 0) return EOF;
+	if ((unsigned long) written != size) return EOF;
+
 	return written;
 }
 

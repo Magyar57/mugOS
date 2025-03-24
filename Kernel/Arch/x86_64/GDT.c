@@ -20,6 +20,7 @@ struct SegmentDescriptor {
 	uint8_t base_24to31;				// Base (bit 24-31)
 } packed;
 
+// Note: SystemSegmentDescriptor is twice as big as a SegmentDescriptor
 struct SystemSegmentDescriptor {
 	struct SegmentDescriptor common; // this is the same as segment descriptors, so we reuse the struct
 	uint32_t base_32to63;
@@ -81,12 +82,8 @@ struct GDTDescriptor {
 #define getSegmentDescriptor(base, limit, access, flags) \
 	{ getLimit0to15(limit), getBase0to15(base), getBase16to23(base), access, GDT_getLimit16to19AndFlags(limit, flags), getBase24to31(base) }
 
-#define getSystemSegmentDescriptor_low getSegmentDescriptor
-#define getSystemSegmentDescriptor_high(base) \
-	{ getBase32to63(base), (uint32_t) 0 }
-
-#define getSystemSegmentDescriptor(base, limit, access, flags) \
-	getSystemSegmentDescriptor_low(base, limit, access, flags), getSystemSegmentDescriptor_high(base)
+#define getEmptySystemSegmentDescriptor() \
+	getSegmentDescriptor(0x0, 0x0, 0, 0), getSegmentDescriptor(0x0, 0x0, 0, 0)
 
 // =========== Declare GDT ===========
 
@@ -107,7 +104,7 @@ struct SegmentDescriptor g_GDT[] = {
 	getSegmentDescriptor(0x0, 0xffffffff, GDT_KDATA_ACCESS, GDT_KDATA_FLAGS),	// Kernel 64-bit data segment
 	getSegmentDescriptor(0x0, 0xffffffff, GDT_UTEXT_ACCESS, GDT_UTEXT_FLAGS),	// Usermode 64-bit code segment
 	getSegmentDescriptor(0x0, 0xffffffff, GDT_UDATA_ACCESS, GDT_UDATA_FLAGS),	// Usermode 64-bit data segment
-	getSystemSegmentDescriptor(0x0, 0x0, 0, 0)									// Placeholder for a TSS descriptor
+	getEmptySystemSegmentDescriptor()											// Placeholder for a TSS descriptor
 };
 
 struct GDTDescriptor g_GDTLocationDescriptor = { sizeof(g_GDT)-1, (uint64_t) g_GDT };
