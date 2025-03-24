@@ -87,7 +87,7 @@ static void prehandler(struct ISR_Params* params){
 	// If we have a handler to call, we call it, and 'alles gut'
 	if (g_IRQHandlers[irq] != NULL) g_IRQHandlers[irq](params);
 	// Otherwise, we send a warning
-	else log(WARNING, MODULE, "Unhandled IRQ number %d - %s", irq, g_IRQTypes[irq]);
+	else log(WARNING, MODULE, "Unhandled IRQ %d - %s", irq, g_IRQTypes[irq]);
 
 	// Finally, signal to the PIC that we handled the interrupt
 	i8259_sendEIO(irq);
