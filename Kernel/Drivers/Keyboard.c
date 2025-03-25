@@ -561,6 +561,9 @@ const char* Keyboard_getKeyString(Keycode keycode){
 		case KEY_LMETA:			return "LMETA";
 		case KEY_RMETA:			return "RMETA";
 		case KEY_STOP:			return "STOP";
+		case KEY_COPY:			return "COPY";
+		case KEY_PASTE:			return "PASTE";
+		case KEY_CUT:			return "CUT";
 		case KEY_MENU:			return "MENU";
 		case KEY_CALC:			return "CALCULATOR";
 		case KEY_SLEEP:			return "SLEEP";

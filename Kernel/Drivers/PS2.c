@@ -27,8 +27,6 @@
 #define PS2_KB_CMD_SET_SCANCODE_SET		0xf0 // Get/Set scancode set
 #define PS2_KB_CMD_SET_DELAY_AND_RATE	0xf3
 #define PS2_MOUSE_CMD_SET_SAMPLERATE	0xf3
-#define PS2_MOUSE_CMD_ENABLE_STREAMING	0xf4 // Automatic packets on
-#define PS2_MOUSE_CMD_DISABLE_STREAMING	0xf5 // Automatic packets off
 #define PS2_MOUSE_CMD_SET_RESOLUTION	0xe8
 // Commands data byte
 #define PS2_KB_SCANCODE_GET				0x00
@@ -195,7 +193,10 @@ static Keycode getKeycodeEscapedSet1(uint8_t scancode){
 		case 0x20: return KEY_MUTE;
 		case 0x21: return KEY_CALC;
 		case 0x22: return KEY_PLAYPAUSE;
+		case 0x23: return KEY_PASTE;
 		case 0x24: return KEY_STOPCD;
+		case 0x25: return KEY_CUT;
+		case 0x26: return KEY_COPY;
 		case 0x2a: return KEY_IGNORE; // Fake LShift
 		case 0x2e: return KEY_VOLUMEDOWN;
 		case 0x30: return KEY_VOLUMEUP;
@@ -542,7 +543,7 @@ static Keycode getKeycodeSet2(uint8_t scancode){
 // Same as getKeycodeSet2, but for escaped characters
 static Keycode getKeycodeEscapedSet2(uint8_t scancode){
 	switch (scancode){
-		case 0x10: return KEY_WWW;
+		case 0x10: return KEY_SEARCH;
 		case 0x11: return KEY_RALT;
 		case 0x14: return KEY_RCTRL;
 		case 0x15: return KEY_PREVIOUSSONG;
@@ -557,14 +558,17 @@ static Keycode getKeycodeEscapedSet2(uint8_t scancode){
 		case 0x2f: return KEY_MENU;
 		case 0x30: return KEY_FORWARD;
 		case 0x32: return KEY_VOLUMEUP;
+		case 0x33: return KEY_PASTE;
 		case 0x34: return KEY_PLAYPAUSE;
 		case 0x37: return KEY_POWER;
 		case 0x38: return KEY_BACK;
 		case 0x3a: return KEY_HOMEPAGE;
 		case 0x3b: return KEY_STOP;
 		case 0x3f: return KEY_SLEEP;
+		case 0x42: return KEY_CUT;
 		case 0x48: return KEY_MAIL;
 		case 0x4a: return KEY_NUMPAD_SLASH;
+		case 0x4b: return KEY_PASTE;
 		case 0x4d: return KEY_NEXTSONG;
 		case 0x50: return KEY_MEDIA;
 		case 0x5a: return KEY_NUMPAD_ENTER;
@@ -602,7 +606,7 @@ static inline void handleScancodeSet2(uint8_t scancode){
 	case 0:
 		break;
 	case 1:
-		if (scancode != 0x12) {print_screen_sequence_pressed = 0; break;}
+		if (scancode != 0x12) {print_screen_sequence_pressed = 0; escaped_state = true; break;}
 		print_screen_sequence_pressed++;
 		escaped_state = false;
 		return;
@@ -611,7 +615,7 @@ static inline void handleScancodeSet2(uint8_t scancode){
 		print_screen_sequence_pressed++;
 		return;
 	case 3:
-		if (scancode != 0x7c) {print_screen_sequence_pressed = 0; break;}
+		if (scancode != 0x7c) {print_screen_sequence_pressed = 0; escaped_state = true; break;}
 		Keyboard_notifyPressed(KEY_PRINTSCREEN);
 		print_screen_sequence_pressed = 0;
 		return;
@@ -684,6 +688,12 @@ static inline void handleScancodeSet2(uint8_t scancode){
 	}
 
 	switch (scancode){
+	case 0x12:
+		// Some keyboard send "0xe0 0x12 0xe0 0x70" for INSERT instead of simply "0xe0 0x70"
+		// We just ignore the additional 0x12
+		if (escaped_state)
+			goto reset_state;
+		break;
 	case PS2_KB_SCANCODE2_SYSRQ:
 		if (!breaked_state) Keyboard_notifySysRq();
 		// Note: We don't invert the breaked_state to manipulate the incoming spurious alt presses from the sysrq sequence
@@ -732,21 +742,21 @@ static inline void handleScancodeSet2(uint8_t scancode){
 			wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_NUMLOCK;
 			cycleLedSequence(true, wanted_leds, false);
 			numlock_was_set = true;
-			break;
+			return;
 		case KEY_SCROLLLOCK:
 			if (breaked_state) { scrolllock_was_set = false; break; }
 			if (scrolllock_was_set) break;
 			wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_SCROLLLOCK;
 			cycleLedSequence(true, wanted_leds, false);
 			scrolllock_was_set = true;
-			break;
+			return;
 		case KEY_CAPSLOCK:
 			if (breaked_state) { capslock_was_set = false; break; }
 			if (capslock_was_set) break;
 			wanted_leds = m_PS2Keyboard.LEDs ^ PS2_KB_LED_CAPSLOCK;
 			cycleLedSequence(true, wanted_leds, false);
 			capslock_was_set = true;
-			break;
+			return;
 		default:
 			// Key was recognized
 			break;
@@ -837,13 +847,13 @@ static void mouseIRQ(void*){
 #define RESPONSE_BUFFER_SIZE 5
 uint8_t m_responseBuffer[RESPONSE_BUFFER_SIZE];
 int m_inBuffer = 0;
-#define TIMEOUT 1<<20
+#define TIMEOUT 1llu<<24
 
 static bool receiveByte(uint8_t* byte_out){
 	// receiveByte is simply popResponseBuffer, with a wait timeout:
 	// we try to wait a certain time for the buffer to be filled
 
-	int counter = 0;
+	unsigned long long counter = 0;
 	while (m_inBuffer<1 && counter<TIMEOUT)
 		counter++;
 	if (m_inBuffer < 1) return false;
@@ -1085,9 +1095,6 @@ void PS2_initializeMouse(struct PS2Mouse* mouse){
 	sendByteToDeviceHandleResend(2, PS2_MOUSE_CMD_SET_RESOLUTION);
 	sendByteToDeviceHandleResend(2, 0x03); // 8 count/mm
 
-	// Enable packets
-	sendByteToDeviceHandleResend(2, PS2_MOUSE_CMD_ENABLE_STREAMING);
-
 	// Set the mouse name
 	switch (mouse->type){
 	case PS2MOUSETYPE_STD:
@@ -1106,9 +1113,6 @@ void PS2_initializeMouse(struct PS2Mouse* mouse){
 		log(WARNING, MODULE, "Couldn't initialize PS/2 mouse (invalid mouse id)");
 		return;
 	}
-
-	// Finally, we can register our IRQ handler
-	IRQ_registerHandler(IRQ_PS2_MOUSE, mouseIRQ);
 
 	mouse->enabled = true;
 	log(INFO, MODULE, "Identified mouse as '%s'", mouse->name);
@@ -1137,8 +1141,10 @@ void PS2_initialize(){
 	if (port1_enabled) PS2_initializeKeyboard(&m_PS2Keyboard);
 	if (port2_enabled) PS2_initializeMouse(&m_PS2Mouse);
 
-	// After intialization, we can re-enable scanning for functionning devices
-	// and register the scancodes-capable IRQs
+	// After intialization, we can re-enable irqs for functionning devices
+	PS2Controller_setDevicesIRQ(m_PS2Keyboard.enabled, m_PS2Mouse.enabled);
+
+	// Same for scanning ; and we can now register the scancodes-capable IRQ handlers
 	if (m_PS2Keyboard.enabled) {
 		sendByteToDeviceHandleResend(1, PS2_CMD_ENABLE_SCANNING);
 		IRQ_registerHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
@@ -1152,7 +1158,6 @@ void PS2_initialize(){
 		IRQ_deregisterHandler(IRQ_PS2_MOUSE);
 	}
 
-	PS2Controller_setDevicesIRQ(m_PS2Keyboard.enabled, m_PS2Mouse.enabled);
 	log(SUCCESS, MODULE, "Initialization success");
 }
 
