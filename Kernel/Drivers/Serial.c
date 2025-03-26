@@ -5,8 +5,10 @@
 #include "HAL/CPU.h"
 #include "IRQ.h"
 #include "Logging.h"
+#include "mugOS/Ringbuffer.h"
 
 #include "Serial.h"
+#define MODULE "Serial Port"
 
 // This is both:
 // - A x86 UART Controller driver (8250, 16450, 16550 and 16550A)
@@ -14,8 +16,6 @@
 // Note: only the 16550A controller has been tested. Other might work
 // with a few bugs, but modern CPU onboards 16550A and no other
 // so this driver should work with all modern systems
-
-#define MODULE "Serial Port driver"
 
 // Possible ports to poll (x86 specific !)
 #define N_PORTS 8
@@ -39,10 +39,9 @@ struct UARTDevice {
 	enum UARTController controller;
 	const char* controllerName;
 	int internalBufferSize; // Internal FIFO buffer size: 14 on 16550A, 1 otherwise
-	uint8_t externalWriteBuffer[UARTDEVICE_EXT_BUFF_SIZE];
-	unsigned int writeBeginIndex, inWriteBuffer; // externalWriteBuffer FIFO variables
-	uint8_t externalReadBuffer[UARTDEVICE_EXT_BUFF_SIZE];
-	unsigned int readBeginIndex, inReadBuffer; // externalWriteBuffer FIFO variables
+	int buffer1[UARTDEVICE_EXT_BUFF_SIZE]; // Actual Ringbuffer buffers, since we don't have kmalloc yet
+	int buffer2[UARTDEVICE_EXT_BUFF_SIZE];
+	Ringbuffer externalWriteBuff, externalReadBuff;
 };
 
 struct UARTDevice m_devices[N_PORTS];
@@ -128,22 +127,19 @@ static bool pushBackWriteBuffer(struct UARTDevice* dev, const uint8_t* str){
 
 	// If we were not already writing (buffer empty), after filling the buffer,
 	// we need to trigger the THRE again so that we actually send what we put in the buffer
-	bool shouldTriggerTHRE = (dev->inWriteBuffer == 0);
+	bool shouldTriggerTHRE = (Ringbuffer_getDataSize(&dev->externalWriteBuff) == 0);
 
 	unsigned long flags;
 	IRQ_disableSave(flags);
 
-	size_t available_space = UARTDEVICE_EXT_BUFF_SIZE - dev->inWriteBuffer;
-	if (available_space < n) { IRQ_restore(flags); return false; }
-
-	// Copy the string to the external buffer
-	size_t write_index = (dev->writeBeginIndex + dev->inWriteBuffer) % UARTDEVICE_EXT_BUFF_SIZE;
-	for(size_t i=0 ; i<n ; i++){
-		dev->externalWriteBuffer[write_index] = str[i];
-		write_index++;
-		if (write_index == UARTDEVICE_EXT_BUFF_SIZE) write_index = 0;
+	size_t i = 0;
+	while(str[i]){
+		if (!Ringbuffer_pushBack(&dev->externalWriteBuff, str[i])){
+			IRQ_restore(flags);
+			return false;
+		}
+		i++;
 	}
-	dev->inWriteBuffer += n;
 
 	// Trigger THRE if we were not writing
 	if (shouldTriggerTHRE){
@@ -156,7 +152,7 @@ static bool pushBackWriteBuffer(struct UARTDevice* dev, const uint8_t* str){
 	// Note: we test whether writeBuffer is full because activating THRE
 	// might have triggered the interrupt, possibly emptying the buffer
 	uint8_t lsr = inb(dev->port + SERIAL_OFFSET_LSR);
-	if ((lsr & SERIAL_LSR_TEMT) && dev->inWriteBuffer){
+	if ((lsr & SERIAL_LSR_TEMT) && (Ringbuffer_getDataSize(&dev->externalWriteBuff) > 0)){
 		processTHRE(dev);
 	}
 
@@ -167,20 +163,18 @@ static bool pushBackWriteBuffer(struct UARTDevice* dev, const uint8_t* str){
 /// @brief Remove (pop front) `n` bytes from the buffer into `out` (out size must be >= n !)
 /// @note IRQs MUST BE DISABLED when calling this method
 static uint8_t popFrontWriteBuffer(struct UARTDevice* dev){
-	uint8_t res;
+	int temp;
 
-	res = dev->externalWriteBuffer[dev->writeBeginIndex];
-	dev->writeBeginIndex = (dev->writeBeginIndex + 1) % UARTDEVICE_EXT_BUFF_SIZE;
-	dev->inWriteBuffer--;
+	Ringbuffer_pop(&dev->externalWriteBuff, &temp);
 
 	// If nothing more to be written, disable THRE
-	if (dev->inWriteBuffer == 0){
+	if (Ringbuffer_getDataSize(&dev->externalWriteBuff) == 0){
 		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
 		ier &= ~SERIAL_IER_THRE;
 		outb(dev->port+SERIAL_OFFSET_IER, ier);
 	}
 
-	return res;
+	return (uint8_t) temp;
 }
 
 /// @brief Add (push back) the null-terminated string str to be written the device read buffer
@@ -193,14 +187,11 @@ static bool pushBackReadBuffer(struct UARTDevice* dev, const uint8_t* str){
 	size_t n = strlen((const char*) str);
 	if (n==0) return true;
 
-	size_t availableSpace = UARTDEVICE_EXT_BUFF_SIZE - dev->inReadBuffer;
-	if (availableSpace < n) return false;
-
-	// Copy the string to the external buffer
-	size_t write_index = (dev->readBeginIndex + dev->inReadBuffer) % UARTDEVICE_EXT_BUFF_SIZE;
-	for(size_t i=0 ; i<n ; i++){
-		dev->externalReadBuffer[write_index] = str[i];
-		dev->inReadBuffer++;
+	size_t i = 0;
+	while(str[i]){
+		if (!Ringbuffer_pushBack(&dev->externalReadBuff, str[i]))
+			return false;
+		i++;
 	}
 
 	return true;
@@ -209,18 +200,18 @@ static bool pushBackReadBuffer(struct UARTDevice* dev, const uint8_t* str){
 /// @brief Pop first byte from the device's read buffer
 /// @note IRQ-safe
 static uint8_t popFrontReadBuffer(struct UARTDevice* dev){
-	uint8_t res;
-	if (dev->inReadBuffer < 1) return 0x00;
+	int temp;
+
+	if (Ringbuffer_getDataSize(&dev->externalReadBuff) == 0)
+		return 0x00;
 
 	unsigned long flags;
 	IRQ_disableSave(flags);
 
-	res = dev->externalReadBuffer[dev->readBeginIndex];
-	dev->readBeginIndex = (dev->readBeginIndex + 1) % UARTDEVICE_EXT_BUFF_SIZE;
-	dev->inReadBuffer--;
+	Ringbuffer_pop(&dev->externalReadBuff, &temp);
 
 	IRQ_restore(flags);
-	return res;
+	return (uint8_t) temp;
 }
 
 // ================ Interrupt handling ================
@@ -268,14 +259,14 @@ static void processTHRE(struct UARTDevice* dev){
 	// write it to the controller's internal buffer
 
 	int i = 0;
-	while(i<dev->internalBufferSize && dev->inWriteBuffer>0){
+	while(i<dev->internalBufferSize && Ringbuffer_getDataSize(&dev->externalWriteBuff)>0){
 		char toSend = popFrontWriteBuffer(dev);
 		outb(dev->port+SERIAL_OFFSET_BUFFER, toSend);
 		i++;
 	}
 
 	// Emptied buffer => Disable THRE interrupt
-	if (dev->inWriteBuffer == 0){
+	if (Ringbuffer_getDataSize(&dev->externalWriteBuff) == 0){
 		uint8_t ier = inb(dev->port+SERIAL_OFFSET_IER);
 		if (ier & SERIAL_IER_THRE){
 			ier &= ~SERIAL_IER_THRE; // clear THRE bit
@@ -455,8 +446,8 @@ void Serial_initialize(){
 		curDev->controllerName = UARTControllersNames[curDev->controller];
 		if (curDev->controller == UART_NONE) continue;
 		curDev->internalBufferSize = (curDev->controller == UART_16550A) ? 14 : 1;
-		curDev->writeBeginIndex = 0;
-		curDev->inWriteBuffer = 0;
+		Ringbuffer_initializeWithBuffer(&curDev->externalWriteBuff, UARTDEVICE_EXT_BUFF_SIZE, curDev->buffer1);
+		Ringbuffer_initializeWithBuffer(&curDev->externalReadBuff, UARTDEVICE_EXT_BUFF_SIZE, curDev->buffer2);
 
 		curDev->present = initializeUARTController(curDev->port);
 		if (!curDev->present){
