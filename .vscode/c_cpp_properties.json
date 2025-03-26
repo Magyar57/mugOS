@@ -12,7 +12,7 @@
 				"${workspaceFolder}/toolchain/include",
                 "${workspaceFolder}/Kernel/Arch/${ARCH}" // Included in each arch only
             ],
-            "defines": ["${ARCH}="],
+            "defines": ["KERNEL=", "${ARCH}="],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c23",
             "cppStandard": "c++23",

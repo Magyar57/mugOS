@@ -1,9 +1,6 @@
 #ifndef __ASSERT_H__
 #define __ASSERT_H__
 
-#include "Logging.h"
-#include "Panic.h"
-
 // If NDEBUG is defined, do nothing
 #ifdef NDEBUG
 
@@ -20,13 +17,11 @@
 
 // assert
 
-#define assert(expr) ((expr) ? __ASSERT_VOID_CAST(0) : __assert_fail(#expr, __FILE__, __LINE__, __FUNCTION__))
+void __assert_fail(const char* assertion, const char* file, unsigned int line, const char* func);
 
-#define __assert_fail(expr_str, file, line, func) ({log(PANIC, __FILE__,"assertion '%s' failed at %s:%d in %s", expr_str, file, line, func); panic();})
+#define assert(expr) \
+	((expr) ? __ASSERT_VOID_CAST(0) : __assert_fail(#expr, __FILE__, __LINE__, __FUNCTION__))
 
 #endif
-
-// debug("print at %s:%d\n", __FILE__, __LINE__);
-// debug("compile time is %s %s\n", __DATE__, __TIME__);
 
 #endif

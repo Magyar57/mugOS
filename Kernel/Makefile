@@ -1,6 +1,6 @@
 # mugOS kernel makefile
 
-TARGET_CFLAGS+=-D $(ARCH)
+TARGET_CFLAGS+=-D KERNEL -D $(ARCH)
 
 # Includes paths for the kernel
 export CPATH=$(abspath $(TOOLCHAIN_PATH)/include):$(abspath .):$(abspath Stdlib):$(abspath Arch/$(ARCH)/Include)
