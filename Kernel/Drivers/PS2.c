@@ -797,15 +797,38 @@ static void keyboardIRQ(void*){
 
 #pragma region PS/2 Mouse
 
-static void handleMousePacket(uint8_t flags, uint8_t dx, uint8_t dy, uint8_t wheelAndThumbBtn){
-	// byte1 bits: Y overflow, X overflow, Y sign bit, X sign bit, Always 1, Middle Btn, Right Btn, Left Btn
-	// byte2: X movement
-	// byte3: Y movement
-	// byte4: [OPT]: wheel & thumb button
+static void handleMousePacket(uint8_t flags, uint8_t raw_dx, uint8_t raw_dy, uint8_t wheelAndThumbBtn){
+	// flags bits (8 to 1): Y overflow, X overflow, Y sign bit, X sign bit, Always 1, Middle Btn, Right Btn, Left Btn
+	// wheelAndThumbBtn is optional
 
-	// If X or Y overflow, we can ignore the packet !
+	int dx, dy;
+	bool btn1, btn2, btn3=false, btn4=false, btn5=false;
+	int wheel = 0; // wheel movement, from -8 to +7
 
-	debug("mouse interrupt, packet=[%#.2hhx, %#.2hhx, %#.2hhx, %#.2hhx]", flags, dx, dy, wheelAndThumbBtn);
+	// Mouse movement
+	// If sign (minus) bit is set, the right part becomes raw_dx - 0x100, which produces
+	// the 2 complement of the first operand raw_dx/y
+	dx = raw_dx - ((flags << 4) & 0x100);
+	dy = raw_dy - ((flags << 3) & 0x100);
+
+	// Left and right buttons
+	btn1 = (flags & 0b00000001);
+	btn2 = (flags & 0b00000010);
+
+	// Wheel
+	if (m_PS2Mouse.type >= PS2MOUSETYPE_WHEEL){
+		btn3 = (flags & 0b00000100);
+		wheel = (wheelAndThumbBtn & 0b00001000) ?
+			(wheelAndThumbBtn | ~0b00000111) : (wheelAndThumbBtn & 0b00000111);
+	}
+
+	// Thumb buttons
+	if (m_PS2Mouse.type >= PS2MOUSETYPE_5BUTTONS){
+		btn4 = (wheelAndThumbBtn & 0b00010000);
+		btn5 = (wheelAndThumbBtn & 0b00100000);
+	}
+
+	debug("mouse IRQ: btn1=%1d btn2=%1d btn3=%1d btn4=%1d btn5=%1d dx=%- 4d dy=%- 4d wheel=%+.1d", btn1, btn2, btn3, btn4, btn5, dx, dy, wheel);
 }
 
 static void mouseIRQ(void*){
