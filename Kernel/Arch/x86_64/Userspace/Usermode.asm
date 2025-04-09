@@ -52,7 +52,7 @@ x86_jumpToUsermode:
 	pushfq
 	; Push user_code_segment:return_address
 	push rdi
-	lea rax, [usermode_function]
+	lea rax, [rel usermode_function]
 	push rax
 
 	iretq
