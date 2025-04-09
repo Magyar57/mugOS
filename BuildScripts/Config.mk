@@ -22,7 +22,7 @@ GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-14.1.0/gcc-14.1.0.tar.gz
 export TARGET_ASM:=nasm
 export TARGET_ASMFLAGS:=-f elf64 -g -F dwarf
 export TARGET_CC:=clang --target=x86_64-none-elf
-export TARGET_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding -mno-red-zone -mcmodel=kernel -mgeneral-regs-only -fsanitize=undefined
+export TARGET_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding -mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined
 export TARGET_LD:=ld.lld
 export TARGET_LDFLAGS:=-nostdlib -static
 export TARGET_LIBS:=
