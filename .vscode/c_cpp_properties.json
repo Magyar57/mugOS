@@ -12,13 +12,14 @@
 				"${workspaceFolder}/toolchain/include",
                 "${workspaceFolder}/Kernel/Arch/${ARCH}" // Included in each arch only
             ],
-            "defines": ["KERNEL=", "${ARCH}="],
+			// Note: we need to tell vscode that true and false are defined, because the c23 parser is buggy
+			// See https://github.com/microsoft/vscode-cpptools/issues/10696
+            "defines": ["true=1", "false=0", "KERNEL=", "${ARCH}="],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c23",
             "cppStandard": "c++23",
             "intelliSenseMode": "linux-clang-x64",
-			// Note: we use c17 since c23 is currently bugged in the extension
-			"compilerArgs": ["-std=c17", "-ffreestanding", "-nostdlib"]
+			"compilerArgs": ["-std=c23", "-ffreestanding", "-nostdlib"]
         }
     ],
     "version": 4
