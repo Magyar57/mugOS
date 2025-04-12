@@ -2,7 +2,6 @@
 #define __IRQ_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 #include "HAL/IRQFlags.h"
 
 // IRQHandler function type

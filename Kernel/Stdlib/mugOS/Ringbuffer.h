@@ -2,7 +2,6 @@
 #define __RINGBUFFER_H__
 
 #include <stddef.h>
-#include <stdbool.h>
 
 struct s_Ringbuffer {
 	size_t size;

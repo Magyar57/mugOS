@@ -2,7 +2,6 @@
 #define __CPU_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 #include "Preprocessor.h"
 
 // CPU.h:

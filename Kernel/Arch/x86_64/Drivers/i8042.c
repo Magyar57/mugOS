@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include "Logging.h"
 #include "assert.h"
 #include "io.h"

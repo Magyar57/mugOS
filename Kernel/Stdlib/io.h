@@ -2,7 +2,6 @@
 #define __IO_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 
 // Note: the functions are meant to be implemented by the specific architecture
 

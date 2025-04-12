@@ -1,5 +1,4 @@
 #include <stddef.h>
-#include <stdbool.h>
 #include <stdarg.h>
 #include "stdio.h"
 #include "Drivers/Serial.h"

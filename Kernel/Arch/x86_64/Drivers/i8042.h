@@ -2,7 +2,6 @@
 #define __i8042_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 
 // i8042.h: Intel 8042 PS/2 controller driver
 

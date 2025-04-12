@@ -2,7 +2,6 @@
 #define __FRAMEBUFFER_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 
 typedef uint32_t color_t;
 #define COLOR_32BPP(r, g, b)	(r<<16 | g<<8 | b)			// r, g, b: 255 values (bounds not checked!)

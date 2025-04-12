@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include "io.h"
 #include "Logging.h"
 #include "Panic.h"

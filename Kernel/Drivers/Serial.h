@@ -2,7 +2,6 @@
 #define __SERIAL_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 
 void Serial_initialize();
 bool Serial_isEnabled();

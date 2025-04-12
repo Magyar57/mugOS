@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include "string.h"
 #include "io.h"
 #include "assert.h"

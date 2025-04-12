@@ -1,5 +1,4 @@
 #include <stddef.h>
-#include <stdbool.h>
 #include "Logging.h"
 #include "Drivers/Keycodes.h"
 
