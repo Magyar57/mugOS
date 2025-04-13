@@ -4,7 +4,8 @@
 # This is needed only if these variables are defined in the environment
 CLEAR_ENV:=ASM= ASMFLAGS= CC= CFLAGS= CXX= LD= LDFLAGS= LINKFLAGS= LIBS=
 
-all: firmware limine
+all: toolchain
+toolchain: firmware limine
 firmware:			| $(UEFI_FIRMWARE)
 limine:				| $(TOOLCHAIN_PATH)/bin/limine
 toolchain_binutils:	| $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld
@@ -12,11 +13,11 @@ toolchain_gcc:		| $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc
 
 .PHONY: toolchain limine clean-toolchain toolchain_binutils toolchain_gcc clean-toolchain remove-toolchain
 
-$(TOOLCHAIN_PATH)/bin/limine:
-	if [ ! -d "$(TOOLCHAIN_PATH)/limine" ]; then git clone https://github.com/limine-bootloader/limine.git $(TOOLCHAIN_PATH)/limine --branch=v8.x-binary --depth=1; fi
+$(TOOLCHAIN_PATH)/bin/limine: | $(TOOLCHAIN_PATH)
+	if [ ! -d "$(TOOLCHAIN_PATH)/limine" ]; then git clone https://github.com/limine-bootloader/limine.git $(TOOLCHAIN_PATH)/limine --branch=$(LIMINE_BRANCH) --depth=1; fi
 	$(MAKE) -C $(TOOLCHAIN_PATH)/limine install PREFIX=$(TOOLCHAIN_PATH)
 
-$(UEFI_FIRMWARE):
+$(UEFI_FIRMWARE): | $(TOOLCHAIN_PATH)
 	mkdir -p $(dir $@)
 	wget -O $@ $(OVMF_URL)
 
