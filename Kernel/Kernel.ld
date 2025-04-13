@@ -12,8 +12,6 @@ SECTIONS {
 	. = LOAD_ADDRESS;
 
 	. = ALIGN(ALIGN_VALUE);
-	.entry :	{ __entry_start = .; *(.entry) } : text
-	. = ALIGN(ALIGN_VALUE);
 	.text :		{ __text_start = .; *(.text) } : text
 	. = ALIGN(ALIGN_VALUE);
 	.rodata :	{ __rodata_start = .; *(.rodata) } : rodata
