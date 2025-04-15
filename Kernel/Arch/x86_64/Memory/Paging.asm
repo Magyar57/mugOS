@@ -59,7 +59,8 @@ setPML4:
 	jne .err
 
 	; Put in canonical form (PML4: 48 bits address)
-	and rdi, 0x0000fffffffff000
+	mov rax, 0x0000fffffffff000
+	and rdi, rax
 	; Set page table in cr3
 	mov cr3, rdi
 
@@ -83,7 +84,8 @@ setPML5:
 	jne .err
 
 	; Put in canonical form (PML5: 52 bits address)
-	and rdi, 0x00fffffffffff000
+	mov rax, 0x00fffffffffff000
+	and rdi, rax
 	; Set page table in cr3
 	mov cr3, rdi
 
