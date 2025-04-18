@@ -28,7 +28,7 @@ void kmain(){
 	HAL_initialize();
 
 	// Memory managers initialization
-	// PMM_printMemoryMap();
+	PMM_initialize();
 
 	// Initialize IRQs
 	IRQ_initialize();

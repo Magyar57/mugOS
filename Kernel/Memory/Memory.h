@@ -7,7 +7,9 @@
 #define SIZE_2MB 0x00200000 // 2 MiB is 2 * 2^20 = 2*1024*1024
 #define SIZE_1GB 0x40000000 // 1 GiB is 1 * 2^30 = 1*1024*1024*1024
 
-#define PAGE_SIZE SIZE_4KB
+#define PAGE_SIZE	SIZE_4KB
+#define PAGE_SHIFT	12 // PAGE_SIZE of 4KB means 12 bits of offset
+#define PAGE_MASK 	0xfffffffffffff000
 
 typedef uint64_t physical_address_t;
 typedef uint64_t virtual_address_t;
