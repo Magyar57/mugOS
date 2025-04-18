@@ -18,10 +18,12 @@
 - [X] Logging subsystem
 - [X] Serial output driver
 - [X] Bootloader: abandon Legacy in favor of UEFI
-- [X] Framebuffer Driver
+- [X] Framebuffer driver
 - [X] Bootloader: switch to Limine
 - [X] Add kernel step by step debugging support (gdb)
-- [ ] Memory detection
+- [X] Memory detection (map)
+- [X] Physical memory allocator (bitmap)
+- [ ] Virtual memory management (paging)
 - [ ] kmalloc
 - [ ] Kernel FAT driver
 - [ ] Kernel filesystem
@@ -40,5 +42,5 @@
 
 Notes:
 - PS/2 Driver purposely does NOT support hot-plug (as the specification PS/2 was designed for)
-- PS/2 Keyboard driver SysRq detection implementation sends spurious (but ) alt presses (see PS2.c in handleScancode for more details)
+- PS/2 Keyboard driver SysRq detection implementation sends spurious (but innocuous) alt presses (see PS2.c in handleScancode for more details)
 - The framebuffer driver only supports 32 bpp framebuffers
