@@ -6,7 +6,7 @@
 volatile LIMINE_REQUESTS_START_MARKER;
 
 // Use protocol version 3
-volatile LIMINE_BASE_REVISION(REQUESTED_LIMINE_REVISION)
+volatile LIMINE_BASE_REVISION(3)
 
 // Ask for Limine version
 volatile struct limine_bootloader_info_request infoReq = {
@@ -18,6 +18,13 @@ volatile struct limine_bootloader_info_request infoReq = {
 // Ask for the system's memory map
 volatile struct limine_memmap_request memmapReq = {
 	.id = LIMINE_MEMMAP_REQUEST,
+	.revision = 0,
+	.response = NULL,
+};
+
+// Ask for the Higher Half Direct Map (get the virtual address offset)
+volatile struct limine_hhdm_request hhdmReq = {
+	.id = LIMINE_HHDM_REQUEST,
 	.revision = 0,
 	.response = NULL,
 };
