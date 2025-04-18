@@ -18,4 +18,6 @@
 
 #define compile_assert(condition) static_assert(condition, "Compile-time assertion failed: " # condition)
 
+#define unreachable() __builtin_unreachable()
+
 #endif
