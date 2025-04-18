@@ -86,3 +86,7 @@ void __ubsan_handle_builtin_unreachable(void*){
 void __ubsan_handle_invalid_builtin(void*){
 	log(ERROR, MODULE, "invalid_builtin");
 }
+
+void __ubsan_handle_vla_bound_not_positive(void*){
+	log(ERROR, MODULE, "vla_bound_not_positive");
+}
