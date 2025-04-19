@@ -6,6 +6,7 @@
 #include "Logging.h"
 #include "Panic.h"
 #include "Boot/LimineRequests.h"
+#include "Memory/VMM.h"
 
 #include "PMM.h"
 #define MODULE "Physical Memory Manager"
@@ -532,12 +533,6 @@ static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memm
 	setBits(allocator, start_bit, end_bit);
 }
 
-// TODO move where it belongs (where?)
-static inline virtual_address_t physicalToVirtual(physical_address_t addr){
-	const uint64_t virtualOffset = hhdmReq.response->offset;
-	return (uint64_t)addr + virtualOffset;
-}
-
 void PMM_initialize(){
 	uint64_t totalMemory;
 	physical_address_t allocated;
@@ -562,7 +557,7 @@ void PMM_initialize(){
 	uint64_t n_pages = getSizeAsPages(bitmapSize + memmapSize);
 	allocated = earlyAllocate(memmapReq.response, n_pages);
 	// Split the memory we got
-	void* addr = (void*) physicalToVirtual(allocated);
+	void* addr = (void*) VMM_physicalToVirtual(allocated);
 	m_bitmapAllocator.bitmap = (uint64_t*) addr;
 	m_memMap.entries = (struct MemoryMapEntry*) (addr + bitmapSize);
 

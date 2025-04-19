@@ -2,6 +2,7 @@
 #include "Logging.h"
 #include "Boot/LimineRequests.h"
 #include "Memory/PMM.h"
+#include "Memory/VMM.h"
 #include "IRQ.h"
 #include "HAL/HAL.h"
 #include "HAL/CPU.h"
@@ -28,6 +29,7 @@ void kmain(){
 	HAL_initialize();
 
 	// Memory managers initialization
+	VMM_setKernelMemoryOffset(hhdmReq.response->offset);
 	PMM_initialize();
 
 	// Initialize IRQs
