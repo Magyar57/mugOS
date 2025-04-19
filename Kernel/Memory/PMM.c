@@ -175,6 +175,56 @@ static uint64_t countFreeBlocks(struct BitmapAllocator* allocator){
 	return n_bits;
 }
 
+static bool isFullyAllocated(struct BitmapAllocator* allocator, uint64_t start_bit, uint64_t end_bit){
+	uint64_t cur;
+
+	if (start_bit >= end_bit) return false;
+	if (start_bit >= allocator->nBlocks) return false;
+	if (end_bit > allocator->nBlocks) return false;
+
+	uint64_t start_index = start_bit / 64;
+	uint64_t end_index = end_bit / 64;
+	int index_in_first_uint64 = start_bit % 64;
+	int index_in_last_uint64 = end_bit % 64;
+
+	// Special case: only one uint64 to check
+	if (start_index == end_index){
+		cur = allocator->bitmap[start_index] >> (64 - index_in_last_uint64);
+		for (uint64_t i=0 ; i<end_bit-start_bit ; i++){
+			if ((cur & 1) == 0)
+				return false;
+			cur >>= 1;
+		}
+		return true;
+	}
+
+	// First uint64
+	if (index_in_first_uint64 != 0){
+		cur = allocator->bitmap[start_index] >> index_in_first_uint64;
+		start_index++;
+		for (int j=index_in_first_uint64 ; j<64 ; j++){
+			if ((cur & 1) == 0)
+				return false;
+			cur >>= 1;
+		}
+	}
+	// Middle
+	for (uint64_t i=start_index ; i<end_index-1 ; i++){
+		cur = allocator->bitmap[i];
+		if (cur != 0xffffffffffffffff)
+			return false;
+	}
+	// Last uint64
+	cur = allocator->bitmap[end_index];
+	for (int j=0 ; j<index_in_last_uint64 ; j++){
+		if ((cur & 0x8000000000000000) == 0)
+			return false;
+		cur <<= 1;
+	}
+
+	return true;
+}
+
 static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* allocator, uint64_t n_pages){
 	// Search for n_blocks consecutive free bits in the bitmap
 	uint64_t n_bits = 0; // consecutive free bits in the current sequence
@@ -229,16 +279,20 @@ physical_address_t PMM_allocate(uint64_t n_pages){
 }
 
 void PMM_free(physical_address_t addr, uint64_t n_pages){
-	// Note: we don't check that the freed address is invalid
-	// We assume that the kernel code that called this doesn't mess up its
-	// addresses and sizes
-	// And bounds are checked by the clearBits method
+	// Note 1: we don't check that the freed address is invalid ; We assume that
+	// the kernel code that called this doesn't mess up its addresses and sizes
+	// Note 2: Bounds are checked by both isFullyAllocated and clearBits
 
-	// TODO check that we don't free stuff that's already free
-
-	// Free the memory in the bitmap
 	uint64_t start_bit = (addr - m_bitmapAllocator.start) >> PAGE_SHIFT;
 	uint64_t end_bit = start_bit + n_pages;
+
+	// Check that we don't free stuff that's already free
+	if (!isFullyAllocated(&m_bitmapAllocator, start_bit, end_bit)){
+		log(ERROR, MODULE, "Detected double free or bad address and size !! In %s", __FUNCTION__);
+		return;
+	}
+
+	// Free the memory in the bitmap
 	clearBits(&m_bitmapAllocator, start_bit, end_bit);
 }
 
