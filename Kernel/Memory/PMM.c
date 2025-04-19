@@ -35,20 +35,15 @@ struct MemoryMap {
 struct BitmapAllocator {
 	uint64_t nBlocks; // (= #bits)
 	physical_address_t start;
+	uint64_t allocatableBlocks; // #blocks that can be allocated (<= nBlocks)
+	uint64_t allocatedBlocks; // #allocated blocks at a given time
 
 	uint64_t* bitmap;
 	uint64_t bitmapLength; // bitmap[bitmapLength]
 };
 
-struct PhysicalMemoryData {
-	uint64_t totalMemory;
-	uint64_t freeMemory;
-
-	struct MemoryMap memMap;
-	struct BitmapAllocator allocator;
-};
-
-static struct PhysicalMemoryData m_pmData;
+static struct MemoryMap m_memMap;
+static struct BitmapAllocator m_bitmapAllocator;
 
 // ================ Memory allocator ================
 
@@ -61,6 +56,9 @@ static void clearBits(struct BitmapAllocator* allocator, uint64_t start_bit, uin
 	if (start_bit >= allocator->nBlocks) return;
 	if (end_bit > allocator->nBlocks)
 		end_bit = allocator->nBlocks;
+
+	// From now on we can update free blocks
+	allocator->allocatedBlocks -= end_bit - start_bit;
 
 	// Example on uint8, clearing from start_bit=2 to end_bit=19
 	// 11000000 00000000 00011111
@@ -103,6 +101,9 @@ static void setBits(struct BitmapAllocator* allocator, uint64_t start_bit, uint6
 	if (start_bit >= allocator->nBlocks) return;
 	if (end_bit > allocator->nBlocks)
 		end_bit = allocator->nBlocks;
+
+	// From now on we can update free blocks
+	allocator->allocatedBlocks += end_bit - start_bit;
 
 	// Example on uint8, setting from start_bit=2 to end_bit=19
 	// 00111111 11111111 11100000
@@ -220,12 +221,11 @@ static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* alloc
 	uint64_t end_idx = i*64 + j + 1;
 	uint64_t start_idx = end_idx - n_pages;
 	setBits(allocator, start_idx, end_idx);
-	m_pmData.freeMemory -= n_pages * PAGE_SIZE;
 	return allocator->start + start_idx * PAGE_SIZE;
 }
 
 physical_address_t PMM_allocate(uint64_t n_pages){
-	return allocate_FirstFit(&m_pmData.allocator, n_pages);
+	return allocate_FirstFit(&m_bitmapAllocator, n_pages);
 }
 
 void PMM_free(physical_address_t addr, uint64_t n_pages){
@@ -234,11 +234,12 @@ void PMM_free(physical_address_t addr, uint64_t n_pages){
 	// addresses and sizes
 	// And bounds are checked by the clearBits method
 
+	// TODO check that we don't free stuff that's already free
+
 	// Free the memory in the bitmap
-	uint64_t start_bit = (addr - m_pmData.allocator.start) >> PAGE_SHIFT;
+	uint64_t start_bit = (addr - m_bitmapAllocator.start) >> PAGE_SHIFT;
 	uint64_t end_bit = start_bit + n_pages;
-	clearBits(&m_pmData.allocator, start_bit, end_bit);
-	m_pmData.freeMemory += n_pages * PAGE_SIZE;
+	clearBits(&m_bitmapAllocator, start_bit, end_bit);
 }
 
 // ================ Memory map ================
@@ -280,24 +281,29 @@ static void printMemoryMap(struct MemoryMap* memmap){
 }
 
 void PMM_printMemoryUsage(){
-	int magnitude_totalMem = getMagnitude(m_pmData.totalMemory);
+	uint64_t total = m_bitmapAllocator.allocatableBlocks * PAGE_SIZE;
+	uint64_t used = m_bitmapAllocator.allocatedBlocks * PAGE_SIZE;
+
+	int magnitude_totalMem = getMagnitude(total);
 	magnitude_totalMem = (magnitude_totalMem > 6) ? 6 : magnitude_totalMem;
 	int divisor_totalMem = (1llu << (10*magnitude_totalMem));
+	uint64_t total_atMagnitude = (divisor_totalMem == 0) ? total : total/divisor_totalMem;
 
-	uint64_t used = m_pmData.totalMemory - m_pmData.freeMemory;
 	int magnitude_usedMem = getMagnitude(used);
 	magnitude_usedMem = (magnitude_usedMem > 6) ? 6 : magnitude_usedMem;
 	int divisor_usedMem = (1llu << (10*magnitude_usedMem));
+	uint64_t used_atMagnitude = (divisor_usedMem == 0)? used : used/divisor_usedMem;
 
 	log(INFO, MODULE, "Memory usage: %llu %s / %llu %s",
-		used/divisor_usedMem, SIZE_UNITS[magnitude_usedMem],
-		m_pmData.totalMemory/divisor_totalMem, SIZE_UNITS[magnitude_totalMem]
+		used_atMagnitude, SIZE_UNITS[magnitude_usedMem],
+		total_atMagnitude, SIZE_UNITS[magnitude_totalMem]
 	);
 }
 
 // ================ Initialization ================
 
-// Returns the number of entries in the processed memory map
+/// @brief Process Limine's memory map by squashing sequential entries of same type
+/// @returns The number of entries in the processed memory map
 static int processLimineMemoryMap(struct limine_memmap_response* memmap){
 	if (memmap->entry_count == 0) return 0;
 	int n_entries = 1; // last entry
@@ -319,9 +325,10 @@ static int processLimineMemoryMap(struct limine_memmap_response* memmap){
 }
 
 static void parseLimineMemoryMap(struct limine_memmap_response* memmap,
-							physical_address_t* totalMemory_out,
-							physical_address_t* firstFreeMemory_out,
-							physical_address_t* lastFreeMemory_out){
+	 							 uint64_t* totalMemory_out,
+								 physical_address_t* firstFreeMemory_out,
+								 physical_address_t* lastFreeMemory_out){
+	*totalMemory_out = 0;
 	bool firstNotFound = true;
 	*firstFreeMemory_out = 0;
 	*lastFreeMemory_out = 0;
@@ -435,37 +442,40 @@ static inline uint64_t roundUp(uint64_t value, unsigned int discretization){
 	return ((value + discretization -1) / discretization) * discretization;
 }
 
-static void initBitmap(struct PhysicalMemoryData* data, physical_address_t allocated, uint64_t nPages){
-	// Set attributes (note: nBlocks was set already)
-	data->allocator.bitmapLength = (data->allocator.nBlocks + 63) / 64;
+static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memmap,
+					   physical_address_t allocated, uint64_t nPages){
+	// Note: Before calling initBitmap, nBlocks and allocatableBlocks needs to be set
+
+	allocator->bitmapLength = (allocator->nBlocks + 63) / 64;
 
 	// Initialized bitmap with all regions used/reserved
-	memset(data->allocator.bitmap, 0xff, data->allocator.bitmapLength*sizeof(uint64_t));
+	memset(allocator->bitmap, 0xff, allocator->bitmapLength*sizeof(uint64_t));
+	allocator->allocatedBlocks = allocator->allocatableBlocks;
 
 	// Set the usable memory as free
 	int start_bit, end_bit;
 	uint64_t freeMemory = 0; // count free memory for verification
-	for (int i=0 ; i<data->memMap.size ; i++){
-		struct MemoryMapEntry* cur = &data->memMap.entries[i];
+	for (int i=0 ; i<memmap->size ; i++){
+		struct MemoryMapEntry* cur = &memmap->entries[i];
 		if (cur->type != MEMORY_USABLE)
 			continue;
 
 		freeMemory += cur->length;
 
-		start_bit = (cur->address - data->allocator.start) >> PAGE_SHIFT;
-		end_bit = (cur->address - data->allocator.start + cur->length) >> PAGE_SHIFT;
-		clearBits(&data->allocator, start_bit, end_bit);
+		start_bit = (cur->address - allocator->start) >> PAGE_SHIFT;
+		end_bit = (cur->address - allocator->start + cur->length) >> PAGE_SHIFT;
+		clearBits(allocator, start_bit, end_bit);
 	}
 
-	assert(freeMemory == PAGE_SIZE * countFreeBlocks(&data->allocator));
+	// Assert that we didn't mess up anything
+	uint64_t freeBlocks = countFreeBlocks(allocator);
+	assert(allocator->allocatedBlocks == allocator->allocatableBlocks - freeBlocks);
+	assert(freeMemory == PAGE_SIZE * freeBlocks);
 
-	// From now we can mark as used the memory that we earlyAllocated
+	// From now, we can mark as used the memory that we earlyAllocated
 	start_bit = allocated >> PAGE_SHIFT;
 	end_bit = start_bit + nPages;
-	setBits(&data->allocator, start_bit, end_bit);
-
-	// Count free memory
-	data->freeMemory = PAGE_SIZE * countFreeBlocks(&data->allocator);
+	setBits(allocator, start_bit, end_bit);
 }
 
 // TODO move where it belongs (where?)
@@ -475,39 +485,42 @@ static inline virtual_address_t physicalToVirtual(physical_address_t addr){
 }
 
 void PMM_initialize(){
+	uint64_t totalMemory;
 	physical_address_t allocated;
 	physical_address_t lastFreePage; // as an address
 	size_t bitmapSize, memmapSize; // sizes are in bytes
 
-	// Limine's memory map: parse values and process (squash together consecutive entries of same type)
-	parseLimineMemoryMap(memmapReq.response, &m_pmData.totalMemory, &m_pmData.allocator.start, &lastFreePage);
-	m_pmData.memMap.size = processLimineMemoryMap(memmapReq.response);
+	// Limine's memory map: parse values and process
+	parseLimineMemoryMap(memmapReq.response, &totalMemory, &m_bitmapAllocator.start, &lastFreePage);
+	m_memMap.size = processLimineMemoryMap(memmapReq.response);
 
-	// Compute allocator size
+	// Compute allocator sizes
 	// Note: we add 1 because from @start to the n-th page, there is n-1 pages
-	m_pmData.allocator.nBlocks = ((lastFreePage - m_pmData.allocator.start) >> PAGE_SHIFT) + 1;
+	m_bitmapAllocator.nBlocks = ((lastFreePage - m_bitmapAllocator.start) >> PAGE_SHIFT) + 1;
+	m_bitmapAllocator.allocatableBlocks = totalMemory >> PAGE_SHIFT;
 
 	// Compute the memory that we need to allocate
-	bitmapSize = (m_pmData.allocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
+	bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
 	bitmapSize = roundUp(bitmapSize, sizeof(struct MemoryMapEntry*)); // Align the next structure's size
-	memmapSize = m_pmData.memMap.size * sizeof(struct MemoryMapEntry*);
+	memmapSize = m_memMap.size * sizeof(struct MemoryMapEntry*);
 
 	// Allocate
 	uint64_t n_pages = getSizeAsPages(bitmapSize + memmapSize);
 	allocated = earlyAllocate(memmapReq.response, n_pages);
 	// Split the memory we got
 	void* addr = (void*) physicalToVirtual(allocated);
-	m_pmData.allocator.bitmap = (uint64_t*) addr;
-	m_pmData.memMap.entries = (struct MemoryMapEntry*) (addr + bitmapSize);
+	m_bitmapAllocator.bitmap = (uint64_t*) addr;
+	m_memMap.entries = (struct MemoryMapEntry*) (addr + bitmapSize);
 
 	// Initializations
-	memset(m_pmData.memMap.entries, 0, memmapSize);
-	initMemoryMap(memmapReq.response, &m_pmData.memMap);
-	initBitmap(&m_pmData, allocated, n_pages);
+	memset(m_memMap.entries, 0, memmapSize);
+	initMemoryMap(memmapReq.response, &m_memMap);
+	initBitmap(&m_bitmapAllocator, &m_memMap, allocated, n_pages);
 
 	// Ok, print stuff
-	printMemoryMap(&m_pmData.memMap);
+	printMemoryMap(&m_memMap);
 	PMM_printMemoryUsage();
 
-	log(SUCCESS, MODULE, "Initialization success (managing %d pages)", m_pmData.allocator.nBlocks);
+	log(SUCCESS, MODULE, "Initialization success (managing %d pages, %d allocatable)",
+		m_bitmapAllocator.nBlocks, m_bitmapAllocator.allocatableBlocks);
 }
