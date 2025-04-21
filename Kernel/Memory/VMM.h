@@ -7,5 +7,6 @@
 
 void VMM_setKernelMemoryOffset(uint64_t offset);
 virtual_address_t VMM_physicalToVirtual(physical_address_t addr);
+physical_address_t VMM_virtualToPhysical(virtual_address_t addr);
 
 #endif
