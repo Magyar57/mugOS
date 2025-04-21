@@ -32,7 +32,10 @@ struct MemoryMap {
 extern struct MemoryMap g_memoryMap;
 
 /// @brief Initialize the Memory Map.
-void MMap_initialize(struct MemoryMap* memmap, struct limine_memmap_response* limine_memmap);
+/// @param memmap The memory map to initialize. Should be `&g_memoryMap`
+/// @param firmware_mmap The bootloader or firmware memory map.
+/// Only Limine's `struct limine_memmap_response*` supported
+void MMap_initialize(struct MemoryMap* memmap, void* firmware_mmap);
 
 // ================ Display number in powers of two ================
 

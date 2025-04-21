@@ -134,7 +134,8 @@ static void printMemoryMap(struct MemoryMap* memmap){
 	}
 }
 
-void MMap_initialize(struct MemoryMap* memmap, struct limine_memmap_response* limine_mmap){
+void MMap_initialize(struct MemoryMap* memmap, void* firmware_mmap){
+	struct limine_memmap_response* limine_mmap = firmware_mmap;
 	parseLimineMemoryMap(memmap, limine_mmap);
 	memmap->size = processLimineMemoryMap(limine_mmap);
 
