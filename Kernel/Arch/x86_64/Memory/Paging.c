@@ -1,17 +1,18 @@
 #include "string.h"
+#include "assert.h"
 #include "Preprocessor.h"
 #include "Panic.h"
 #include "Logging.h"
+#include "Memory/MemoryMap.h"
 #include "Memory/PMM.h"
+#include "Memory/VMM.h"
 #include "GDT.h"
 
 #include "HAL/Paging.h"
 #define MODULE "Paging"
 
-// Number of entries in the tables
-#define TABLE_SIZE 512
-
-#define ADDRESS_SIZE 48 // aka MAXPHYADDR aka M
+#define TABLE_SIZE		512	// Number of entries in the tables
+#define ADDRESS_SIZE	48	// In bits ; aka MAXPHYADDR aka M
 
 #pragma region "Paging structures"
 
@@ -30,14 +31,15 @@
 // Virtual address = [ [ PML4 ] [ Directory Ptr ] [ Directory ] [ Table ] [ Offset ] ]
 //            bits = [ 47    39 38             30 29         21 20     12 11       0 ]
 
-#define getEntryAddress(addr)					( ( (physical_address_t)addr & 0x0000fffffffff000) >> 12 )
-#define getIndexPML4(addr) 						( ( (physical_address_t)addr & 0x0000ffc000000000) >> 39 )
-#define getIndexPageDirectoryPointerTable(addr)	( ( (physical_address_t)addr & 0x0000007fc0000000) >> 30 )
-#define getIndexPageDirectory(addr)				( ( (physical_address_t)addr & 0x000000003fe00000) >> 21 )
-#define getIndexPageTable(addr)					( ( (physical_address_t)addr & 0x00000000001ff000) >> 12 )
-#define get4KBPageAddress(addr)					( ( (physical_address_t)addr & 0x0000fffffffff000) >> 12 )
-#define get2MBPageAddress(addr)					( ( (physical_address_t)addr & 0x0000ffffffe00000) >> 21 )
-#define get1GBPageAddress(addr)					( ( (physical_address_t)addr & 0x0000ffffc0000000) >> 30 )
+#define getIndexPML4(addr) 						( ( (virtual_address_t )addr & 0x0000ff8000000000) >> 39 )
+#define getIndexPageDirectoryPointerTable(addr)	( ( (virtual_address_t )addr & 0x0000007fc0000000) >> 30 )
+#define getIndexPageDirectory(addr)				( ( (virtual_address_t )addr & 0x000000003fe00000) >> 21 )
+#define getIndexPageTable(addr)					( ( (virtual_address_t )addr & 0x00000000001ff000) >> 12 )
+
+#define get4KBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000fffffffff000) >> 12 )
+#define get2MBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000ffffffe00000) >> 21 )
+#define get1GBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000ffffc0000000) >> 30 )
+#define getTableEntryAddress(addr) 				get4KBEntryAddress(addr)
 
 #define PRIVILEGE_KERNEL 0
 #define PRIVILEGE_USER 1
@@ -95,7 +97,7 @@ struct PageDirectoryPointerTableEntry_Page1GB {
 	uint64_t restart : 1; // Used if using HLAT paging
 	uint64_t pat : 1;
 	uint64_t reserved0 : 17;
-	physical_address_t address : ADDRESS_SIZE-30; // @phys of the 2MB page (ADDRESS_SIZE-30 bits)
+	physical_address_t address : ADDRESS_SIZE-30; // @phys of the 1GB page (ADDRESS_SIZE-30 bits)
 	uint64_t reserved1 : 52-ADDRESS_SIZE;
 	uint64_t ignored1 : 7;
 	uint64_t protectionKey : 4;
@@ -174,38 +176,32 @@ struct PageTableEntry {
 	uint64_t executeDisabled : 1; // Used if IA32_EFER.NXE set
 };
 
-#pragma endregion
-
-aligned(PAGE_SIZE) struct PageMapLevel4Entry g_pml4[TABLE_SIZE];
-aligned(PAGE_SIZE) union PageDirectoryPointerTableEntry g_pageDirectoryPointer[TABLE_SIZE];
-aligned(PAGE_SIZE) union PageDirectoryEntry g_pageDirectory[TABLE_SIZE];
-aligned(PAGE_SIZE) struct PageTableEntry g_pageTable[TABLE_SIZE];
-
+compile_assert(sizeof(struct PageMapLevel5Entry) == 8);
 compile_assert(sizeof(struct PageMapLevel4Entry) == 8);
 compile_assert(sizeof(union PageDirectoryPointerTableEntry) == 8);
 compile_assert(sizeof(union PageDirectoryEntry) == 8);
 compile_assert(sizeof(struct PageTableEntry) == 8);
-compile_assert(sizeof(g_pml4) == 4096);
-compile_assert(sizeof(g_pageDirectoryPointer) == 4096);
-compile_assert(sizeof(g_pageDirectory) == 4096);
-compile_assert(sizeof(g_pageTable) == 4096);
 
-// Paging.asm
-bool setPML4(physical_address_t pml4);
+#pragma endregion
 
-static void setPML4Entry(struct PageMapLevel4Entry* entry, physical_address_t address){
+aligned(PAGE_SIZE) struct PageMapLevel4Entry g_pml4[TABLE_SIZE];
+compile_assert(sizeof(g_pml4) == PAGE_SIZE);
+
+void setPML4Entry(struct PageMapLevel4Entry* entry, physical_address_t address){
 	entry->present = true;
 	entry->readWrite = true;
 	entry->privilege = PRIVILEGE_KERNEL;
 	entry->writeThrough = 0;
 	entry->cacheDisabled = false;
 	entry->accessed = 0;
+	entry->reserved0 = 0b0;
 	entry->restart = 0;
-	entry->address = getEntryAddress(address);
+	entry->address = getTableEntryAddress(address);
+	entry->reserved1 = 0b0000;
 	entry->executeDisabled = 0;
 }
 
-static void setPageDirectoryPointerTableEntry(union PageDirectoryPointerTableEntry* entry, physical_address_t address){
+void setPageDirectoryPointerTableEntry(union PageDirectoryPointerTableEntry* entry, physical_address_t address){
 	entry->pageDirectory.present = true;
 	entry->pageDirectory.readWrite = true;
 	entry->pageDirectory.privilege = PRIVILEGE_KERNEL;
@@ -214,11 +210,12 @@ static void setPageDirectoryPointerTableEntry(union PageDirectoryPointerTableEnt
 	entry->pageDirectory.accessed = false;
 	entry->pageDirectory.pageSize = 0; // points to a page directory
 	entry->pageDirectory.restart = false;
-	entry->pageDirectory.address = getEntryAddress(address);
+	entry->pageDirectory.address = getTableEntryAddress(address);
+	entry->pageDirectory.reserved = 0b0000;
 	entry->pageDirectory.executeDisabled = false;
 }
 
-static void setPageDirectoryEntry(union PageDirectoryEntry* entry, physical_address_t address){
+void setPageDirectoryEntry(union PageDirectoryEntry* entry, physical_address_t address){
 	entry->pageTable.present = true;
 	entry->pageTable.readWrite = true;
 	entry->pageTable.privilege = PRIVILEGE_KERNEL;
@@ -227,11 +224,12 @@ static void setPageDirectoryEntry(union PageDirectoryEntry* entry, physical_addr
 	entry->pageTable.accessed = false;
 	entry->pageTable.pageSize = 0;
 	entry->pageTable.restart = false;
-	entry->pageTable.address = getEntryAddress(address);
+	entry->pageTable.address = getTableEntryAddress(address);
+	entry->pageTable.reserved = 0b0000;
 	entry->pageTable.executeDisabled = false;
 }
 
-static void setPageTableEntry(struct PageTableEntry* entry, physical_address_t address){
+void setPageTableEntry(struct PageTableEntry* entry, physical_address_t address){
 	entry->present = true;
 	entry->readWrite = true;
 	entry->privilege = PRIVILEGE_KERNEL;
@@ -242,56 +240,117 @@ static void setPageTableEntry(struct PageTableEntry* entry, physical_address_t a
 	entry->pat = 0; // TODO check what PAT is ???
 	entry->global = false;
 	entry->restart = false;
-	entry->address = getEntryAddress(address);
+	entry->address = get4KBEntryAddress(address);
+	entry->reserved = 0b0000;
 	entry->protectionKey = 0b0000;
 	entry->executeDisabled = false;
 }
 
-void Paging_initialize(physical_address_t kernelPhys, virtual_address_t kernelVirt, size_t kSize, size_t virtualOffset){
-	// Clear the tables (that sets all entries to invalid)
-	memset(g_pml4, 0, sizeof(g_pml4));
-	memset(g_pageDirectoryPointer, 0, sizeof(g_pageDirectoryPointer));
-	memset(g_pageDirectory, 0, sizeof(g_pageDirectory));
-	memset(g_pageTable, 0, sizeof(g_pageTable));
-
-	// Map the kernel code. These are the STARTING indexes, we'll have to fill several entries
-	int kernel_pml4_index = getIndexPML4(kernelVirt);
-	int kernel_pdp_index = getIndexPageDirectoryPointerTable(kernelVirt);
-	int kernel_pd_index = getIndexPageDirectory(kernelVirt);
-	int kernel_pt_index = getIndexPageTable(kernelVirt);
-
-	physical_address_t pml4_addr = (physical_address_t) &g_pml4 - virtualOffset;
-	physical_address_t pdp_addr = (physical_address_t) &g_pageDirectoryPointer - virtualOffset;
-	physical_address_t pd_addr = (physical_address_t) &g_pageDirectory - virtualOffset;
-	physical_address_t pt_addr = (physical_address_t) &g_pageTable - virtualOffset;
-
-	setPML4Entry(g_pml4 + kernel_pml4_index, pdp_addr);
-	setPageDirectoryPointerTableEntry(g_pageDirectoryPointer + kernel_pdp_index, pd_addr);
-	setPageDirectoryEntry(g_pageDirectory + kernel_pd_index, pt_addr);
-
-	// Page table
-	size_t mapped = 0; // bytes mapped
-	size_t offset = 0; // offset from kernel
-	for(int i=kernel_pt_index ; i<TABLE_SIZE ; i++){
-		setPageTableEntry(g_pageTable + kernel_pt_index, kernelPhys+offset);
-		mapped += PAGE_SIZE;
-		offset += PAGE_SIZE;
-	}
-
-	// We mapped the kernel (text)
-	debug("kernel @phys=%p @virt=%p", kernelPhys, kernelVirt);
-	// But now we need to map the rest of the data (stacks, limine stuff, framebuffer...)
-
-	if (mapped < kSize){
-		debug("Couldn't map the whole kernel, need another page directory");
+static physical_address_t allocatePageOrPanic(){
+	void* tmp = PMM_allocate(1);
+	if (!tmp){
+		log(PANIC, MODULE, "Could not allocate necessary paging structure !");
 		panic();
 	}
 
-	bool res = setPML4(pml4_addr);
+	memset(tmp, 0, PAGE_SIZE);
+	return VMM_virtualToPhysical((virtual_address_t)tmp);
+}
+
+static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages){
+	physical_address_t tmp;
+	physical_address_t phys_cur = phys;
+	virtual_address_t virt_cur = virt;
+
+	// TODO replace with another algorithm:
+	// - Map with 4KB pages until we get to an address multiple of 2MB `while (cur % SIZE_4KB)`
+	// - Map with 2MB pages until we get to an address multiple of 1GB
+	// - Map with 1GB pages until we can't
+	// - Fill remaining with 2MB pages until we can't
+	// - Fill remaning with 2KB pages
+	// At each step, we of course need to check whether we finished paging what was asked
+
+	union PageDirectoryPointerTableEntry* cur_directoryPointer;
+	union PageDirectoryEntry* cur_directory;
+	struct PageTableEntry* cur_pageTable;
+
+	for (uint64_t i=0 ; i<n_pages ; i++){
+		int pml4_index = getIndexPML4(virt_cur);
+		int pdp_index = getIndexPageDirectoryPointerTable(virt_cur);
+		int pd_index = getIndexPageDirectory(virt_cur);
+		int pt_index = getIndexPageTable(virt_cur);
+
+		// PML4
+		if (g_pml4[pml4_index].present == 0){
+			tmp = allocatePageOrPanic();
+			setPML4Entry(g_pml4+pml4_index, tmp);
+		}
+		cur_directoryPointer = (void*) VMM_physicalToVirtual(g_pml4[pml4_index].address << PAGE_SHIFT);
+
+		// Page directory pointer
+		if (cur_directoryPointer[pdp_index].pageDirectory.present == 0){
+			tmp = allocatePageOrPanic();
+			setPageDirectoryPointerTableEntry(cur_directoryPointer+pdp_index, tmp);
+		}
+		tmp = cur_directoryPointer[pdp_index].pageDirectory.address << PAGE_SHIFT;
+		cur_directory = (void*) VMM_physicalToVirtual(tmp);
+
+		// Page directory
+		if (cur_directory[pd_index].pageTable.present == 0){
+			tmp = allocatePageOrPanic();
+			setPageDirectoryEntry(cur_directory+pd_index, tmp);
+		}
+		tmp = cur_directory[pd_index].pageTable.address << PAGE_SHIFT;
+		cur_pageTable = (void*) VMM_physicalToVirtual(tmp);
+
+		// Page table
+		setPageTableEntry(cur_pageTable+pt_index, phys_cur);
+
+		phys_cur += PAGE_SIZE;
+		virt_cur += PAGE_SIZE;
+	}
+}
+
+// Paging.asm
+bool setPML4(physical_address_t pml4);
+
+void Paging_initialize(){
+	// Clear the PML4 (sets all entries to invalid)
+	memset(g_pml4, 0, PAGE_SIZE);
+
+	// HHDM: Higher half direct map
+	physical_address_t hhdm_phys = 0x0;
+	virtual_address_t hhdm_virt = VMM_physicalToVirtual(hhdm_phys);
+	size_t hhdm_size = g_memoryMap.totalMemory; // in bytes
+	// Kernel goes at its specific address
+	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
+	extern uint8_t LOAD_ADDRESS;
+	virtual_address_t kernel_virt = (virtual_address_t) &LOAD_ADDRESS;
+	size_t ksize = g_memoryMap.kernelSize; // in bytes
+
+	debug("hhdm   %#.16llx-%#.16llx => %#.16llx-%#.16llx",
+		hhdm_phys, hhdm_phys+hhdm_size-PAGE_SIZE, hhdm_virt, hhdm_virt+hhdm_size-PAGE_SIZE);
+	debug("kernel %#.16llx-%#.16llx => %#.16llx-%#.16llx",
+		kernel_phys, kernel_phys+ksize-PAGE_SIZE, kernel_virt, kernel_virt+ksize-PAGE_SIZE);
+
+	// TODO: map ktext to read only, kdata to rw+XD
+	// use __data_start (and eventually __end) for that
+
+	// HHDM - 0x0 => 0xffff800000000000
+	map(0x0, hhdm_virt, hhdm_size/PAGE_SIZE);
+	// Kernel (code & data) - &LOAD_ADDRESS => 0xffffffff80000000
+	map(kernel_phys, kernel_virt, ksize/PAGE_SIZE);
+
+	// Now load our page table
+	// Note: g_pml4 is not in the HHDM region, so we cannot use VMM_virtualToPhysical
+	// It is in the kernel data section, so we use the kernel code offset
+	physical_address_t page_table_addr = kernel_phys + ((uint64_t)g_pml4 - kernel_virt);
+	bool res = setPML4(page_table_addr);
 	if (!res){
 		log(PANIC, MODULE, "Could not set page table !!");
 		panic();
 	}
 
-	debug("Page table set successfully");
+	debug("Kernel page table set successfully. Higher Half Direct Map starts at %p, kernel at %p",
+		hhdm_virt, kernel_virt);
 }
