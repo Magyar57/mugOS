@@ -30,8 +30,10 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 				firstNotFound = false;
 			}
 			break;
-		case LIMINE_MEMMAP_ACPI_RECLAIMABLE:
 		case LIMINE_MEMMAP_KERNEL_AND_MODULES:
+			mmap->kernelAddress = cur->base;
+			mmap->kernelSize = cur->length;
+		case LIMINE_MEMMAP_ACPI_RECLAIMABLE:
 			// These are potentially usable memory.
 			// Limine does not guarantee no overlap with other entries
 			// Note: we check for overlap with the next entry, because
@@ -140,9 +142,9 @@ void MMap_initialize(struct MemoryMap* memmap, void* firmware_mmap){
 	memmap->size = processLimineMemoryMap(limine_mmap);
 
 	if (memmap->size >= MMAP_MAX_ENTRIES){
-		log(PANIC, MODULE, "Memory map is too big to fit in anticipated buffer !");
-		log(PANIC, MODULE, "Please recompile with MMAP_MAX_ENTRIES > %d", memmap->size);
-		log(PANIC, MODULE, "Note: current value is %d", MMAP_MAX_ENTRIES);
+		log(PANIC, MODULE, "Memory map is too big to fit in buffer ! "
+			"Recompile kernel with MMAP_MAX_ENTRIES > %d (current MMAP_MAX_ENTRIES=%d)",
+			memmap->size, MMAP_MAX_ENTRIES);
 		panic();
 	}
 

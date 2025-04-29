@@ -20,6 +20,8 @@ struct MemoryMap {
 	size_t totalMemory; // in bytes
 	physical_address_t firstUsablePage;
 	physical_address_t lastUsablePage;
+	physical_address_t kernelAddress;
+	size_t kernelSize;
 
 	int size; // number of MemoryMapEntry in entries
 	struct MemoryMapEntry {
