@@ -229,21 +229,21 @@ void setPageDirectoryEntry(union PageDirectoryEntry* entry, physical_address_t a
 	entry->pageTable.executeDisabled = false;
 }
 
-void setPageTableEntry(struct PageTableEntry* entry, physical_address_t address){
+void setPageTableEntry(struct PageTableEntry* entry, physical_address_t address, int flags){
 	entry->present = true;
-	entry->readWrite = true;
-	entry->privilege = PRIVILEGE_KERNEL;
-	entry->writeThrough = false;
-	entry->cacheDisabled = false;
+	entry->readWrite = ((flags & PAGE_WRITE) != 0);
+	entry->privilege = ((flags & PAGE_USER) != 0);
+	entry->writeThrough = ((flags & PAGE_CACHE_WRITETHROUGH) != 0);
+	entry->cacheDisabled = ((flags & PAGE_CACHE_DISABLED) != 0);
 	entry->accessed = 0;
 	entry->dirty = 0;
-	entry->pat = 0; // TODO check what PAT is ???
+	entry->pat = 0; // TODO add Page Attribute Table check & support
 	entry->global = false;
 	entry->restart = false;
 	entry->address = get4KBEntryAddress(address);
 	entry->reserved = 0b0000;
 	entry->protectionKey = 0b0000;
-	entry->executeDisabled = false;
+	entry->executeDisabled = !(flags & PAGE_EXEC);
 }
 
 static physical_address_t allocatePageOrPanic(){
@@ -257,7 +257,7 @@ static physical_address_t allocatePageOrPanic(){
 	return VMM_virtualToPhysical((virtual_address_t)tmp);
 }
 
-static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages){
+static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
 	physical_address_t tmp;
 	physical_address_t phys_cur = phys;
 	virtual_address_t virt_cur = virt;
@@ -304,7 +304,7 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		cur_pageTable = (void*) VMM_physicalToVirtual(tmp);
 
 		// Page table
-		setPageTableEntry(cur_pageTable+pt_index, phys_cur);
+		setPageTableEntry(cur_pageTable+pt_index, phys_cur, flags);
 
 		phys_cur += PAGE_SIZE;
 		virt_cur += PAGE_SIZE;
@@ -318,39 +318,48 @@ void Paging_initialize(){
 	// Clear the PML4 (sets all entries to invalid)
 	memset(g_pml4, 0, PAGE_SIZE);
 
-	// HHDM: Higher half direct map
-	physical_address_t hhdm_phys = 0x0;
-	virtual_address_t hhdm_virt = VMM_physicalToVirtual(hhdm_phys);
-	size_t hhdm_size = g_memoryMap.totalMemory; // in bytes
-	// Kernel goes at its specific address
+	// Kernel is loaded at its specific address
 	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
 	extern uint8_t LOAD_ADDRESS;
 	virtual_address_t kernel_virt = (virtual_address_t) &LOAD_ADDRESS;
-	size_t ksize = g_memoryMap.kernelSize; // in bytes
 
-	debug("hhdm   %#.16llx-%#.16llx => %#.16llx-%#.16llx",
-		hhdm_phys, hhdm_phys+hhdm_size-PAGE_SIZE, hhdm_virt, hhdm_virt+hhdm_size-PAGE_SIZE);
-	debug("kernel %#.16llx-%#.16llx => %#.16llx-%#.16llx",
-		kernel_phys, kernel_phys+ksize-PAGE_SIZE, kernel_virt, kernel_virt+ksize-PAGE_SIZE);
-
-	// TODO: map ktext to read only, kdata to rw+XD
-	// use __data_start (and eventually __end) for that
-
-	// HHDM - 0x0 => 0xffff800000000000
-	map(0x0, hhdm_virt, hhdm_size/PAGE_SIZE);
-	// Kernel (code & data) - &LOAD_ADDRESS => 0xffffffff80000000
-	map(kernel_phys, kernel_virt, ksize/PAGE_SIZE);
+	for(int i=0 ; i<g_memoryMap.size ; i++){
+		struct MemoryMapEntry* cur = g_memoryMap.entries + i;
+		switch (cur->type){
+		case MEMORY_USABLE:
+		case MEMORY_ACPI_NVS:
+		case MEMORY_ACPI_RECLAIMABLE:
+		case MEMORY_BOOTLOADER_RECLAIMABLE:
+			map(cur->address, VMM_physicalToVirtual(cur->address), cur->length/PAGE_SIZE,
+				PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+			break;
+		case MEMORY_RESERVED:
+			break;
+		case MEMORY_KERNEL:
+			// TODO map text as read-only+execute, rodata as read-only, and data as rw
+			// we can use the linker symbols for that
+			map(kernel_phys, kernel_virt, cur->length/PAGE_SIZE, PAGE_READ|PAGE_WRITE|PAGE_EXEC|PAGE_KERNEL);
+			break;
+		case MEMORY_FRAMEBUFFER:
+			map(cur->address, VMM_physicalToVirtual(cur->address), cur->length/PAGE_SIZE,
+				PAGE_READ|PAGE_WRITE|PAGE_KERNEL|PAGE_CACHE_DISABLED);
+			break;
+		default:
+			break;
+		}
+	}
 
 	// Now load our page table
 	// Note: g_pml4 is not in the HHDM region, so we cannot use VMM_virtualToPhysical
 	// It is in the kernel data section, so we use the kernel code offset
-	physical_address_t page_table_addr = kernel_phys + ((uint64_t)g_pml4 - kernel_virt);
-	bool res = setPML4(page_table_addr);
+	physical_address_t pml4_phys = kernel_phys + ((uint64_t)g_pml4 - kernel_virt);
+	bool res = setPML4(pml4_phys);
 	if (!res){
 		log(PANIC, MODULE, "Could not set page table !!");
 		panic();
 	}
 
-	debug("Kernel page table set successfully. Higher Half Direct Map starts at %p, kernel at %p",
-		hhdm_virt, kernel_virt);
+	log(SUCCESS, MODULE,
+		"Kernel page table set successfully ! Higher Half Direct Map starts at %p, kernel at %p",
+		VMM_getKernelMemoryOffset(), kernel_virt);
 }

@@ -12,18 +12,19 @@ struct MemoryMap g_memoryMap;
 
 // Parse the map to initialize some `mmap` members
 static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_response* limine_mmap){
-	mmap->totalMemory = 0;
+	mmap->totalUsableMemory = 0;
 	bool firstNotFound = true;
 	mmap->firstUsablePage = 0;
 	mmap->lastUsablePage = 0;
 	uint64_t temp;
+	struct limine_memmap_entry* cur;
 
 	for (uint64_t i=0 ; i<limine_mmap->entry_count ; i++){
-		struct limine_memmap_entry* cur = limine_mmap->entries[i];
+		cur = limine_mmap->entries[i];
 
 		switch (cur->type){
 		case LIMINE_MEMMAP_USABLE:
-			mmap->totalMemory += cur->length;
+			mmap->totalUsableMemory += cur->length;
 			mmap->lastUsablePage = cur->base + cur->length - PAGE_SIZE; // Last page of the region
 			if (firstNotFound){
 				mmap->firstUsablePage = cur->base;
@@ -41,10 +42,10 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 			temp = cur->length;
 			if ( (i < limine_mmap->entry_count-1) && (cur->base+cur->length >= limine_mmap->entries[i+1]->base) )
 				temp = limine_mmap->entries[i+1]->base - cur->base;
-			mmap->totalMemory += temp;
+			mmap->totalUsableMemory += temp;
 			break;
 		case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE:
-			mmap->totalMemory += cur->length;
+			mmap->totalUsableMemory += cur->length;
 			break;
 		case LIMINE_MEMMAP_RESERVED:
 		case LIMINE_MEMMAP_ACPI_NVS:
@@ -58,7 +59,7 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 		}
 	}
 
-	if (mmap->totalMemory == 0){
+	if (mmap->totalUsableMemory == 0){
 		log(PANIC, MODULE, "No usable physical memory available !!");
 		panic();
 	}

@@ -363,7 +363,7 @@ void PMM_initialize(){
 	// Compute allocator sizes
 	// Note: we add 1 because from @start to the n-th page, there is n-1 pages
 	m_bitmapAllocator.nBlocks = ((g_memoryMap.lastUsablePage - m_bitmapAllocator.start) >> PAGE_SHIFT) + 1;
-	m_bitmapAllocator.allocatableBlocks = g_memoryMap.totalMemory >> PAGE_SHIFT;
+	m_bitmapAllocator.allocatableBlocks = g_memoryMap.totalUsableMemory >> PAGE_SHIFT;
 
 	// Compute the memory that we need to allocate
 	bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up

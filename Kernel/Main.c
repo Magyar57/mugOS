@@ -31,6 +31,7 @@ void kmain(){
 	// Memory managers initialization
 	VMM_setKernelMemoryOffset(hhdmReq.response->offset);
 	PMM_initialize();
+	VMM_initialize();
 
 	// Initialize IRQs
 	IRQ_initialize();

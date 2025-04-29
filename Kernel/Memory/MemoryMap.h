@@ -17,7 +17,7 @@ enum MemoryType {
 #define MMAP_MAX_ENTRIES 128
 
 struct MemoryMap {
-	size_t totalMemory; // in bytes
+	size_t totalUsableMemory; // in bytes
 	physical_address_t firstUsablePage;
 	physical_address_t lastUsablePage;
 	physical_address_t kernelAddress;
