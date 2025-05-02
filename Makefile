@@ -3,7 +3,7 @@ include BuildScripts/Toolchain.mk
 
 all: image
 
-.PHONY: all image kernel run clean kclean
+.PHONY: all image kernel run debug clean kclean
 
 #
 # Disk image
@@ -52,6 +52,15 @@ run:
 	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
 		-drive if=pflash,file=$(UEFI_FIRMWARE),format=raw,readonly=on \
 		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
+
+debug:
+	make run -E QEMU_ARGS="-gdb tcp::1234 -S" &
+	gdb \
+		-ex "file build/kernel.elf" \
+		-ex "target remote localhost:1234" \
+		-ex "break kmain" \
+		-ex "layout src" \
+		-ex "continue"
 
 #
 # Build directory
