@@ -312,11 +312,6 @@ static physical_address_t earlyAllocate(struct limine_memmap_response* memmap, u
 	unreachable();
 }
 
-static inline uint64_t roundUp(uint64_t value, unsigned int discretization){
-	if (discretization == 0) return value;
-	return ((value + discretization -1) / discretization) * discretization;
-}
-
 static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memmap,
 					   physical_address_t allocated, uint64_t nPages){
 	// Note: Before calling initBitmap, nBlocks and allocatableBlocks needs to be set
@@ -367,7 +362,6 @@ void PMM_initialize(){
 
 	// Compute the memory that we need to allocate
 	bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
-	bitmapSize = roundUp(bitmapSize, sizeof(struct MemoryMapEntry*)); // Align the next structure's size
 
 	// Allocate
 	uint64_t n_pages = getSizeAsPages(bitmapSize);
