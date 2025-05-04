@@ -43,9 +43,19 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 			if ( (i < limine_mmap->entry_count-1) && (cur->base+cur->length >= limine_mmap->entries[i+1]->base) )
 				temp = limine_mmap->entries[i+1]->base - cur->base;
 			mmap->totalUsableMemory += temp;
+			mmap->lastUsablePage = cur->base + cur->length - PAGE_SIZE; // Last page of the region
+			if (firstNotFound){
+				mmap->firstUsablePage = cur->base;
+				firstNotFound = false;
+			}
 			break;
 		case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE:
 			mmap->totalUsableMemory += cur->length;
+			mmap->lastUsablePage = cur->base + cur->length - PAGE_SIZE; // Last page of the region
+			if (firstNotFound){
+				mmap->firstUsablePage = cur->base;
+				firstNotFound = false;
+			}
 			break;
 		case LIMINE_MEMMAP_RESERVED:
 		case LIMINE_MEMMAP_ACPI_NVS:
