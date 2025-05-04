@@ -128,18 +128,16 @@ static uint64_t countFreeBlocks(struct BitmapAllocator* allocator){
 
 	for (uint64_t i=0 ; i<allocator->bitmapLength-1 ; i++){
 		cur = allocator->bitmap[i];
-
-		// Compute how many bits are free in the current uint64
-		for (int j=0 ; j<64 ; j++){
-			if ((cur & 0x8000000000000000) == 0)
-				n_bits++;
-			cur <<= 1;
-		}
+		// Note: __builtin_popcountll counts the number of bits to 1 in the argument
+		n_bits += 64 - __builtin_popcountll(cur);
 	}
 
 	// Last uint64 is special to parse: we need to ignore the last bits
 	cur = allocator->bitmap[allocator->bitmapLength-1];
 	int n_bits_remaining = allocator->nBlocks % 64;
+	if (n_bits_remaining == 0)
+		n_bits_remaining = 64;
+
 	for (int j=0 ; j<n_bits_remaining ; j++){
 		if ((cur & 0x8000000000000000) == 0)
 			n_bits++;
@@ -250,15 +248,18 @@ static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* alloc
 
 void* PMM_allocate(uint64_t n_pages){
 	physical_address_t addr = allocate_FirstFit(&m_bitmapAllocator, n_pages);
+	addr += m_bitmapAllocator.start;
 	return (void*) VMM_physicalToVirtual(addr);
 }
 
-void PMM_free(physical_address_t addr, uint64_t n_pages){
+void PMM_free(virtual_address_t addr, uint64_t n_pages){
 	// Note 1: we don't check that the freed address is invalid ; We assume that
 	// the kernel code that called this doesn't mess up its addresses and sizes
 	// Note 2: Bounds are checked by both isFullyAllocated and clearBits
 
-	uint64_t start_bit = (addr - m_bitmapAllocator.start) >> PAGE_SHIFT;
+	physical_address_t addr_phys = VMM_virtualToPhysical(addr);
+
+	uint64_t start_bit = (addr_phys - m_bitmapAllocator.start) >> PAGE_SHIFT;
 	uint64_t end_bit = start_bit + n_pages;
 
 	// Check that we don't free stuff that's already free
@@ -313,7 +314,7 @@ static physical_address_t earlyAllocate(struct limine_memmap_response* memmap, u
 }
 
 static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memmap,
-					   physical_address_t allocated, uint64_t nPages){
+					   physical_address_t bitmap_addr_phys, uint64_t nPages){
 	// Note: Before calling initBitmap, nBlocks and allocatableBlocks needs to be set
 
 	allocator->bitmapLength = (allocator->nBlocks + 63) / 64;
@@ -343,39 +344,31 @@ static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memm
 	assert(freeMemory == PAGE_SIZE * freeBlocks);
 
 	// From now, we can mark as used the memory that we earlyAllocated
-	start_bit = allocated >> PAGE_SHIFT;
+	start_bit = (bitmap_addr_phys - allocator->start) >> PAGE_SHIFT;
 	end_bit = start_bit + nPages;
 	setBits(allocator, start_bit, end_bit);
+	assert(freeBlocks - nPages == countFreeBlocks(allocator)); // check that we removed 'nPages' bits
 }
 
 void PMM_initialize(){
-	physical_address_t allocated;
-	size_t bitmapSize; // sizes are in bytes
-
 	// Initialize the MemoryMap, we'll need it later
 	MMap_initialize(&g_memoryMap, memmapReq.response);
 
 	// Compute allocator sizes
 	// Note: we add 1 because from @start to the n-th page, there is n-1 pages
+	m_bitmapAllocator.start = g_memoryMap.firstUsablePage;
 	m_bitmapAllocator.nBlocks = ((g_memoryMap.lastUsablePage - m_bitmapAllocator.start) >> PAGE_SHIFT) + 1;
 	m_bitmapAllocator.allocatableBlocks = g_memoryMap.totalUsableMemory >> PAGE_SHIFT;
 
-	// Compute the memory that we need to allocate
-	bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
-
-	// Allocate
+	// Allocate memory for the bitmap
+	size_t bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
 	uint64_t n_pages = getSizeAsPages(bitmapSize);
-	allocated = earlyAllocate(memmapReq.response, n_pages);
-	// Split the memory we got
-	void* addr = (void*) VMM_physicalToVirtual(allocated);
-	m_bitmapAllocator.bitmap = (uint64_t*) addr;
+	physical_address_t allocated = earlyAllocate(memmapReq.response, n_pages);
+	m_bitmapAllocator.bitmap = (uint64_t*) VMM_physicalToVirtual(allocated);
 
-	// Initializations
 	initBitmap(&m_bitmapAllocator, &g_memoryMap, allocated, n_pages);
 
-	// Ok, print stuff
 	PMM_printMemoryUsage();
-
 	log(SUCCESS, MODULE, "Initialization success (managing %d pages, %d allocatable)",
 		m_bitmapAllocator.nBlocks, m_bitmapAllocator.allocatableBlocks);
 }

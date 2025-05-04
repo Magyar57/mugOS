@@ -7,7 +7,7 @@
 
 void PMM_initialize();
 void* PMM_allocate(uint64_t n_pages);
-void PMM_free(physical_address_t addr, uint64_t n_pages);
+void PMM_free(virtual_address_t addr, uint64_t n_pages);
 void PMM_printMemoryUsage();
 
 #endif
