@@ -16,7 +16,6 @@ SECTIONS {
 	. = ALIGN(ALIGN_VALUE);
 	.rodata :	{ __rodata_start = .; *(.rodata) } : rodata
 	. = ALIGN(ALIGN_VALUE);
-
 	.data :		{ __data_start = .; *(.data) } : data
 	. = ALIGN(ALIGN_VALUE);
 	.bss :		{ __bss_start = .; *(.bss) } : data
