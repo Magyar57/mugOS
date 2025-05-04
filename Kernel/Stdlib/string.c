@@ -4,11 +4,11 @@
 
 #include "string.h"
 
-const char* strchr(const char* str, char chr){
+char* strchr(const char* str, int chr){
 	if (str==NULL) return NULL;
 
 	while(*str){
-		if (*str == chr) return str;
+		if (*str == chr) return (char*) str;
 		str++;
 	}
 
@@ -63,7 +63,7 @@ size_t strlen(const char* str){
 	return res;
 }
 
-void* memcpy(const void* dst, const void* src, size_t size){
+void* memcpy(void* dst, const void* src, size_t size){
 	// Note: the can be heavily optimized by writing it in assembly, using specific directives than take advantage of parralelization
 
 	uint8_t* u8dst = (uint8_t*) dst;

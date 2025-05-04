@@ -5,7 +5,7 @@
 
 /// @brief Finds a char "chr" in the string
 /// @returns A pointer to the first occurrence of `chr` in the C string `str`. NULL if not found
-const char* strchr(const char* str, char chr);
+char* strchr(const char* str, int chr);
 
 /// @brief Copies the string `src` into a destination `dst`. The memory regions must NOT overlap
 char* strcpy(char* dst, const char* src);
@@ -16,7 +16,7 @@ size_t strlen(const char* str);
 
 /// @brief Copies `size` bytes from memory area `src` to `dest`. The memory regions must NOT overlap
 /// @returns A pointer to `dest`
-void* memcpy(const void* dst, const void* src, size_t size);
+void* memcpy(void* dst, const void* src, size_t size);
 
 /// @brief Fills the first `size` bytes of the memory pointed by `ptr` with the constant byte `value`
 /// @returns A pointer to `ptr`
