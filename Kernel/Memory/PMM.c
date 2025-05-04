@@ -259,7 +259,7 @@ void PMM_free(virtual_address_t addr, uint64_t n_pages){
 
 	physical_address_t addr_phys = VMM_virtualToPhysical(addr);
 
-	uint64_t start_bit = (addr_phys - m_bitmapAllocator.start) >> PAGE_SHIFT;
+	uint64_t start_bit = (addr_phys - m_bitmapAllocator.start) / PAGE_SIZE;
 	uint64_t end_bit = start_bit + n_pages;
 
 	// Check that we don't free stuff that's already free
@@ -333,8 +333,8 @@ static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memm
 
 		freeMemory += cur->length;
 
-		start_bit = (cur->address - allocator->start) >> PAGE_SHIFT;
-		end_bit = (cur->address - allocator->start + cur->length) >> PAGE_SHIFT;
+		start_bit = (cur->address - allocator->start) / PAGE_SIZE;
+		end_bit = (cur->address - allocator->start + cur->length) / PAGE_SIZE;
 		clearBits(allocator, start_bit, end_bit);
 	}
 
@@ -344,7 +344,7 @@ static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memm
 	assert(freeMemory == PAGE_SIZE * freeBlocks);
 
 	// From now, we can mark as used the memory that we earlyAllocated
-	start_bit = (bitmap_addr_phys - allocator->start) >> PAGE_SHIFT;
+	start_bit = (bitmap_addr_phys - allocator->start) / PAGE_SIZE;
 	end_bit = start_bit + nPages;
 	setBits(allocator, start_bit, end_bit);
 	assert(freeBlocks - nPages == countFreeBlocks(allocator)); // check that we removed 'nPages' bits
@@ -357,8 +357,8 @@ void PMM_initialize(){
 	// Compute allocator sizes
 	// Note: we add 1 because from @start to the n-th page, there is n-1 pages
 	m_bitmapAllocator.start = g_memoryMap.firstUsablePage;
-	m_bitmapAllocator.nBlocks = ((g_memoryMap.lastUsablePage - m_bitmapAllocator.start) >> PAGE_SHIFT) + 1;
-	m_bitmapAllocator.allocatableBlocks = g_memoryMap.totalUsableMemory >> PAGE_SHIFT;
+	m_bitmapAllocator.nBlocks = ((g_memoryMap.lastUsablePage - m_bitmapAllocator.start) / PAGE_SIZE) + 1;
+	m_bitmapAllocator.allocatableBlocks = g_memoryMap.totalUsableMemory / PAGE_SIZE;
 
 	// Allocate memory for the bitmap
 	size_t bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up

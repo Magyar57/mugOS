@@ -285,14 +285,14 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			tmp = allocatePageOrPanic();
 			setPML4Entry(g_pml4+pml4_index, tmp);
 		}
-		cur_directoryPointer = (void*) VMM_physicalToVirtual(g_pml4[pml4_index].address << PAGE_SHIFT);
+		cur_directoryPointer = (void*) VMM_physicalToVirtual(g_pml4[pml4_index].address * PAGE_SIZE);
 
 		// Page directory pointer
 		if (cur_directoryPointer[pdp_index].pageDirectory.present == 0){
 			tmp = allocatePageOrPanic();
 			setPageDirectoryPointerTableEntry(cur_directoryPointer+pdp_index, tmp);
 		}
-		tmp = cur_directoryPointer[pdp_index].pageDirectory.address << PAGE_SHIFT;
+		tmp = cur_directoryPointer[pdp_index].pageDirectory.address * PAGE_SIZE;
 		cur_directory = (void*) VMM_physicalToVirtual(tmp);
 
 		// Page directory
@@ -300,7 +300,7 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			tmp = allocatePageOrPanic();
 			setPageDirectoryEntry(cur_directory+pd_index, tmp);
 		}
-		tmp = cur_directory[pd_index].pageTable.address << PAGE_SHIFT;
+		tmp = cur_directory[pd_index].pageTable.address * PAGE_SIZE;
 		cur_pageTable = (void*) VMM_physicalToVirtual(tmp);
 
 		// Page table
