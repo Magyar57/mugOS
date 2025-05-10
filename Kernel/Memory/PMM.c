@@ -248,6 +248,9 @@ static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* alloc
 
 void* PMM_allocate(uint64_t n_pages){
 	physical_address_t addr = allocate_FirstFit(&m_bitmapAllocator, n_pages);
+	if (addr == 0)
+		return NULL;
+
 	addr += m_bitmapAllocator.start;
 	return (void*) VMM_physicalToVirtual(addr);
 }
