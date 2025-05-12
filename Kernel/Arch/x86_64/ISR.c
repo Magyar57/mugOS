@@ -130,7 +130,27 @@ void ISR_segmentNotPresent(struct ISR_Params* params){
 }
 
 void ISR_pageFault(struct ISR_Params* params){
-	log(PANIC, MODULE, "Page fault (error=%#llx) ! From code at address %p", params->err, params->rip);
+	uint64_t cr2;
+	__asm__ volatile("mov %%cr2, %0" : "=r"(cr2));
+
+	const char* cause = params->err & 0b00000001 ? "page-protection violation" : "non-present page";
+	const char* type = params->err & 0b00000010 ? "write access" : "read access";
+	const char* cpu_mode = params->err & 0b00000100 ? "user" : "kernel";
+	bool reserved = (params->err & 0b00001000);
+	bool instruction_fetch = (params->err & 0b00010000);
+	bool protection_key_violation = (params->err & 0b00100000);
+	bool shadow_stack = (params->err & 0b01000000);
+	bool sgx_violation = (params->err & 0b10000000);
+
+	// TODO protection key, shadow stack, software guard extensions
+
+	log(PANIC, MODULE, "Page fault (error=%#llx) ! Access to %p from code at %p", params->err, cr2, params->rip);
+	log(PANIC, MODULE, "Cause: %s, from a %s, with CPU in %s mode", cause, type, cpu_mode);
+	if (reserved) log(PANIC, MODULE, "Accessed to reserved entries !");
+	if (instruction_fetch) log(PANIC, MODULE, "Source: instruction fetch");
+	if (protection_key_violation) log(PANIC, MODULE, "Source: protection key violation");
+	if (shadow_stack) log(PANIC, MODULE, "Source: shadow stack access");
+	if (sgx_violation) log(PANIC, MODULE, "Source: SGX violation");
 	panic();
 }
 
