@@ -1,7 +1,7 @@
 
 ; getSegmentSelector(int selector, int ti, int rpl)
 ; https://wiki.osdev.org/Segment_Selector
-; slector = (segment selector & 0xfff8) | (ti & 0x0004) | (rpl & 0x0003)
+; selector = (segment selector & 0xfff8) | (ti & 0x0004) | (rpl & 0x0003)
 %define getSegmentSelector(selector, ti, cpl) \
 	((selector & 0xfff8) | ((ti << 2) & 0x0004) | (cpl & 0x0003))
 
@@ -16,11 +16,11 @@ usermode_function:
 	ret
 ; END usermode_function
 
-; void x86_jumpToUsermode(uint16_t ucodeSegment, uint16_t udataSegment);
+; void x86_jumpToUsermode(uint16_t UTEXT, uint16_t UDATA);
 global x86_jumpToUsermode
 x86_jumpToUsermode:
-	; rdi = ucodeSegment aka utextSegment
-	; rsi = udataSegment
+	; rdi = UTEXT (usermode code/text segment)
+	; rsi = UDATA (usermode data segment)
 
 	; disable interrupts because for now, we don't have a TSS to
 	; be able to go back to ring 0
@@ -44,13 +44,13 @@ x86_jumpToUsermode:
 
 	; Setup the stack frame for iretq
 
-	; Push user_data_segment:rsp
-	push rsi		; rdi still contains the UDATA segment
+	; Push UDATA_segment:rsp
+	push rsi		; rsi still contains the UDATA segment
 	mov rax, rsp
 	push rax
 	; Push rflags
 	pushfq
-	; Push user_code_segment:return_address
+	; Push UTEXT_segment:return_address
 	push rdi
 	lea rax, [rel usermode_function]
 	push rax
