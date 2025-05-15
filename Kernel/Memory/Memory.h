@@ -10,6 +10,9 @@
 #define PAGE_SIZE	SIZE_4KB
 #define PAGE_MASK 	0xfffffffffffff000
 
+#define toCanonical(addr) \
+	(addr & 0x0000800000000000) ? addr|0xffff000000000000 : addr&0x0000ffffffffffff
+
 typedef uint64_t physical_address_t;
 typedef uint64_t virtual_address_t;
 
