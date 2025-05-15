@@ -23,13 +23,15 @@
 - [X] Add kernel step by step debugging support (gdb)
 - [X] Memory detection (map)
 - [X] Physical memory allocator (bitmap)
-- [ ] Virtual memory management (paging)
-- [ ] kmalloc
+- [X] Virtual memory management (paging)
+- [ ] Heap (malloc/kmalloc)
+- [ ] Virtual filesystem
 - [ ] Kernel FAT driver
-- [ ] Kernel filesystem
 - [ ] ELF binary loading
-- [ ] Userland
+- [X] Userland
 - [ ] Init process
+- [ ] System calls
+- [ ] mush (the **mu**gOS **sh**ell)
 
 ## Modifications
 
