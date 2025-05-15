@@ -41,6 +41,8 @@
 #define get1GBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000ffffc0000000) >> 30 )
 #define getTableEntryAddress(addr) 				get4KBEntryAddress(addr)
 
+#define parseEntryAddress(entry_addr)			(void*) VMM_physicalToVirtual(entry_addr << 12)
+
 #define PRIVILEGE_KERNEL 0
 #define PRIVILEGE_USER 1
 
@@ -52,7 +54,7 @@ struct PML4Descriptor {
 // PML4 table entry, references a PageDirectoryPointerTable
 struct PDTPDescriptor {
 	uint64_t present : 1;
-	uint64_t readWrite : 1;
+	uint64_t writable : 1;
 	uint64_t privilege : 1;
 	uint64_t writeThrough : 1;
 	uint64_t cacheDisabled : 1;
@@ -70,7 +72,7 @@ struct PDTPDescriptor {
 // PDPT entry, that references a page directory
 struct PageDirectoryDescriptor {
 	uint64_t present : 1;
-	uint64_t readWrite : 1;
+	uint64_t writable : 1;
 	uint64_t privilege : 1;
 	uint64_t writeThrough : 1;
 	uint64_t cacheDisabled : 1;
@@ -88,7 +90,7 @@ struct PageDirectoryDescriptor {
 // Page directory pointer table entry, that references a 1GB page
 struct PageDescriptor1GB {
 	uint64_t present : 1;
-	uint64_t readWrite : 1;
+	uint64_t writable : 1;
 	uint64_t privilege : 1;
 	uint64_t writeThrough : 1;
 	uint64_t cacheDisabled : 1;
@@ -116,7 +118,7 @@ union PageDirectoryPointerTableEntry {
 // Page directory entry, that references a Page Table
 struct PageTableDescriptor {
 	uint64_t present : 1;
-	uint64_t readWrite : 1;
+	uint64_t writable : 1;
 	uint64_t privilege : 1;
 	uint64_t writeThrough : 1;
 	uint64_t cacheDisabled : 1;
@@ -134,7 +136,7 @@ struct PageTableDescriptor {
 // Page directory entry, that references a 2MB page
 struct PageDescriptor2MB {
 	uint64_t present : 1;
-	uint64_t readWrite : 1;
+	uint64_t writable : 1;
 	uint64_t privilege : 1;
 	uint64_t writeThrough : 1;
 	uint64_t cacheDisabled : 1;
@@ -162,7 +164,7 @@ union PageDirectoryEntry {
 // Page table entry, references a 4KB Page
 struct PageDescriptor4KB {
 	uint64_t present : 1;
-	uint64_t readWrite : 1;
+	uint64_t writable : 1;
 	uint64_t privilege : 1;
 	uint64_t writeThrough : 1;
 	uint64_t cacheDisabled : 1;
@@ -190,28 +192,39 @@ compile_assert(sizeof(struct PageDescriptor4KB) == 8);
 aligned(PAGE_SIZE) struct PDTPDescriptor g_pml4[TABLE_SIZE];
 compile_assert(sizeof(g_pml4) == PAGE_SIZE);
 
+// Note:
+// When the most restrictive bit applies, we set the most permissive
+// rights in the tables, and the correct rights in the pages descriptors.
+// -> Concerns bits R/W "writable", U/S "privilege", XD "executeDisabled"
+// When the last level met applies, we do the opposite (set caching on)
+// -> Concerns btis PWT "writeThrough", PCD "cacheDisabled"
+
 void setPDPT(struct PDTPDescriptor* entry, physical_address_t address){
+	assert(!entry->present);
+
 	entry->present = true;
-	entry->readWrite = true;
-	entry->privilege = PRIVILEGE_KERNEL;
-	entry->writeThrough = 0;
+	entry->writable = true;
+	entry->privilege = PRIVILEGE_USER;
+	entry->writeThrough = false;
 	entry->cacheDisabled = false;
-	entry->accessed = 0;
+	entry->accessed = false;
 	entry->reserved0 = 0b0;
-	entry->restart = 0;
+	entry->restart = false;
 	entry->address = getTableEntryAddress(address);
 	entry->reserved1 = 0b0000;
-	entry->executeDisabled = 0;
+	entry->executeDisabled = false;
 }
 
 void setPageDirectory(struct PageDirectoryDescriptor* entry, physical_address_t addr){
+	assert(!entry->present);
+
 	entry->present = true;
-	entry->readWrite = true;
-	entry->privilege = PRIVILEGE_KERNEL;
+	entry->writable = true;
+	entry->privilege = PRIVILEGE_USER;
 	entry->writeThrough = false;
-	entry->cacheDisabled = true;
+	entry->cacheDisabled = false;
 	entry->accessed = false;
-	entry->pageSize = 0; // points to a page directory
+	entry->pageSize = 0;
 	entry->restart = false;
 	entry->address = getTableEntryAddress(addr);
 	entry->reserved = 0b0000;
@@ -219,9 +232,11 @@ void setPageDirectory(struct PageDirectoryDescriptor* entry, physical_address_t 
 }
 
 void setPageTable(struct PageTableDescriptor* entry, physical_address_t addr){
+	assert(!entry->present);
+
 	entry->present = true;
-	entry->readWrite = true;
-	entry->privilege = PRIVILEGE_KERNEL;
+	entry->writable = true;
+	entry->privilege = PRIVILEGE_USER;
 	entry->writeThrough = false;
 	entry->cacheDisabled = false;
 	entry->accessed = false;
@@ -236,7 +251,7 @@ void set4KBPage(struct PageDescriptor4KB* entry, physical_address_t addr, int fl
 	assert(!entry->present); // prevent overrides (temp)
 
 	entry->present = true;
-	entry->readWrite = ((flags & PAGE_WRITE) != 0);
+	entry->writable = ((flags & PAGE_WRITE) != 0);
 	entry->privilege = ((flags & PAGE_USER) != 0);
 	entry->writeThrough = ((flags & PAGE_CACHE_WRITETHROUGH) != 0);
 	entry->cacheDisabled = ((flags & PAGE_CACHE_DISABLED) != 0);
@@ -255,7 +270,7 @@ void set2MBPage(struct PageDescriptor2MB* entry, physical_address_t addr, int fl
 	assert(!entry->present); // prevent overrides (temp)
 
 	entry->present = true;
-	entry->readWrite = ((flags & PAGE_WRITE) != 0);
+	entry->writable = ((flags & PAGE_WRITE) != 0);
 	entry->privilege = ((flags & PAGE_USER) != 0);
 	entry->writeThrough = ((flags & PAGE_CACHE_WRITETHROUGH) != 0);
 	entry->cacheDisabled = ((flags & PAGE_CACHE_DISABLED) != 0);
@@ -276,7 +291,7 @@ void set1GBPage(struct PageDescriptor1GB* entry, physical_address_t addr, int fl
 	assert(!entry->present); // prevent overrides (temp)
 
 	entry->present = true;
-	entry->readWrite = ((flags & PAGE_WRITE) != 0);
+	entry->writable = ((flags & PAGE_WRITE) != 0);
 	entry->privilege = ((flags & PAGE_USER) != 0);
 	entry->writeThrough = ((flags & PAGE_CACHE_WRITETHROUGH) != 0);
 	entry->cacheDisabled = ((flags & PAGE_CACHE_DISABLED) != 0);
@@ -327,11 +342,11 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			tmp = allocatePageOrPanic();
 			setPDPT(g_pml4+pml4_index, tmp);
 		}
-		cur_pdp = (void*) VMM_physicalToVirtual(g_pml4[pml4_index].address * PAGE_SIZE);
+		cur_pdp = parseEntryAddress(g_pml4[pml4_index].address);
 
 		// Try to map as 1GB pages (if addr is 1GB aligned AND we have more than 1GB to map)
 		if (phys_cur % SIZE_1GB == 0 && pages_remaining >= SIZE_1GB/PAGE_SIZE){
-			mappable = min(512 - pdp_index, pages_remaining*SIZE_4KB / SIZE_1GB);
+			mappable = min(TABLE_SIZE - pdp_index, pages_remaining*SIZE_4KB / SIZE_1GB);
 			for (uint64_t i=0 ; i<mappable ; i++){
 				set1GBPage(&cur_pdp->page1GB+pdp_index+i, phys_cur, flags);
 				phys_cur += SIZE_1GB;
@@ -346,12 +361,11 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			tmp = allocatePageOrPanic();
 			setPageDirectory(&cur_pdp[pdp_index].pageDirectory, tmp);
 		}
-		tmp = cur_pdp[pdp_index].pageDirectory.address * PAGE_SIZE;
-		cur_pd = (void*) VMM_physicalToVirtual(tmp);
+		cur_pd = parseEntryAddress(cur_pdp[pdp_index].pageDirectory.address);
 
 		// Try to map as 2MB pages
 		if (phys_cur % SIZE_2MB == 0 && pages_remaining >= SIZE_2MB/PAGE_SIZE){
-			mappable = min(512 - pd_index, pages_remaining*SIZE_4KB / SIZE_2MB);
+			mappable = min(TABLE_SIZE - pd_index, pages_remaining*SIZE_4KB / SIZE_2MB);
 			for (uint64_t i=0 ; i<mappable ; i++){
 				set2MBPage(&cur_pd->page2MB+pd_index+i, phys_cur, flags);
 				phys_cur += SIZE_2MB;
@@ -366,11 +380,10 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			tmp = allocatePageOrPanic();
 			setPageTable(&cur_pd[pd_index].pageTable, tmp);
 		}
-		tmp = cur_pd[pd_index].pageTable.address * PAGE_SIZE;
-		cur_pt = (void*) VMM_physicalToVirtual(tmp);
+		cur_pt = parseEntryAddress(cur_pd[pd_index].pageTable.address);
 
 		// Map 4KB pages in the page table
-		mappable = min(512 - pt_index, pages_remaining);
+		mappable = min(TABLE_SIZE - pt_index, pages_remaining);
 		for (uint64_t i=0 ; i<mappable ; i++){
 			set4KBPage(cur_pt+pt_index+i, phys_cur, flags);
 			phys_cur += PAGE_SIZE;
