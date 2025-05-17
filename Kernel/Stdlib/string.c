@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "stdio.h"
+#include "assert.h"
 
 #include "string.h"
 
@@ -61,6 +62,36 @@ size_t strlen(const char* str){
 	}
 
 	return res;
+}
+
+int my_strncmp(const char* s1, const char* s2, size_t n){
+	#ifdef KERNEL
+		assert(s1 && s2);
+	#endif
+	// else (userspace stdlib) we let the program segfault
+
+	int temp;
+	size_t i = 0;
+	while (i<n){
+		if (!s1[i] || !s2[i]){
+			// Only s1 is missing
+			if (!s1[i] && s2[i])
+				return -1;
+			// Only s2 is missing
+			if (s1[i] && !s2[i])
+				return 1;
+			// Neither are present
+			return 0;
+		}
+
+		temp = s1[i] - s2[i];
+		if (temp != 0)
+			return temp;
+
+		i++;
+	}
+
+	return 0;
 }
 
 void* memcpy(void* dst, const void* src, size_t size){

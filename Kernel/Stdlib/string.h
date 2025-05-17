@@ -14,6 +14,10 @@ char* strcpy(char* dst, const char* src);
 /// @return The number of bytes in the string pointed to by `str`
 size_t strlen(const char* str);
 
+/// @brief Compares the strings s1 and s2
+/// @return 0 if string are equal, negative value if s1 is less than s2, positive value otherwise
+int strncmp(const char* s1, const char* s2, size_t n);
+
 /// @brief Copies `size` bytes from memory area `src` to `dest`. The memory regions must NOT overlap
 /// @returns A pointer to `dest`
 void* memcpy(void* dst, const void* src, size_t size);
