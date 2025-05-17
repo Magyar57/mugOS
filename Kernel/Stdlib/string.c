@@ -64,7 +64,7 @@ size_t strlen(const char* str){
 	return res;
 }
 
-int my_strncmp(const char* s1, const char* s2, size_t n){
+int strncmp(const char* s1, const char* s2, size_t n){
 	#ifdef KERNEL
 		assert(s1 && s2);
 	#endif
