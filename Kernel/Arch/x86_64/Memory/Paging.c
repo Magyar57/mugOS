@@ -199,6 +199,10 @@ compile_assert(sizeof(g_pml4) == PAGE_SIZE);
 // When the last level met applies, we do the opposite (set caching on)
 // -> Concerns btis PWT "writeThrough", PCD "cacheDisabled"
 
+// Paging.asm
+bool setPML4(physical_address_t pml4);
+void flushTLB(void* addr);
+
 void setPDPT(struct PDTPDescriptor* entry, physical_address_t address){
 	assert(!entry->present);
 
@@ -349,10 +353,11 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			mappable = min(TABLE_SIZE - pdp_index, pages_remaining*SIZE_4KB / SIZE_1GB);
 			for (uint64_t i=0 ; i<mappable ; i++){
 				set1GBPage(&cur_pdp->page1GB+pdp_index+i, phys_cur, flags);
+				flushTLB((void*) virt_cur);
 				phys_cur += SIZE_1GB;
+				virt_cur += SIZE_1GB;
 			}
 			pages_remaining -= mappable * SIZE_1GB/PAGE_SIZE;
-			virt_cur += mappable*SIZE_1GB;
 			continue;
 		}
 
@@ -368,10 +373,11 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			mappable = min(TABLE_SIZE - pd_index, pages_remaining*SIZE_4KB / SIZE_2MB);
 			for (uint64_t i=0 ; i<mappable ; i++){
 				set2MBPage(&cur_pd->page2MB+pd_index+i, phys_cur, flags);
+				flushTLB((void*) virt_cur);
 				phys_cur += SIZE_2MB;
+				virt_cur += SIZE_2MB;
 			}
 			pages_remaining -= mappable * SIZE_2MB/PAGE_SIZE;
-			virt_cur += mappable*SIZE_2MB;
 			continue;
 		}
 
@@ -386,15 +392,13 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		mappable = min(TABLE_SIZE - pt_index, pages_remaining);
 		for (uint64_t i=0 ; i<mappable ; i++){
 			set4KBPage(cur_pt+pt_index+i, phys_cur, flags);
+			flushTLB((void*) virt_cur);
 			phys_cur += PAGE_SIZE;
+			virt_cur += PAGE_SIZE;
 		}
 		pages_remaining -= mappable;
-		virt_cur += mappable*PAGE_SIZE;
 	}
 }
-
-// Paging.asm
-bool setPML4(physical_address_t pml4);
 
 void Paging_initialize(){
 	// Clear the PML4 (sets all entries to invalid)

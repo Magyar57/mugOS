@@ -98,3 +98,10 @@ setPML5:
 	xor rax, rax
 	ret
 ; END setPML5
+
+; void flushTLB(void* addr);
+global flushTLB
+flushTLB:
+	invlpg [rdi]
+	ret
+; END flushTLB
