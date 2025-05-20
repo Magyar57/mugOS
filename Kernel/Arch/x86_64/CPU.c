@@ -127,14 +127,14 @@ static void parseCpuid_extended_8(struct CPU* cpu){
 	cpu->extFeatures.ints[5] = rbx;
 }
 
-static inline void panicForMissingFeature(const char* feature){
-	log(PANIC, MODULE, "mugOS requires the feature '%s', which this CPU does not support !", feature);
+void CPU_panicForMissingFeature(const char* feature){
+	log(PANIC, MODULE, "mugOS requires the '%s' feature, which this CPU does not support !", feature);
 	panic();
 }
 
 void CPU_initialize(struct CPU* cpu){
 	if (!CPU_supportsCpuid())
-		panicForMissingFeature("CPUID instruction");
+		CPU_panicForMissingFeature("CPUID instruction");
 
 	parseCpuid_basic_0(cpu);
 	if (strncmp(cpu->vendor, "GenuineIntel", 13) && strncmp(cpu->vendor, "AuthenticAMD", 13)){
@@ -144,7 +144,7 @@ void CPU_initialize(struct CPU* cpu){
 
 	parseCpuid_basic_1(cpu);
 	if (!cpu->features.bits.MSR_RDMSR)
-		panicForMissingFeature("RDMSR and WRMSR instructions");
+		CPU_panicForMissingFeature("RDMSR and WRMSR instructions");
 
 	uint64_t msr_misc_enable = CPU_readMSR(MSR_IA32_MISC_ENABLE);
 
@@ -152,7 +152,7 @@ void CPU_initialize(struct CPU* cpu){
 	// - maxInformation > 1
 	// - in the IA32_MISC_ENABLE MSR, bit 22 ('limit CPUID maxval') is 0 by default
 	if (!(cpu->maxInformation > 1) || msr_misc_enable & (1<<22))
-		panicForMissingFeature("CPUID leaves > 1");
+		CPU_panicForMissingFeature("CPUID leaves > 1");
 
 	switch (cpu->maxInformation){
 	default:

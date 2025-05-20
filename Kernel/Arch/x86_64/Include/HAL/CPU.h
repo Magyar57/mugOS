@@ -285,7 +285,10 @@ extern struct CPU g_CPU;
 #define haltAndCatchFire() __asm__ volatile("cli; 1: hlt; jmp 1b")
 
 /// @returns Whether the cpu supports the cpuid instruction
-extern bool CPU_supportsCpuid();
+bool CPU_supportsCpuid();
+
+/// @brief Prints a message saying mugOS requires the feature 'feature', and panics
+void CPU_panicForMissingFeature(const char* feature);
 
 /// @brief Fill the CPU struct with CPU identification informations
 /// @note Acts as an assertion to some arch-specific mugOS-required features
