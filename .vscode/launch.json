@@ -5,26 +5,6 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "QEMU",
-			"type": "cppdbg",
-			"preLaunchTask": "Native build",
-			"request": "launch",
-			"program": "make",
-			"args": ["run", "-E", "QEMU_ARGS="],
-			"stopAtEntry": false,
-			"cwd": "${workspaceFolder}",
-			"environment": [],
-			"externalConsole": false,
-			"MIMode": "gdb",
-			"linux": {
-				"program": "/usr/bin/make",
-			},
-			"osx": {
-				"program": "/usr/bin/make",
-				"MIMode": "lldb",
-			},
-		},
-		{
 			"name": "QEMU+gdb",
 			"type": "cppdbg",
 			"preLaunchTask": "Build and start QEMU+gdb",

@@ -50,11 +50,13 @@ tools:
 #
 run:
 	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
+		-cpu qemu64,+pdpe1gb \
+		-m 128M \
 		-drive if=pflash,file=$(UEFI_FIRMWARE),format=raw,readonly=on \
 		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
 
 debug:
-	make run -E QEMU_ARGS="-gdb tcp::1234 -S" &
+	make run -e QEMU_ARGS="-gdb tcp::1234 -S" &
 	gdb \
 		-ex "file build/kernel.elf" \
 		-ex "target remote localhost:1234" \
