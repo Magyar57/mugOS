@@ -27,8 +27,8 @@ CPU_supportsCpuid:
 	ret
 ; END CPU_supportsCpuid
 
-; void cpuidWrapper(int code, uint32_t* rax, uint32_t* rbx, uint32_t* rcx, uint32_t* rdx);
-; This function assumes that the cpuid instruction is supported. To test it, use CPUSupportsCpuid
+; void cpuidWrapper(int leaf, uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
+; This function assumes that the cpuid instruction is supported. To test it, use CPU_supportsCpuid
 global cpuidWrapper
 cpuidWrapper:
 	push rbp
@@ -41,21 +41,72 @@ cpuidWrapper:
 	push rcx
 	push r8
 
-	mov rax, rdi
+	xor ecx, ecx ; sub-leaf = 0
+	mov eax, edi
 	cpuid
 
 	; write results
-
-	pop rdi			; rdi = &rdx
-	mov [rdi], rdx
-	pop rdi			; rdi = &rcx
-	mov [rdi], rcx
-	pop rdi			; rdi = &rbx
-	mov [rdi], rbx
-	pop rdi			; rdi = &rax
-	mov [rdi], rax
+	pop rdi			; rdi = edxOut
+	mov [rdi], edx
+	pop rdi			; rdi = ecxOut
+	mov [rdi], ecx
+	pop rdi			; rdi = ebxOut
+	mov [rdi], ebx
+	pop rdi			; rdi = eaxOut
+	mov [rdi], eax
 
 	pop rbx
 	leave
 	ret
 ; END cpuidWrapper
+
+; void cpuidWrapperWithSubleaf(int leaf, int subleaf, uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
+; This function assumes that the cpuid instruction is supported. To test it, use CPU_supportsCpuid
+global cpuidWrapperWithSubleaf
+cpuidWrapperWithSubleaf:
+	push rbp
+	mov rbp, rsp
+	push rbx
+
+	; preserve args for later
+	push rdx
+	push rcx
+	push r8
+	push r9
+
+	mov ecx, esi ; ecx = sub-leaf (which is in esi)
+	mov eax, edi
+	cpuid
+
+	; write results
+	pop rdi			; rdi = edxOut
+	mov [rdi], edx
+	pop rdi			; rdi = ecxOut
+	mov [rdi], ecx
+	pop rdi			; rdi = ebxOut
+	mov [rdi], ebx
+	pop rdi			; rdi = eaxOut
+	mov [rdi], eax
+
+	pop rbx
+	leave
+	ret
+; END cpuidWrapper
+
+; uint64_t CPU_readMSR(int msr);
+; Reads and returns the value of the `msr` Model-Specific Register
+; Warning: Does NOT check whether the MSR and the `rdmsr` instruction are supported
+global CPU_readMSR
+CPU_readMSR:
+	; rdi = msr
+
+	mov ecx, edi
+	rdmsr
+
+	; Return value of rdmsr is in edx:eax
+	; High 32 bits of both registers are 0
+	shl rdx, 32
+	or rax, rdx
+
+	ret
+; END CPU_readMSR

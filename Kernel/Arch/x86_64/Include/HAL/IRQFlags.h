@@ -13,6 +13,8 @@
 
 // Flags manipulations
 
+#define X86_64_RFLAGS_IF 1<<9
+
 /// @brief Disable interrupts (cli)
 #define IRQ_disable() __asm__ volatile("cli")
 
