@@ -33,14 +33,15 @@
 - [ ] System calls
 - [ ] mush (the **mu**gOS **sh**ell)
 
-## Modifications
+## Eventual modifications and ideas
 
-- Refactor: abstract the Serial ports from the Serial driver
-- With a timer subsystem, set a minimum delay between set LEDs for the PS/2 keyboard, to prevent bricking the device
-- With USB implemented, intialize and disable USB legacy support BEFORE initializing the PS/2 controller
-- With ACPI implemented, finish step 2 of the 8042 PS/2 controller initalization
-- With proper executable and lib support, remove callbacks from the keyboard driver when its owner exits
-- With threads, implement threaded interrupts (so that we minimize time with masked interrupts) ; see linux request_threaded_irq kernel/irq/manage.c
+- [ ] *(Refactor)* Remove HHDM, in favour of dynamic memory mapping
+- [ ] *(Refactor)* Abstract the Serial ports from the Serial driver
+- [ ] *(Requires a timer subsystem)* Set a minimum delay between set LEDs for the PS/2 keyboard, to prevent bricking the device
+- [ ] *(Requires USB implemented)* Intialize and disable USB legacy support BEFORE initializing the PS/2 controller
+- [ ] *(Requires ACPI implemented)* Finish step 2 of the 8042 PS/2 controller initalization
+- [ ] *(Requires proper executable and lib support)* Remove callbacks from the keyboard driver when its owner exits
+- [ ] *(Requires threads)* Implement threaded interrupts (so that we minimize time with masked interrupts) ; see linux request_threaded_irq kernel/irq/manage.c
 
 Notes:
 - PS/2 Driver purposely does NOT support hot-plug (as the specification PS/2 was designed for)
