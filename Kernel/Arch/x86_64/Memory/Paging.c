@@ -7,6 +7,8 @@
 #include "Memory/PMM.h"
 #include "Memory/VMM.h"
 #include "GDT.h"
+#include "HAL/CPU.h"
+#include "Registers.h"
 
 #include "HAL/Paging.h"
 #define MODULE "Paging"
@@ -189,6 +191,8 @@ compile_assert(sizeof(struct PageDescriptor4KB) == 8);
 
 #pragma endregion
 
+bool m_has1GBPages = false;
+
 aligned(PAGE_SIZE) struct PDTPDescriptor g_pml4[TABLE_SIZE];
 compile_assert(sizeof(g_pml4) == PAGE_SIZE);
 
@@ -293,6 +297,7 @@ void set2MBPage(struct PageDescriptor2MB* entry, physical_address_t addr, int fl
 
 void set1GBPage(struct PageDescriptor1GB* entry, physical_address_t addr, int flags){
 	assert(!entry->present); // prevent overrides (temp)
+	assert(m_has1GBPages);
 
 	entry->present = true;
 	entry->writable = ((flags & PAGE_WRITE) != 0);
@@ -349,7 +354,7 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		cur_pdp = parseEntryAddress(g_pml4[pml4_index].address);
 
 		// Try to map as 1GB pages (if addr is 1GB aligned AND we have more than 1GB to map)
-		if (phys_cur % SIZE_1GB == 0 && pages_remaining >= SIZE_1GB/PAGE_SIZE){
+		if (m_has1GBPages && phys_cur % SIZE_1GB == 0 && pages_remaining >= SIZE_1GB/PAGE_SIZE){
 			mappable = min(TABLE_SIZE - pdp_index, pages_remaining*SIZE_4KB / SIZE_1GB);
 			for (uint64_t i=0 ; i<mappable ; i++){
 				set1GBPage(&cur_pdp->page1GB+pdp_index+i, phys_cur, flags);
@@ -400,9 +405,49 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 	}
 }
 
+void initializeFeatures(){
+	union CR4 cr4;
+	cr4.value = Registers_readCR4();
+	union MSR_IA32_EFER efer;
+	efer.value = Registers_readMSR(MSR_ADDR_IA32_EFER);
+
+	// Assert that the address line is long enough
+	if (g_CPU.extFeatures.bits.NumberOfLinearAddressBits < ADDRESS_SIZE){
+		log(PANIC, MODULE, "Detected a CPU address size of %d, minimum supported is %d !",
+			g_CPU.extFeatures.bits.NumberOfLinearAddressBits, ADDRESS_SIZE);
+		panic();
+	}
+
+	// Restrain the CPU in kernel mode to execute/access kernel pages
+	if (g_CPU.features.bits.SMAP)
+		cr4.bits.SMAP = true;
+	if (g_CPU.features.bits.SMEP)
+		cr4.bits.SMEP = true;
+
+	// Assert that the Execute-disable feature is available, and enable it
+	if (!g_CPU.extFeatures.bits.NX)
+		panicForMissingFeature("NX (mark pages as non executable)");
+	else
+		efer.bits.NXE = true;
+
+	// Check if we can use 1GB pages
+	m_has1GBPages = g_CPU.extFeatures.bits.PAGES_1GB;
+
+	// Note: whether or not the global (G) bit (<=> PGE feature) is supported, we disable it
+	// as we don't use it.
+	// Note 2: feature presence is determined by `g_CPU.features.bits.PGE`
+	cr4.bits.PGE = false;
+
+	Registers_writeCR4(cr4.value);
+	Registers_writeMSR(MSR_ADDR_IA32_EFER, efer.value);
+}
+
 void Paging_initialize(){
 	// Clear the PML4 (sets all entries to invalid)
 	memset(g_pml4, 0, PAGE_SIZE);
+
+	// Assert that we have the features we need, and enable them
+	initializeFeatures();
 
 	// Kernel is loaded at its specific address
 	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
