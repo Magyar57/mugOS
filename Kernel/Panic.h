@@ -1,7 +1,10 @@
 #ifndef __PANIC_H__
 #define __PANIC_H__
 
-// Trigger kernel panic. Will DEFINITELY halt the system
+/// @brief Trigger kernel panic. Will DEFINITELY halt the system
 void panic();
+
+/// @brief Prints a message saying mugOS requires the feature 'feature', and panics
+void panicForMissingFeature(const char* feature);
 
 #endif

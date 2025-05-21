@@ -4,14 +4,12 @@
 #include <stdint.h>
 #include "Preprocessor.h"
 
-// CPU.h:
-// - Architecture related definitions
-// - CPU structure
+// CPU.h: Architecture related flags & features (CPUID...)
 
 union Features {
 	uint32_t ints[13];
 	struct FeaturesBits {
-		// ECX values for CPUID EAX=0x00
+		// ECX values for CPUID EAX=0x01
 		uint32_t SSE3 : 1;
 		uint32_t PCLMULQDQ : 1;
 		uint32_t DTES64 : 1;
@@ -44,7 +42,7 @@ union Features {
 		uint32_t F16C : 1;
 		uint32_t RDRAND : 1;
 		uint32_t reserved_0_1 : 1;
-		// EDX values for CPUID EAX=0x00
+		// EDX values for CPUID EAX=0x01
 		uint32_t FPU : 1;
 		uint32_t VME : 1;
 		uint32_t DE : 1;
@@ -259,8 +257,15 @@ union ExtendedFeatures {
 	} bits;
 };
 
+enum Vendor {
+	Vendor_Unsupported,
+	Vendor_Intel,
+	Vendor_AMD
+};
+
 struct CPU {
-	char vendor[13];
+	enum Vendor vendor;
+	char vendorStr[13];
 	char brand[49];
 	uint8_t model;
 	uint16_t family;
@@ -287,21 +292,10 @@ extern struct CPU g_CPU;
 /// @returns Whether the cpu supports the cpuid instruction
 bool CPU_supportsCpuid();
 
-/// @brief Prints a message saying mugOS requires the feature 'feature', and panics
-void CPU_panicForMissingFeature(const char* feature);
-
 /// @brief Fill the CPU struct with CPU identification informations
 /// @note Acts as an assertion to some arch-specific mugOS-required features
 void CPU_initialize(struct CPU* cpu);
 
 void CPU_print(struct CPU* cpu);
-
-#define MSR_IA32_MISC_ENABLE	0x000001a0
-#define MSR_IA32_APIC_BASE		0x0000001b
-#define MSR_IA32_EFER			0xc0000080
-
-/// @brief Reads and returns the value of the `msr` Model-Specific Register
-/// @warning Does NOT check whether the MSR and the `rdmsr` instruction are supported
-uint64_t CPU_readMSR(int msr);
 
 #endif

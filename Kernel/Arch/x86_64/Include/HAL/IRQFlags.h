@@ -2,7 +2,7 @@
 #define __IRQ_FLAGS_H__
 
 #include "Preprocessor.h"
-#include "HAL/CPU.h"
+#include "Arch/x86_64/Registers.h"
 
 // Standard ISA IRQ numbers
 #define IRQ_TIMER			0x00
@@ -12,8 +12,6 @@
 #define IRQ_PS2_MOUSE		0x0c
 
 // Flags manipulations
-
-#define X86_64_RFLAGS_IF 1<<9
 
 /// @brief Disable interrupts (cli)
 #define IRQ_disable() __asm__ volatile("cli")

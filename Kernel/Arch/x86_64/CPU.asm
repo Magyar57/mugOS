@@ -1,7 +1,16 @@
 section .text
 
-; bool CPU_supportsCpuid();
 global CPU_supportsCpuid
+global cpuidWrapper
+global cpuidWrapperWithSubleaf
+global Registers_readMSR
+global Registers_writeMSR
+global Registers_readCR0
+global Registers_writeCR0
+global Registers_readCR4
+global Registers_writeCR4
+
+; bool CPU_supportsCpuid();
 CPU_supportsCpuid:
 	push rbp
 	mov rbp, rsp
@@ -25,11 +34,10 @@ CPU_supportsCpuid:
 
 	leave
 	ret
-; END CPU_supportsCpuid
+;
 
 ; void cpuidWrapper(int leaf, uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
 ; This function assumes that the cpuid instruction is supported. To test it, use CPU_supportsCpuid
-global cpuidWrapper
 cpuidWrapper:
 	push rbp
 	mov rbp, rsp
@@ -58,11 +66,10 @@ cpuidWrapper:
 	pop rbx
 	leave
 	ret
-; END cpuidWrapper
+;
 
 ; void cpuidWrapperWithSubleaf(int leaf, int subleaf, uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
 ; This function assumes that the cpuid instruction is supported. To test it, use CPU_supportsCpuid
-global cpuidWrapperWithSubleaf
 cpuidWrapperWithSubleaf:
 	push rbp
 	mov rbp, rsp
@@ -91,13 +98,12 @@ cpuidWrapperWithSubleaf:
 	pop rbx
 	leave
 	ret
-; END cpuidWrapper
+;
 
-; uint64_t CPU_readMSR(int msr);
+; uint64_t Registers_readMSR(int msr);
 ; Reads and returns the value of the `msr` Model-Specific Register
 ; Warning: Does NOT check whether the MSR and the `rdmsr` instruction are supported
-global CPU_readMSR
-CPU_readMSR:
+Registers_readMSR:
 	; rdi = msr
 
 	mov ecx, edi
@@ -109,4 +115,42 @@ CPU_readMSR:
 	or rax, rdx
 
 	ret
-; END CPU_readMSR
+;
+
+; void Registers_writeMSR(int msr, uint64_t value);
+; Write the value `value` to the `msr` Model-Specific Register
+; Warning: Does NOT check whether the MSR and the `wrmsr` instruction are supported
+Registers_writeMSR:
+	; rdi = msr
+	; rsi = value
+
+	; Set edx:eax to MSR value
+	mov rdx, rsi
+	shr rdx, 32
+	mov eax, esi
+
+	mov ecx, edi
+	wrmsr
+
+	ret
+;
+
+Registers_readCR0:
+	mov rax, cr0
+	ret
+;
+
+Registers_writeCR0:
+	mov cr0, rdi
+	ret
+;
+
+Registers_readCR4:
+	mov rax, cr4
+	ret
+;
+
+Registers_writeCR4:
+	mov cr4, rdi
+	ret
+;

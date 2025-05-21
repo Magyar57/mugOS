@@ -2,6 +2,7 @@
 #include "string.h"
 #include "Logging.h"
 #include "Panic.h"
+#include "Registers.h"
 
 #include "HAL/CPU.h"
 #define MODULE "CPU"
@@ -19,10 +20,17 @@ static void parseCpuid_basic_0(struct CPU* cpu){
 	cpuidWrapper(0x00, (uint32_t*) &cpu->maxInformation, &rbx, &rcx, &rdx);
 
 	// The CPU vendor string is contained in rbx, rdx and rcx ; copy it into the structure
-	memcpy(cpu->vendor, &rbx, 4);
-	memcpy(cpu->vendor+4, &rdx, 4);
-	memcpy(cpu->vendor+8, &rcx, 4);
-	cpu->vendor[12] = '\0';
+	memcpy(cpu->vendorStr, &rbx, 4);
+	memcpy(cpu->vendorStr+4, &rdx, 4);
+	memcpy(cpu->vendorStr+8, &rcx, 4);
+	cpu->vendorStr[12] = '\0';
+
+	if (strncmp(cpu->vendorStr, "GenuineIntel", 13) == 0)
+		cpu->vendor = Vendor_Intel;
+	else if (strncmp(cpu->vendorStr, "AuthenticAMD", 13) == 0)
+		cpu->vendor = Vendor_AMD;
+	else
+		cpu->vendor = Vendor_Unsupported;
 }
 
 // CPUID.EAX = 0x01: Version informations
@@ -127,32 +135,33 @@ static void parseCpuid_extended_8(struct CPU* cpu){
 	cpu->extFeatures.ints[5] = rbx;
 }
 
-void CPU_panicForMissingFeature(const char* feature){
-	log(PANIC, MODULE, "mugOS requires the '%s' feature, which this CPU does not support !", feature);
-	panic();
-}
-
 void CPU_initialize(struct CPU* cpu){
 	if (!CPU_supportsCpuid())
-		CPU_panicForMissingFeature("CPUID instruction");
+		panicForMissingFeature("CPUID instruction");
 
 	parseCpuid_basic_0(cpu);
-	if (strncmp(cpu->vendor, "GenuineIntel", 13) && strncmp(cpu->vendor, "AuthenticAMD", 13)){
-		log(PANIC, MODULE, "Unsupported CPU constructor '%s'", cpu->vendor);
+	if (cpu->vendor == Vendor_Unsupported){
+		log(PANIC, MODULE, "Unsupported CPU vendor '%s'", cpu->vendorStr);
 		panic();
 	}
 
 	parseCpuid_basic_1(cpu);
 	if (!cpu->features.bits.MSR_RDMSR)
-		CPU_panicForMissingFeature("RDMSR and WRMSR instructions");
-
-	uint64_t msr_misc_enable = CPU_readMSR(MSR_IA32_MISC_ENABLE);
+		panicForMissingFeature("RDMSR and WRMSR instructions");
 
 	// Leaves above 1 are enabled if both:
 	// - maxInformation > 1
-	// - in the IA32_MISC_ENABLE MSR, bit 22 ('limit CPUID maxval') is 0 by default
-	if (!(cpu->maxInformation > 1) || msr_misc_enable & (1<<22))
-		CPU_panicForMissingFeature("CPUID leaves > 1");
+	// - on Intel manufactured CPUs, in the IA32_MISC_ENABLE MSR, LimitCPUIDMaxval (bit) is 0 by default
+	bool leaf_condition_met = (cpu->maxInformation >= 7);
+	if (cpu->vendor == Vendor_Intel){
+		union MSR_IA32_MISC_ENABLE misc_enable;
+		misc_enable.value = Registers_readMSR(MSR_ADDR_IA32_MISC_ENABLE);
+		leaf_condition_met = leaf_condition_met && !misc_enable.bits.LimitCPUIDMaxval;
+		if (misc_enable.bits.LimitCPUIDMaxval)
+			panicForMissingFeature("RDMSR and WRMSR instructions");
+	}
+	if (!leaf_condition_met)
+		panicForMissingFeature("CPUID leaves >= 7");
 
 	switch (cpu->maxInformation){
 	default:
@@ -208,7 +217,7 @@ void CPU_initialize(struct CPU* cpu){
 void CPU_print(struct CPU* cpu){
 	if (!cpu) return;
 
-	log(INFO, MODULE, "CPU vendor: '%s'", cpu->vendor);
+	log(INFO, MODULE, "CPU vendor: '%s'", cpu->vendorStr);
 	log(INFO, MODULE, "CPU family=%d model=%d type=%d stepping=%d",
 		cpu->family, cpu->model, cpu->type, cpu->stepping);
 	log(INFO, MODULE, "CPU brandIndex=%d cflushLineSize=%d maxAddressableCpuIds=%d",
@@ -222,8 +231,8 @@ void CPU_print(struct CPU* cpu){
 		cpu->extFeatures.bits.CacheSize, cpu->extFeatures.bits.L2Associativity,
 		cpu->extFeatures.bits.CacheLineSize);
 
-	log(INFO, MODULE, "CPUID max values: basic=%#hhx extended=%#hhx",
-		cpu->maxInformation, cpu->maxExtendedInformation);
+	// log(INFO, MODULE, "CPUID max values: basic=%#hhx extended=%#hhx",
+	// 	cpu->maxInformation, cpu->maxExtendedInformation);
 
 	const char* SSE3 = (cpu->features.bits.SSE3) ? "SSE3 " : "";
 	const char* PCLMULQDQ = (cpu->features.bits.PCLMULQDQ) ? "PCLMULQDQ " : "";
