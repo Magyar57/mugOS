@@ -215,8 +215,12 @@ static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* alloc
 			else
 				n_bits = 0;
 
-			if (n_bits == n_pages)
-				goto found;
+			if (n_bits == n_pages){
+				uint64_t end_idx = i*64 + j + 1;
+				uint64_t start_idx = end_idx - n_pages;
+				setBits(allocator, start_idx, end_idx);
+				return allocator->start + start_idx * PAGE_SIZE;
+			}
 
 			cur <<= 1;
 		}
@@ -231,19 +235,17 @@ static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* alloc
 		else
 			n_bits = 0;
 
-		if (n_bits == n_pages)
-			goto found;
+		if (n_bits == n_pages){
+			uint64_t end_idx = i*64 + j + 1;
+			uint64_t start_idx = end_idx - n_pages;
+			setBits(allocator, start_idx, end_idx);
+			return allocator->start + start_idx * PAGE_SIZE;
+		}
 
 		cur <<= 1;
 	}
 
 	return (physical_address_t) NULL;
-
-	found:
-	uint64_t end_idx = i*64 + j + 1;
-	uint64_t start_idx = end_idx - n_pages;
-	setBits(allocator, start_idx, end_idx);
-	return allocator->start + start_idx * PAGE_SIZE;
 }
 
 void* PMM_allocate(uint64_t n_pages){

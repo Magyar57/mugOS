@@ -274,6 +274,7 @@ static inline void handleScancodeSet1(uint8_t scancode){
 	static int pause_sequence = 0;
 	static bool numlock_was_set=false, capslock_was_set=false, scrolllock_was_set=false;
 	static uint8_t wanted_leds = 0;
+	static int resend_count = 0;
 
 	// 1. Check for sequences progression
 	// Check for print screen pressed sequence : 0xe0, 0x2a, 0xe0, 0x37
@@ -374,7 +375,6 @@ static inline void handleScancodeSet1(uint8_t scancode){
 		}
 		return;
 	case PS2_RES_RESEND:
-		static int resend_count = 0;
 		resend_count++;
 		// We limit the number of resend allowed to avoid infinite loops
 		if (resend_count == 3) { resend_count = 0; goto reset_state; }
@@ -597,6 +597,7 @@ static inline void handleScancodeSet2(uint8_t scancode){
 	static int pause_sequence = 0;
 	static bool numlock_was_set=false, capslock_was_set=false, scrolllock_was_set=false;
 	static uint8_t wanted_leds = 0;
+	static int resend_count = 0;
 
 	// Note: See handleScancodeSet1 for full commented function
 
@@ -718,7 +719,6 @@ static inline void handleScancodeSet2(uint8_t scancode){
 		}
 		return;
 	case PS2_RES_RESEND:
-		static int resend_count = 0;
 		resend_count++;
 		// We limit the number of resend allowed to avoid infinite loops
 		if (resend_count == 3) { resend_count = 0; goto reset_state; }

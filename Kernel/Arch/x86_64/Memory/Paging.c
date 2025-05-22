@@ -449,10 +449,25 @@ void Paging_initialize(){
 	// Assert that we have the features we need, and enable them
 	initializeFeatures();
 
-	// Kernel is loaded at its specific address
+	// Map the kernel
 	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
 	extern uint8_t LOAD_ADDRESS, __text_start, __rodata_start, __data_start;
 	virtual_address_t kernel_virt = (virtual_address_t) &LOAD_ADDRESS;
+	// Compute size (in #pages) of kernel regions to map
+	// Note: since the __end symbol from the linker map points before the actual end of the bss,
+	// we use the size that the bootloader gave us instead to know the bss' size
+	uint64_t text_size = (&__rodata_start - &__text_start) / PAGE_SIZE;
+	uint64_t rodata_size = (&__data_start - &__rodata_start) / PAGE_SIZE;
+	uint64_t data_size = (g_memoryMap.kernelSize/PAGE_SIZE - (rodata_size+text_size));
+	physical_address_t ktext_phys = (physical_address_t)&__text_start - kernel_virt + kernel_phys;
+	physical_address_t rodata_phys = (physical_address_t)&__rodata_start - kernel_virt + kernel_phys;
+	physical_address_t data_phys = (physical_address_t)&__data_start - kernel_virt + kernel_phys;
+	// .text section: r-x
+	map(ktext_phys, (virtual_address_t) &__text_start, text_size, PAGE_READ|PAGE_EXEC|PAGE_KERNEL);
+	// .rodata section: r--
+	map(rodata_phys, (virtual_address_t) &__rodata_start, rodata_size, PAGE_READ|PAGE_KERNEL);
+	// .data and .bss sections: rw-
+	map(data_phys, (virtual_address_t) &__data_start, data_size, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 
 	for(int i=0 ; i<g_memoryMap.size ; i++){
 		struct MemoryMapEntry* cur = g_memoryMap.entries + i;
@@ -467,22 +482,6 @@ void Paging_initialize(){
 		case MEMORY_RESERVED:
 			break;
 		case MEMORY_KERNEL:
-			// Compute size (in #pages) of kernel regions to map
-			// Note: since the __end symbol from the linker map points before the actual end of the bss,
-			// we use the size that the bootloader gave us instead to know the bss' size
-			uint64_t text_size = (&__rodata_start - &__text_start) / PAGE_SIZE;
-			uint64_t rodata_size = (&__data_start - &__rodata_start) / PAGE_SIZE;
-			uint64_t data_size = (g_memoryMap.kernelSize/PAGE_SIZE - (rodata_size+text_size));
-			physical_address_t ktext_phys = (physical_address_t)&__text_start - kernel_virt + kernel_phys;
-			physical_address_t rodata_phys = (physical_address_t)&__rodata_start - kernel_virt + kernel_phys;
-			physical_address_t data_phys = (physical_address_t)&__data_start - kernel_virt + kernel_phys;
-
-			// .text section: r-x
-			map(ktext_phys, (virtual_address_t) &__text_start, text_size, PAGE_READ|PAGE_EXEC|PAGE_KERNEL);
-			// .rodata section: r--
-			map(rodata_phys, (virtual_address_t) &__rodata_start, rodata_size, PAGE_READ|PAGE_KERNEL);
-			// .data and .bss sections: rw-
-			map(data_phys, (virtual_address_t) &__data_start, data_size, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			break;
 		case MEMORY_FRAMEBUFFER:
 			map(cur->address, VMM_physicalToVirtual(cur->address), cur->length/PAGE_SIZE,
