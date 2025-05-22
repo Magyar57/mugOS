@@ -31,9 +31,8 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 				firstNotFound = false;
 			}
 			break;
-		case LIMINE_MEMMAP_KERNEL_AND_MODULES:
-			mmap->kernelAddress = cur->base;
-			mmap->kernelSize = cur->length;
+		case LIMINE_MEMMAP_RESERVED:
+			break;
 		case LIMINE_MEMMAP_ACPI_RECLAIMABLE:
 			// These are potentially usable memory.
 			// Limine does not guarantee no overlap with other entries
@@ -49,6 +48,10 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 				firstNotFound = false;
 			}
 			break;
+		case LIMINE_MEMMAP_ACPI_NVS:
+			break;
+		case LIMINE_MEMMAP_BAD_MEMORY:
+			break;
 		case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE:
 			mmap->totalUsableMemory += cur->length;
 			mmap->lastUsablePage = cur->base + cur->length - PAGE_SIZE; // Last page of the region
@@ -57,10 +60,12 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 				firstNotFound = false;
 			}
 			break;
-		case LIMINE_MEMMAP_RESERVED:
-		case LIMINE_MEMMAP_ACPI_NVS:
-		case LIMINE_MEMMAP_BAD_MEMORY:
+		case LIMINE_MEMMAP_KERNEL_AND_MODULES:
+			mmap->kernelAddress = cur->base;
+			mmap->kernelSize = cur->length;
+			break;
 		case LIMINE_MEMMAP_FRAMEBUFFER:
+			break;
 		case REMOVED_ENTRY_LIMINE:
 			break;
 		default:
@@ -77,14 +82,13 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 
 /// @brief Process Limine's memory map by squashing sequential entries of same type
 /// @returns The number of entries in the processed memory map
-static int processLimineMemoryMap(struct limine_memmap_response* limine_mmmap){
-	if (limine_mmmap->entry_count == 0) return 0;
-	int n_entries = 1; // last entry
+static int processLimineMemoryMap(struct limine_memmap_response* limine_memap){
+	if (limine_memap->entry_count == 0) return 0;
+	int n_entries = limine_memap->entry_count;
 
-	for (uint64_t i=0 ; i<limine_mmmap->entry_count-1 ; i++){
-		struct limine_memmap_entry* cur = limine_mmmap->entries[i];
-		struct limine_memmap_entry* next = limine_mmmap->entries[i+1];
-		n_entries++;
+	for (uint64_t i=0 ; i<limine_memap->entry_count-1 ; i++){
+		struct limine_memmap_entry* cur = limine_memap->entries[i];
+		struct limine_memmap_entry* next = limine_memap->entries[i+1];
 
 		// If two consecutives entries are juxtaposed, merge them
 		if (cur->type == next->type && cur->base+cur->length == next->base){
