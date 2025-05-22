@@ -488,6 +488,7 @@ void Paging_initialize(){
 			break;
 		case MEMORY_RESERVED:
 		case MEMORY_KERNEL:
+			break;
 		case MEMORY_FRAMEBUFFER:
 			map(cur->address, VMM_physicalToVirtual(cur->address), n_pages,
 				PAGE_READ|PAGE_WRITE|PAGE_KERNEL|PAGE_CACHE_DISABLED);
