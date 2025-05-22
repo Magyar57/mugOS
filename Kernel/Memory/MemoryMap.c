@@ -145,7 +145,7 @@ static void printMemoryMap(struct MemoryMap* memmap){
 		magnitude = (magnitude > 6) ? 6 : magnitude; // clamp magnitude to the max prefix available on 64 bits
 		uint64_t divisor = (1llu << (10*magnitude)); // 1024**magnitude = 2**(10*magnitude)
 
-		log(INFO, MODULE, "%#.16llx %#.16llx (%4d %s) - %s ",
+		log(INFO, MODULE, "%#.16llx %#.16llx (%4d %s) - %s",
 			cur->address, cur->address + cur->length - 1, cur->length/divisor, SIZE_UNITS[magnitude],
 			memoryTypeNames[cur->type]);
 	}

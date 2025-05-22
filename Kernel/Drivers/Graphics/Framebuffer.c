@@ -35,8 +35,8 @@ void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom){
 
 	uint64_t maxHorizontalChar = (this->width - 2*this->drawOffsetX*this->zoom) / (BITMAP_CHAR_WIDTH*this->zoom);
 	uint64_t maxVerticalChar = (this->height - 2*this->drawOffsetY*this->zoom) / (BITMAP_CHAR_HEIGHT*this->zoom);
-	this->textWidth = (maxHorizontalChar > MAX_TERMINAL_WIDTH) ? MAX_TERMINAL_WIDTH : maxHorizontalChar;
-	this->textHeight = (maxVerticalChar > MAX_TERMINAL_HEIGHT) ? MAX_TERMINAL_HEIGHT : maxVerticalChar;
+	this->textWidth = min(maxHorizontalChar, MAX_TERMINAL_WIDTH);
+	this->textHeight = min(maxVerticalChar, MAX_TERMINAL_HEIGHT);
 }
 
 void Framebuffer_setClearColor(Framebuffer* this, color_t clearColor){
@@ -58,8 +58,8 @@ void Framebuffer_clearScreen(Framebuffer* this){
 
 void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, unsigned int offsetX, unsigned int offsetY){
 	assert(this);
-	assert((offsetX+BITMAP_CHAR_WIDTH) < this->width);
-	assert((offsetY+BITMAP_CHAR_HEIGHT) < this->height);
+	assert((offsetX+this->charWidth) < this->width);
+	assert((offsetY+this->charHeight) < this->height);
 
 	uint8_t* bitmap = m_defaultFont[letter];
 	int mask; // bit mask, will be shifted right every iteration
@@ -152,16 +152,28 @@ static inline size_t getFirstTextLineSize(Framebuffer* this){
 	size_t screen_size = 0;
 	char c = this->text[0];
 	while( (c != '\n') && (screen_size < this->textWidth) ){
-		if (c == '\t'){
+		switch (c){
+		case '\t':
 			screen_size += (TAB_SIZE - (screen_size % TAB_SIZE));
-		}
-		else {
+			break;
+		case '\r':
+			screen_size = 0;
+			break;
+		default:
 			screen_size++;
+			break;
 		}
 
 		line_size++;
 		c = this->text[line_size];
 	}
+
+	// Include the '\n':
+	// - If line is incomplete ("aaaaaa\n      ")
+	// - If line is complete, and was ended by a carriage return ('\r')
+	bool prevWasCR = (line_size>0 && this->text[line_size-1] == '\r');
+	if (this->text[line_size] == '\n' && (screen_size != this->textWidth || prevWasCR))
+		line_size++;
 
 	return line_size;
 }
@@ -173,7 +185,6 @@ void Framebuffer_scrollDown(Framebuffer* this){
 
 	// First line size
 	size_t line_size = getFirstTextLineSize(this);
-	if (line_size != this->textWidth) line_size++; // include the '\n'
 
 	// Move the terminal text one line up
 	memmove(this->text, this->text+line_size, TERMINAL_SIZE-line_size);
@@ -190,49 +201,44 @@ void Framebuffer_putchar(Framebuffer* this, const char c){
 	assert(this);
 	unsigned long flags;
 
-	switch (c){
-		case '\0':
-			return;
+	if (c == '\0')
+		return;
 
+	IRQ_disableSave(flags);
+
+	switch (c){
 		case '\t':
-			IRQ_disableSave(flags);
 			this->text[this->textIndex] = '\t';
 			this->textIndex++;
 			drawTab(this);
-			IRQ_restore(flags);
 			break;
 
 		case '\n':
-			IRQ_disableSave(flags);
 			this->text[this->textIndex] = c;
 			this->textIndex++;
 			this->cursorX = 0;
 			this->cursorY++;
-			IRQ_restore(flags);
 			break;
 
 		case '\r':
-			IRQ_disableSave(flags);
 			this->text[this->textIndex] = c;
 			this->textIndex++;
 			this->cursorX = 0;
-			IRQ_restore(flags);
 			break;
 
 		default:
-			IRQ_disableSave(flags);
 			this->text[this->textIndex] = c;
 			this->textIndex++;
-			Framebuffer_drawLetter(this, c, WHITE, this->cursorX*BITMAP_CHAR_WIDTH + this->drawOffsetX, this->cursorY*BITMAP_CHAR_HEIGHT + this->drawOffsetY);
+			Framebuffer_drawLetter(this, c, WHITE, this->cursorX*this->charWidth + this->drawOffsetX, this->cursorY*this->charHeight + this->drawOffsetY);
 			this->cursorX = (this->cursorX+1) % this->textWidth;
 			if (this->cursorX == 0) this->cursorY++;
-			IRQ_restore(flags);
 			break;
 	}
 
-	// Note: scrollDown is interrupt-safe
 	if (this->cursorY >= this->textHeight)
 		Framebuffer_scrollDown(this);
+
+	IRQ_restore(flags);
 }
 
 void Framebuffer_puts_noLF(Framebuffer* this, const char* str){
