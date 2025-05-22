@@ -405,6 +405,28 @@ static void map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 	}
 }
 
+static inline void mapKernel(physical_address_t kernel_phys, virtual_address_t kernel_virt){
+	extern uint8_t __text_start, __rodata_start, __data_start;
+
+	// Compute size (in #pages) of kernel regions to map
+	// Note: since the __end symbol from the linker map points before the actual end of the bss,
+	// we use the size that the bootloader gave us instead to know the bss' size
+	uint64_t text_size = (&__rodata_start - &__text_start) / PAGE_SIZE;
+	uint64_t rodata_size = (&__data_start - &__rodata_start) / PAGE_SIZE;
+
+	uint64_t data_size = (g_memoryMap.kernelSize/PAGE_SIZE - (rodata_size+text_size));
+	physical_address_t ktext_phys = (physical_address_t)&__text_start - kernel_virt + kernel_phys;
+	physical_address_t rodata_phys = (physical_address_t)&__rodata_start - kernel_virt + kernel_phys;
+	physical_address_t data_phys = (physical_address_t)&__data_start - kernel_virt + kernel_phys;
+
+	// .text section: r-x
+	map(ktext_phys, (virtual_address_t) &__text_start, text_size, PAGE_READ|PAGE_EXEC|PAGE_KERNEL);
+	// .rodata section: r--
+	map(rodata_phys, (virtual_address_t) &__rodata_start, rodata_size, PAGE_READ|PAGE_KERNEL);
+	// .data and .bss sections: rw-
+	map(data_phys, (virtual_address_t) &__data_start, data_size, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+}
+
 void initializeFeatures(){
 	union CR4 cr4;
 	cr4.value = Registers_readCR4();
@@ -450,42 +472,32 @@ void Paging_initialize(){
 	initializeFeatures();
 
 	// Map the kernel
+	extern uint8_t LOAD_ADDRESS;
 	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
-	extern uint8_t LOAD_ADDRESS, __text_start, __rodata_start, __data_start;
 	virtual_address_t kernel_virt = (virtual_address_t) &LOAD_ADDRESS;
-	// Compute size (in #pages) of kernel regions to map
-	// Note: since the __end symbol from the linker map points before the actual end of the bss,
-	// we use the size that the bootloader gave us instead to know the bss' size
-	uint64_t text_size = (&__rodata_start - &__text_start) / PAGE_SIZE;
-	uint64_t rodata_size = (&__data_start - &__rodata_start) / PAGE_SIZE;
-	uint64_t data_size = (g_memoryMap.kernelSize/PAGE_SIZE - (rodata_size+text_size));
-	physical_address_t ktext_phys = (physical_address_t)&__text_start - kernel_virt + kernel_phys;
-	physical_address_t rodata_phys = (physical_address_t)&__rodata_start - kernel_virt + kernel_phys;
-	physical_address_t data_phys = (physical_address_t)&__data_start - kernel_virt + kernel_phys;
-	// .text section: r-x
-	map(ktext_phys, (virtual_address_t) &__text_start, text_size, PAGE_READ|PAGE_EXEC|PAGE_KERNEL);
-	// .rodata section: r--
-	map(rodata_phys, (virtual_address_t) &__rodata_start, rodata_size, PAGE_READ|PAGE_KERNEL);
-	// .data and .bss sections: rw-
-	map(data_phys, (virtual_address_t) &__data_start, data_size, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+	mapKernel(kernel_phys, kernel_virt);
 
+	// Map the HHDM & framebuffer
 	for(int i=0 ; i<g_memoryMap.size ; i++){
 		struct MemoryMapEntry* cur = g_memoryMap.entries + i;
+		uint64_t n_pages = (cur->length + PAGE_SIZE-1) / PAGE_SIZE; // round up
 		switch (cur->type){
 		case MEMORY_USABLE:
-		case MEMORY_ACPI_NVS:
-		case MEMORY_ACPI_RECLAIMABLE:
-		case MEMORY_BOOTLOADER_RECLAIMABLE:
-			map(cur->address, VMM_physicalToVirtual(cur->address), cur->length/PAGE_SIZE,
+			map(cur->address, VMM_physicalToVirtual(cur->address), n_pages,
 				PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			break;
 		case MEMORY_RESERVED:
-			break;
 		case MEMORY_KERNEL:
-			break;
 		case MEMORY_FRAMEBUFFER:
-			map(cur->address, VMM_physicalToVirtual(cur->address), cur->length/PAGE_SIZE,
+			map(cur->address, VMM_physicalToVirtual(cur->address), n_pages,
 				PAGE_READ|PAGE_WRITE|PAGE_KERNEL|PAGE_CACHE_DISABLED);
+			break;
+		case MEMORY_ACPI_NVS:
+		case MEMORY_ACPI_RECLAIMABLE:
+			break;
+		case MEMORY_BOOTLOADER_RECLAIMABLE:
+			map(cur->address, VMM_physicalToVirtual(cur->address), n_pages,
+				PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			break;
 		default:
 			break;
