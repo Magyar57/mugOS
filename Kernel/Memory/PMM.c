@@ -248,7 +248,7 @@ static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* alloc
 	return (physical_address_t) NULL;
 }
 
-void* PMM_allocate(uint64_t n_pages){
+void* PMM_allocatePages(uint64_t n_pages){
 	physical_address_t addr = allocate_FirstFit(&m_bitmapAllocator, n_pages);
 	if (addr == 0)
 		return NULL;
@@ -257,12 +257,12 @@ void* PMM_allocate(uint64_t n_pages){
 	return (void*) VMM_physicalToVirtual(addr);
 }
 
-void PMM_free(virtual_address_t addr, uint64_t n_pages){
+void PMM_freePages(void* addr, uint64_t n_pages){
 	// Note 1: we don't check that the freed address is invalid ; We assume that
 	// the kernel code that called this doesn't mess up its addresses and sizes
 	// Note 2: Bounds are checked by both isFullyAllocated and clearBits
 
-	physical_address_t addr_phys = VMM_virtualToPhysical(addr);
+	physical_address_t addr_phys = VMM_virtualToPhysical((virtual_address_t) addr);
 
 	uint64_t start_bit = (addr_phys - m_bitmapAllocator.start) / PAGE_SIZE;
 	uint64_t end_bit = start_bit + n_pages;
@@ -356,8 +356,10 @@ static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memm
 }
 
 void PMM_initialize(){
-	// Initialize the MemoryMap, we'll need it later
-	MMap_initialize(&g_memoryMap, memmapReq.response);
+	if (g_memoryMap.size == 0){
+		log(PANIC, MODULE, "PMM initialization needs the MemoryMap to be initialized first !");
+		panic();
+	}
 
 	// Compute allocator sizes
 	// Note: we add 1 because from @start to the n-th page, there is n-1 pages

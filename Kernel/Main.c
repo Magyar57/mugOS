@@ -1,6 +1,7 @@
 #include "string.h"
 #include "Logging.h"
 #include "Boot/LimineRequests.h"
+#include "Memory/MemoryMap.h"
 #include "Memory/PMM.h"
 #include "Memory/VMM.h"
 #include "IRQ.h"
@@ -28,7 +29,8 @@ void kmain(){
 	// Hardware-specific initialization
 	HAL_initialize();
 
-	// Memory managers initialization
+	// Memory management initialization
+	MMap_initialize(&g_memoryMap, memmapReq.response);
 	VMM_setKernelMemoryOffset(hhdmReq.response->offset);
 	PMM_initialize();
 	VMM_initialize();

@@ -318,7 +318,7 @@ void set1GBPage(struct PageDescriptor1GB* entry, physical_address_t addr, int fl
 }
 
 static physical_address_t allocatePageOrPanic(){
-	void* tmp = PMM_allocate(1);
+	void* tmp = PMM_allocatePages(1);
 	if (!tmp){
 		log(PANIC, MODULE, "Could not allocate necessary paging structure !");
 		panic();
