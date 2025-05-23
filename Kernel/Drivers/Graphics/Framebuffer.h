@@ -16,8 +16,8 @@ typedef uint32_t color_t;
 #define CYAN					COLOR_32BPP(  0,255,255)
 #define MAGENTA					COLOR_32BPP(255,  0,255)
 
-#define MAX_TERMINAL_WIDTH		256
-#define MAX_TERMINAL_HEIGHT		512
+#define MAX_TERMINAL_WIDTH		256	// Aka in number of characters in a line
+#define MAX_TERMINAL_HEIGHT		512	// Aka number of lines
 #define TERMINAL_SIZE			MAX_TERMINAL_WIDTH*MAX_TERMINAL_HEIGHT
 
 #define TAB_SIZE 4
@@ -41,9 +41,8 @@ typedef struct s_Framebuffer {
 	// Character array (framebuffer as a terminal)
 	uint32_t cursorX;			// Cursor X position on screen
 	uint32_t cursorY;			// Cursor Y position on screen
-	uint32_t textWidth;			// Width (number of characters in 'text')
-	uint32_t textHeight;		// Height (number of characters in 'text')
-	uint32_t textIndex;
+	uint32_t textWidth;			// Terminal width (number of characters in a line)
+	uint32_t textHeight;		// Terminal height (number of lines)
 	unsigned char text[TERMINAL_SIZE]; // Contains the printed letters
 } Framebuffer;
 
