@@ -31,7 +31,7 @@ void kmain(){
 
 	// Memory management initialization
 	MMap_initialize(&g_memoryMap, memmapReq.response);
-	VMM_setKernelMemoryOffset(hhdmReq.response->offset);
+	VMM_setHHDM(hhdmReq.response->offset);
 	PMM_initialize();
 	VMM_initialize();
 

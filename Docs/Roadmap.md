@@ -35,7 +35,7 @@
 
 ## Eventual modifications and ideas
 
-- [ ] *(Refactor)* Remove HHDM, in favour of dynamic memory mapping
+- [X] *(Refactor)* Remove HHDM, in favour of dynamic memory mapping
 - [ ] *(Refactor)* Abstract the Serial ports from the Serial driver
 - [ ] *(Requires a timer subsystem)* Set a minimum delay between set LEDs for the PS/2 keyboard, to prevent bricking the device
 - [ ] *(Requires USB implemented)* Intialize and disable USB legacy support BEFORE initializing the PS/2 controller

@@ -248,23 +248,21 @@ static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* alloc
 	return (physical_address_t) NULL;
 }
 
-void* PMM_allocatePages(uint64_t n_pages){
+physical_address_t PMM_allocatePages(uint64_t n_pages){
 	physical_address_t addr = allocate_FirstFit(&m_bitmapAllocator, n_pages);
 	if (addr == 0)
-		return NULL;
+		return (physical_address_t) NULL;
 
 	addr += m_bitmapAllocator.start;
-	return (void*) VMM_physicalToVirtual(addr);
+	return addr;
 }
 
-void PMM_freePages(void* addr, uint64_t n_pages){
+void PMM_freePages(physical_address_t addr, uint64_t n_pages){
 	// Note 1: we don't check that the freed address is invalid ; We assume that
 	// the kernel code that called this doesn't mess up its addresses and sizes
 	// Note 2: Bounds are checked by both isFullyAllocated and clearBits
 
-	physical_address_t addr_phys = VMM_virtualToPhysical((virtual_address_t) addr);
-
-	uint64_t start_bit = (addr_phys - m_bitmapAllocator.start) / PAGE_SIZE;
+	uint64_t start_bit = (addr - m_bitmapAllocator.start) / PAGE_SIZE;
 	uint64_t end_bit = start_bit + n_pages;
 
 	// Check that we don't free stuff that's already free
@@ -371,7 +369,9 @@ void PMM_initialize(){
 	size_t bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
 	uint64_t n_pages = getSizeAsPages(bitmapSize);
 	physical_address_t allocated = earlyAllocate(memmapReq.response, n_pages);
-	m_bitmapAllocator.bitmap = (uint64_t*) VMM_physicalToVirtual(allocated);
+	virtual_address_t allocated_virt = VMM_HHDM_physToVirt(allocated);
+	VMM_premap(allocated, allocated_virt, n_pages, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+	m_bitmapAllocator.bitmap = (uint64_t*) allocated_virt;
 
 	initBitmap(&m_bitmapAllocator, &g_memoryMap, allocated, n_pages);
 
