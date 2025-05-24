@@ -16,9 +16,9 @@
 #define ISR_PAGE_FAULT				0x0e
 
 // Global array of [un]registered interrupt handlers
-ISR g_ISR[256];
+static ISR m_ISR[256];
 
-static const char* const g_ExceptionTypes[] = {
+static const char* const EXCEPTION_TYPES[] = {
     "Exception (Fault) - Divide by zero error",
     "Exception (Fault/Trap) - Debug exception",
     "Non-Maskable Interrupt (NMI)",
@@ -55,11 +55,11 @@ static const char* const g_ExceptionTypes[] = {
 };
 
 void ISR_registerHandler(uint8_t vector, ISR handler){
-	g_ISR[vector] = handler;
+	m_ISR[vector] = handler;
 }
 
 void ISR_deregisterHandler(uint8_t vector){
-	g_ISR[vector] = NULL;
+	m_ISR[vector] = NULL;
 }
 
 static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
@@ -78,13 +78,13 @@ static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
 void ISR_C_prehandler(struct ISR_Params* params){
 
 	// If we have a handler to call, we call it, and 'alles gut'
-	if (g_ISR[params->vector] != NULL){
-		g_ISR[params->vector](params);
+	if (m_ISR[params->vector] != NULL){
+		m_ISR[params->vector](params);
 		return;
 	}
 
 	// Otherwise we PANIC !
-	const char* interrupt_type = (params->vector < 32) ? g_ExceptionTypes[params->vector] : "Interrupt";
+	const char* interrupt_type = (params->vector < 32) ? EXCEPTION_TYPES[params->vector] : "Interrupt";
 	log(PANIC, MODULE, "Unhandled %s !", interrupt_type);
 	dumpRegisters(PANIC, params);
 	panic();
@@ -122,7 +122,7 @@ void ISR_segmentNotPresent(struct ISR_Params* params){
 		tableName = "None"; // unreachable
 	}
 
-	log(PANIC, MODULE, "%s", g_ExceptionTypes[params->vector]);
+	log(PANIC, MODULE, "%s", EXCEPTION_TYPES[params->vector]);
 	log(PANIC, MODULE, "%s Exception in %s at descriptor=%p", origin, tableName, descriptor);
 	if (!IDT_isInterruptHandlerEnabled(descriptor))
 		log(PANIC, MODULE, "This was triggered because the IDT entry is disabled");
@@ -166,7 +166,7 @@ void ISR_initialize(){
 	// They all call ISR_Common with unified parameters
 	for(int i=0 ; i<256 ; i++){
 		IDT_enableInterruptHandler(i); // Enable Asm ISR
-		g_ISR[i] = NULL; // Initialize C ISR
+		m_ISR[i] = NULL; // Initialize C ISR
 	}
 	IDT_disableInterruptHandler(0x80); // until we implement system calls
 

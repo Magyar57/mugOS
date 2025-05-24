@@ -18,7 +18,7 @@
 
 // Possible ports to poll (x86 specific !)
 #define N_PORTS 8
-const int PORTS[N_PORTS] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8, 0x5f8, 0x4f8, 0x5e8, 0x4e8 };
+static const int PORTS[N_PORTS] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8, 0x5f8, 0x4f8, 0x5e8, 0x4e8 };
 
 // UART controllers types
 enum UARTController {
@@ -28,7 +28,7 @@ enum UARTController {
 	UART_16550,
 	UART_16550A,
 };
-const char* UARTControllersNames[] = { "None", "8250", "16450", "16550", "16550A" };
+const char* UART_CONTROLLERS_NAMES[] = { "None", "8250", "16450", "16550", "16550A" };
 
 #define UARTDEVICE_EXT_BUFF_SIZE 1024
 struct UARTDevice {
@@ -43,9 +43,9 @@ struct UARTDevice {
 	Ringbuffer externalWriteBuff, externalReadBuff;
 };
 
-struct UARTDevice m_devices[N_PORTS];
-int m_defaultDevice = -1;
-bool m_enabled = false;
+static struct UARTDevice m_devices[N_PORTS];
+static int m_defaultDevice = -1;
+static bool m_enabled = false;
 
 // UART registers. Ports are given as an offset from the device port
 #define SERIAL_OFFSET_BUFFER				0 // - Receive/transmit buffer (read/write)
@@ -442,7 +442,7 @@ void Serial_initialize(){
 		curDev->identifier = i+1;
 		curDev->port = PORTS[i];
 		curDev->controller = detectUARTController(curDev->port);
-		curDev->controllerName = UARTControllersNames[curDev->controller];
+		curDev->controllerName = UART_CONTROLLERS_NAMES[curDev->controller];
 		if (curDev->controller == UART_NONE) continue;
 		curDev->internalBufferSize = (curDev->controller == UART_16550A) ? 14 : 1;
 		Ringbuffer_initializeWithBuffer(&curDev->externalWriteBuff, UARTDEVICE_EXT_BUFF_SIZE, curDev->buffer1);

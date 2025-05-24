@@ -61,7 +61,7 @@ void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fo
 	assert((offsetX+this->charWidth) < this->width);
 	assert((offsetY+this->charHeight) < this->height);
 
-	uint8_t* bitmap = m_defaultFont[letter];
+	const uint8_t* bitmap = DEFAULT_FONT[letter];
 	int mask; // bit mask, will be shifted right every iteration
 	color_t colorToDraw;
 

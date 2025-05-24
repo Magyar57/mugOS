@@ -13,9 +13,9 @@
 #define IRQ_MASTER_PIC_REMAP_OFFSET 0x20
 
 // Global array of [un]registered IRQ handlers
-IRQHandler g_IRQHandlers[16];
+static IRQHandler m_IRQHandlers[16];
 
-static const char* const g_IRQTypes[] = {
+static const char* const IRQ_TYPES[] = {
     "Programmable Interrupt Timer (PIT)",
     "PS/2 Keyboard",
     "Cascade",								// Used internally by the two PICs, never raised
@@ -39,13 +39,13 @@ static const char* const g_IRQTypes[] = {
 void IRQChip_registerHandler(int irq, IRQHandler handler){
 	if (isInvalidIRQ(irq)) return;
 
-	g_IRQHandlers[irq] = handler;
+	m_IRQHandlers[irq] = handler;
 }
 
 void IRQChip_deregisterHandler(int irq){
 	if (isInvalidIRQ(irq)) return;
 
-	g_IRQHandlers[irq] = NULL;
+	m_IRQHandlers[irq] = NULL;
 }
 
 void IRQChip_enableSpecific(int irq){
@@ -85,9 +85,9 @@ static void prehandler(struct ISR_Params* params){
 	}
 
 	// If we have a handler to call, we call it, and 'alles gut'
-	if (g_IRQHandlers[irq] != NULL) g_IRQHandlers[irq](params);
+	if (m_IRQHandlers[irq] != NULL) m_IRQHandlers[irq](params);
 	// Otherwise, we send a warning
-	else log(WARNING, MODULE, "Unhandled IRQ %d - %s", irq, g_IRQTypes[irq]);
+	else log(WARNING, MODULE, "Unhandled IRQ %d - %s", irq, IRQ_TYPES[irq]);
 
 	// Finally, signal to the PIC that we handled the interrupt
 	i8259_sendEIO(irq);

@@ -867,8 +867,8 @@ static void mouseIRQ(void*){
 
 // Response buffer, used only during initialization by the temporary irq handler
 #define RESPONSE_BUFFER_SIZE 5
-uint8_t m_responseBuffer[RESPONSE_BUFFER_SIZE];
-int m_inBuffer = 0;
+static uint8_t m_responseBuffer[RESPONSE_BUFFER_SIZE];
+static int m_inBuffer = 0;
 #define TIMEOUT 1llu<<24
 
 static bool receiveByte(uint8_t* byte_out){

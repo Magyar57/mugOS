@@ -98,7 +98,7 @@ struct GDTDescriptor {
 #define GDT_UDATA_FLAGS  SD_FLAG_GRANULARITY_4K|SD_FLAG_SIZE_16PMODE|SD_FLAG_LONGMODE_ON
 
 // The actual GDT
-struct SegmentDescriptor g_GDT[] = {
+static struct SegmentDescriptor m_GDT[] = {
 	getSegmentDescriptor(0x0, 0x0, 0, 0),										// Null descriptor
 	getSegmentDescriptor(0x0, 0xffffffff, GDT_KTEXT_ACCESS, GDT_KTEXT_FLAGS),	// Kernel 64-bit code segment
 	getSegmentDescriptor(0x0, 0xffffffff, GDT_KDATA_ACCESS, GDT_KDATA_FLAGS),	// Kernel 64-bit data segment
@@ -107,13 +107,13 @@ struct SegmentDescriptor g_GDT[] = {
 	getEmptySystemSegmentDescriptor()											// Placeholder for a TSS descriptor
 };
 
-struct GDTDescriptor g_GDTLocationDescriptor = { sizeof(g_GDT)-1, (uint64_t) g_GDT };
+static struct GDTDescriptor m_GDTLocationDescriptor = { sizeof(m_GDT)-1, (uint64_t) m_GDT };
 
 // (GDT.asm) Sets the GDT located at 'descriptor' and loads the segments registers accordingly (kcodeSegment & kdataSegment)
 void setGDT(struct GDTDescriptor* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
 
 void GDT_initialize(){
-	setGDT(&g_GDTLocationDescriptor, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);
+	setGDT(&m_GDTLocationDescriptor, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);
 }
 
 // ================ TSS ================
@@ -143,7 +143,7 @@ uint8_t stack0[4096];
 uint8_t stack1[4096];
 uint8_t stack2[4096];
 
-struct TSS g_TSS = {
+static struct TSS m_TSS = {
 	.reserved0 = 0,
 	.rsp0 = (uint64_t) stack0,
 	.rsp1 = (uint64_t) stack1,
@@ -168,8 +168,8 @@ struct TSS g_TSS = {
 void setTSS(uint16_t TSS_descriptor);
 
 void GDT_setTSS(){
-	struct SystemSegmentDescriptor* entry = (struct SystemSegmentDescriptor*) &g_GDT[5];
-	const uint64_t base = (uint64_t) &g_TSS;
+	struct SystemSegmentDescriptor* entry = (struct SystemSegmentDescriptor*) &m_GDT[5];
+	const uint64_t base = (uint64_t) &m_TSS;
 	const uint16_t limit = sizeof(struct TSS)-1;
 	const uint8_t access = TSS_CPU0_ACCESS;
 	const uint8_t flags = TSS_CPU0_FLAGS;

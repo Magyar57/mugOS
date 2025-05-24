@@ -30,10 +30,10 @@ struct IDTLocationDescriptor {
 // ================ Declare IDT ================
 
 // Global IDT variable, in (kernel) memory
-struct IDTEntry g_IDT[256];
+static struct IDTEntry m_IDT[256];
 
 // Global IDT location descriptor, in (kernel) memory
-struct IDTLocationDescriptor g_IDTLocationDescriptor = { sizeof(g_IDT)-1, (uint64_t) g_IDT };
+static struct IDTLocationDescriptor m_IDTLocationDescriptor = { sizeof(m_IDT)-1, (uint64_t) m_IDT };
 
 // ================ IDT and ISR manipulations ================
 
@@ -41,30 +41,30 @@ struct IDTLocationDescriptor g_IDTLocationDescriptor = { sizeof(g_IDT)-1, (uint6
 void setIDT(struct IDTLocationDescriptor* descriptor);
 
 void IDT_initialize(){
-	setIDT(&g_IDTLocationDescriptor);
+	setIDT(&m_IDTLocationDescriptor);
 }
 
 bool IDT_isInterruptHandlerEnabled(uint8_t interrupt){
-	return (g_IDT[interrupt].attributes & IDT_ATTR_PRESENT);
+	return (m_IDT[interrupt].attributes & IDT_ATTR_PRESENT);
 }
 
 void IDT_enableInterruptHandler(uint8_t interrupt){
-	g_IDT[interrupt].attributes |= IDT_ATTR_PRESENT;
+	m_IDT[interrupt].attributes |= IDT_ATTR_PRESENT;
 }
 
 void IDT_disableInterruptHandler(uint8_t interrupt){
 	// attributes = attributes & 0b01111111
 	// 0b01111111 is 'not IDT_ATTR_PRESENT'
-	g_IDT[interrupt].attributes &= (~IDT_ATTR_PRESENT);
+	m_IDT[interrupt].attributes &= (~IDT_ATTR_PRESENT);
 }
 
 void IDT_setInterruptHandler(uint8_t interrupt, void* base, uint16_t segmentDescriptor, uint8_t attributes){
 	uint64_t offset = (uint64_t) base;
-	g_IDT[interrupt].offset_0to15  = (offset & 0x000000000000ffff);
-	g_IDT[interrupt].segment_0to15 = segmentDescriptor;
-	g_IDT[interrupt].reserved0     = 0;
-	g_IDT[interrupt].attributes    = attributes;
-	g_IDT[interrupt].offset_16to31 = ((offset & 0x00000000ffff0000) >> 16);
-	g_IDT[interrupt].offset_32to63 = ((offset & 0xffffffff00000000) >> 32);
-	g_IDT[interrupt].reserved1     = 0;
+	m_IDT[interrupt].offset_0to15  = (offset & 0x000000000000ffff);
+	m_IDT[interrupt].segment_0to15 = segmentDescriptor;
+	m_IDT[interrupt].reserved0     = 0;
+	m_IDT[interrupt].attributes    = attributes;
+	m_IDT[interrupt].offset_16to31 = ((offset & 0x00000000ffff0000) >> 16);
+	m_IDT[interrupt].offset_32to63 = ((offset & 0xffffffff00000000) >> 32);
+	m_IDT[interrupt].reserved1     = 0;
 }

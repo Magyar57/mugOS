@@ -8,9 +8,9 @@
 
 #define MODULE "Graphics"
 
-bool m_initialized = false;
-void* m_driver; // current driver
-enum GraphicsSource m_driverType; // Which drive we're using
+static bool m_initialized = false;
+static void* m_driver; // current driver
+static enum GraphicsSource m_driverType; // Which drive we're using
 
 // Supported drivers
 Framebuffer m_framebuffer;

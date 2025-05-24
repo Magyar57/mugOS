@@ -21,13 +21,13 @@ enum VGATextMode{
 
 #define VGA_COLOUR_VIDEO_MEMORY		(uint8_t*) 0xb8000
 #define VGA_MONOCHROME_VIDEO_MEMORY	(uint8_t*) 0xb0000
-uint8_t* m_videoMemory; // Either COLOUR or MONOCHROME_VIDEO_MEMORY
+static uint8_t* m_videoMemory; // Either COLOUR or MONOCHROME_VIDEO_MEMORY
 
 #define SCREEN_WIDTH  80 // Default text mode screen width
 #define SCREEN_HEIGHT 25 // Default text mode screen height
 #define DEFAULT_COLOR (0 << 4) | (7) // (background_color << 4) | (character_color)
-int m_screenX = 0; // Cursor's X position
-int m_screenY = 0; // Cursor's Y position
+static int m_screenX = 0; // Cursor's X position
+static int m_screenY = 0; // Cursor's Y position
 
 #define VGA_PORT_CRTC_ADDRESS_REGISTER	0x3d4
 #define VGA_PORT_CRTC_DATA_REGISTER		0x3d5

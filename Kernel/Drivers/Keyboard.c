@@ -7,19 +7,19 @@
 #define MODULE "Keyboard subsystem"
 
 // Driver state variables
-bool g_capslockOn;
-bool g_numlockOn;
-bool g_numlockKeyWasFunction[11]; // set when numpad key pressed, used when released
+static bool m_capslockOn;
+static bool m_numlockOn;
+static bool m_numlockKeyWasFunction[11]; // set when numpad key pressed, used when released
 // Modifier keys
-uint8_t g_modifierKeys;
-bool g_leftShiftPressed;
-bool g_rightShiftPressed;
-bool g_leftCtrlPressed;
-bool g_rightCtrlPressed;
-bool g_leftAltPressed;
-bool g_rightAltPressed;
-bool g_leftMetaPressed;
-bool g_rightMetaPressed;
+static uint8_t m_modifierKeys;
+static bool m_leftShiftPressed;
+static bool m_rightShiftPressed;
+static bool m_leftCtrlPressed;
+static bool m_rightCtrlPressed;
+static bool m_leftAltPressed;
+static bool m_rightAltPressed;
+static bool m_leftMetaPressed;
+static bool m_rightMetaPressed;
 
 #define MAX_CALLBACKS 16
 KeyCallback g_callbacks[MAX_CALLBACKS];
@@ -441,19 +441,19 @@ static char getChar_AZERTY_Shift(Keycode k){
 // If 'keycode' is non printable, returns 0
 static char getChar_AZERTY(Keycode k){
 	// Only shift
-	if ((g_leftShiftPressed || g_rightShiftPressed) && !g_rightAltPressed && !g_capslockOn)
+	if ((m_leftShiftPressed || m_rightShiftPressed) && !m_rightAltPressed && !m_capslockOn)
 		return getChar_AZERTY_Shift(k);
 
 	// Only AltGr
-	if (g_rightAltPressed && !g_leftShiftPressed && !g_rightShiftPressed)
+	if (m_rightAltPressed && !m_leftShiftPressed && !m_rightShiftPressed)
 		return getChar_AZERTY_AltGr(k);
 
 	// Shift + AltGr
-	if ((g_leftShiftPressed || g_rightShiftPressed) && g_rightAltPressed)
+	if ((m_leftShiftPressed || m_rightShiftPressed) && m_rightAltPressed)
 		return getChar_AZERTY_ShiftAltGr(k);
 
 	// Caps lock (it gets overriden by all the modifier keys up there, except shift)
-	if (g_capslockOn && !g_leftShiftPressed && !g_rightShiftPressed)
+	if (m_capslockOn && !m_leftShiftPressed && !m_rightShiftPressed)
 		return getChar_AZERTY_CapsLock(k);
 
 	// None or Ctrl or LAlt or Meta or CapsLock+Shift
@@ -597,15 +597,15 @@ const char* Keyboard_getKeyString(Keycode keycode){
 }
 
 void Keyboard_initialize(){
-	g_modifierKeys = 0;
-	g_leftShiftPressed = false;
-	g_rightShiftPressed = false;
-	g_numlockOn = true;
-	g_capslockOn = false;
-	g_modifierKeys = KB_MODIFIER_NUMLOCK;
+	m_modifierKeys = 0;
+	m_leftShiftPressed = false;
+	m_rightShiftPressed = false;
+	m_numlockOn = true;
+	m_capslockOn = false;
+	m_modifierKeys = KB_MODIFIER_NUMLOCK;
 
 	for (int i=0 ; i<11 ; i++){
-		g_numlockKeyWasFunction[i] = false;
+		m_numlockKeyWasFunction[i] = false;
 	}
 
 	for(int i=0 ; i<MAX_CALLBACKS ; i++){
@@ -619,52 +619,52 @@ void Keyboard_initialize(){
 void Keyboard_notifyReleased(Keycode keycode){
 	switch (keycode){
 		case KEY_LCTRL:
-			g_rightCtrlPressed = false;
+			m_rightCtrlPressed = false;
 			break;
 		case KEY_LSHIFT:
-			g_leftShiftPressed = false;
+			m_leftShiftPressed = false;
 			break;
 		case KEY_RSHIFT:
-			g_rightShiftPressed = false;
+			m_rightShiftPressed = false;
 			break;
 		case KEY_LALT:
-			g_leftAltPressed = false;
+			m_leftAltPressed = false;
 			break;
 		case KEY_NUMLOCK: // it is actually flipped when key is released ! who knows why
-			g_numlockOn = !g_numlockOn;
-			g_modifierKeys ^= KB_MODIFIER_NUMLOCK;
+			m_numlockOn = !m_numlockOn;
+			m_modifierKeys ^= KB_MODIFIER_NUMLOCK;
 			break;
 		case KEY_RCTRL:
-			g_rightCtrlPressed = false;
+			m_rightCtrlPressed = false;
 			break;
 		case KEY_RALT:
-			g_rightAltPressed = false;
+			m_rightAltPressed = false;
 			break;
 		case KEY_LMETA:
-			g_leftMetaPressed = false;
+			m_leftMetaPressed = false;
 			break;
 		case KEY_RMETA:
-			g_rightMetaPressed = false;
+			m_rightMetaPressed = false;
 			break;
 		default:
 			break;
 	}
 
 	// No shift pressed: clear shift flag
-	if (!(g_leftShiftPressed || g_rightShiftPressed)){
-		g_modifierKeys &= ~KB_MODIFIER_SHIFT;
+	if (!(m_leftShiftPressed || m_rightShiftPressed)){
+		m_modifierKeys &= ~KB_MODIFIER_SHIFT;
 	}
 	// Ctrl
-	if (!(g_leftCtrlPressed || g_rightCtrlPressed)){
-		g_modifierKeys &= ~KB_MODIFIER_CTRL;
+	if (!(m_leftCtrlPressed || m_rightCtrlPressed)){
+		m_modifierKeys &= ~KB_MODIFIER_CTRL;
 	}
 	// Alt
-	if (!(g_leftAltPressed || g_rightAltPressed)){
-		g_modifierKeys &= ~KB_MODIFIER_ALT;
+	if (!(m_leftAltPressed || m_rightAltPressed)){
+		m_modifierKeys &= ~KB_MODIFIER_ALT;
 	}
 	// Meta
-	if (!(g_leftMetaPressed || g_rightMetaPressed)){
-		g_modifierKeys &= ~KB_MODIFIER_META;
+	if (!(m_leftMetaPressed || m_rightMetaPressed)){
+		m_modifierKeys &= ~KB_MODIFIER_META;
 	}
 
 	// Handle numpad key (translate it for break if it was translated for make)
@@ -672,128 +672,128 @@ void Keyboard_notifyReleased(Keycode keycode){
 		// Note: Numpad 5 has no function associated so we just don't send it
 		switch (keycode){
 			case KEY_NUMPAD_7:
-				if (g_numlockKeyWasFunction[0] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[0] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[0] = false;
+					m_numlockKeyWasFunction[0] = false;
 				}
 				break;
 			case KEY_NUMPAD_8:
-				if (g_numlockKeyWasFunction[1] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[1] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[1] = false;
+					m_numlockKeyWasFunction[1] = false;
 				}
 				break;
 			case KEY_NUMPAD_9:
-				if (g_numlockKeyWasFunction[2] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[2] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[2] = false;
+					m_numlockKeyWasFunction[2] = false;
 				}
 				break;
 			case KEY_NUMPAD_4:
-				if (g_numlockKeyWasFunction[3] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[3] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[3] = false;
+					m_numlockKeyWasFunction[3] = false;
 				}
 				break;
 			case KEY_NUMPAD_5:
-				if (g_numlockKeyWasFunction[4]){
-					g_numlockKeyWasFunction[4] = false;
+				if (m_numlockKeyWasFunction[4]){
+					m_numlockKeyWasFunction[4] = false;
 					return;
 				}
 				break;
 			case KEY_NUMPAD_6:
-				if (g_numlockKeyWasFunction[5] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[5] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[5] = false;
+					m_numlockKeyWasFunction[5] = false;
 				}
 				break;
 			case KEY_NUMPAD_1:
-				if (g_numlockKeyWasFunction[6] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[6] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[6] = false;
+					m_numlockKeyWasFunction[6] = false;
 				}
 				break;
 			case KEY_NUMPAD_2:
-				if (g_numlockKeyWasFunction[7] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[7] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[7] = false;
+					m_numlockKeyWasFunction[7] = false;
 				}
 				break;
 			case KEY_NUMPAD_3:
-				if (g_numlockKeyWasFunction[8] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[8] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[8] = false;
+					m_numlockKeyWasFunction[8] = false;
 				}
 				break;
 			case KEY_NUMPAD_0:
-				if (g_numlockKeyWasFunction[9] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[9] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[9] = false;
+					m_numlockKeyWasFunction[9] = false;
 				}
 				break;
 			case KEY_NUMPAD_DOT:
-				if (g_numlockKeyWasFunction[10] || !g_numlockOn){
+				if (m_numlockKeyWasFunction[10] || !m_numlockOn){
 					keycode = getNumpadKey_NoNumluck(keycode);
-					g_numlockKeyWasFunction[10] = false;
+					m_numlockKeyWasFunction[10] = false;
 				}
 				break;
 		}
 	}
 
 	char c = getChar_AZERTY(keycode);
-	executeCallbacks(keycode, (int) c, KB_KEYMODE_KEY_RELEASED, g_modifierKeys);
+	executeCallbacks(keycode, (int) c, KB_KEYMODE_KEY_RELEASED, m_modifierKeys);
 }
 
 void Keyboard_notifyPressed(Keycode keycode){
 	switch (keycode){
 		case KEY_LCTRL:
-			g_rightCtrlPressed = true;
+			m_rightCtrlPressed = true;
 			break;
 		case KEY_LSHIFT:
-			g_leftShiftPressed = true;
+			m_leftShiftPressed = true;
 			break;
 		case KEY_RSHIFT:
-			g_rightShiftPressed = true;
+			m_rightShiftPressed = true;
 			break;
 		case KEY_LALT:
-			g_leftAltPressed = true;
+			m_leftAltPressed = true;
 			break;
 		// case KEY_NUMLOCK: // it is actually flipped when key is released ! who knows why
 		case KEY_CAPSLOCK:
-			g_capslockOn = !g_capslockOn;
-			g_modifierKeys ^= KB_MODIFIER_CAPSLOCK;
+			m_capslockOn = !m_capslockOn;
+			m_modifierKeys ^= KB_MODIFIER_CAPSLOCK;
 			break;
 		case KEY_RCTRL:
-			g_rightCtrlPressed = true;
+			m_rightCtrlPressed = true;
 			break;
 		case KEY_RALT:
-			g_rightAltPressed = true;
+			m_rightAltPressed = true;
 			break;
 		case KEY_LMETA:
-			g_leftMetaPressed = true;
+			m_leftMetaPressed = true;
 			break;
 		case KEY_RMETA:
-			g_rightMetaPressed = true;
+			m_rightMetaPressed = true;
 			break;
 		default:
 			break;
 	}
 
 	// Shift pressed: set shift flag
-	if (g_leftShiftPressed || g_rightShiftPressed){
-		g_modifierKeys |= KB_MODIFIER_SHIFT;
+	if (m_leftShiftPressed || m_rightShiftPressed){
+		m_modifierKeys |= KB_MODIFIER_SHIFT;
 	}
 	// Ctrl
-	if (g_leftCtrlPressed || g_rightCtrlPressed){
-		g_modifierKeys |= KB_MODIFIER_CTRL;
+	if (m_leftCtrlPressed || m_rightCtrlPressed){
+		m_modifierKeys |= KB_MODIFIER_CTRL;
 	}
 	// Alt
-	if (g_leftAltPressed || g_rightAltPressed){
-		g_modifierKeys |= KB_MODIFIER_ALT;
+	if (m_leftAltPressed || m_rightAltPressed){
+		m_modifierKeys |= KB_MODIFIER_ALT;
 	}
 	// Meta
-	if (g_leftMetaPressed || g_rightMetaPressed){
-		g_modifierKeys |= KB_MODIFIER_META;
+	if (m_leftMetaPressed || m_rightMetaPressed){
+		m_modifierKeys |= KB_MODIFIER_META;
 	}
 
 	// Handle numpad key
@@ -801,27 +801,27 @@ void Keyboard_notifyPressed(Keycode keycode){
 	//   ctrl  => numpad_no_numlock
 	//   else  => (numlock) ? numpad_numlock : numpad_no_numlock
 	if (isNumpadKey(keycode)){
-		if (g_leftShiftPressed || g_rightShiftPressed || g_leftCtrlPressed || g_rightCtrlPressed || !g_numlockOn){
+		if (m_leftShiftPressed || m_rightShiftPressed || m_leftCtrlPressed || m_rightCtrlPressed || !m_numlockOn){
 			// Note: Numpad 5 has no function associated so we just don't send it
 			switch (keycode){
-				case KEY_NUMPAD_7: g_numlockKeyWasFunction[0] = true; break;
-				case KEY_NUMPAD_8: g_numlockKeyWasFunction[1] = true; break;
-				case KEY_NUMPAD_9: g_numlockKeyWasFunction[2] = true; break;
-				case KEY_NUMPAD_4: g_numlockKeyWasFunction[3] = true; break;
-				case KEY_NUMPAD_5: g_numlockKeyWasFunction[4] = true; return;
-				case KEY_NUMPAD_6: g_numlockKeyWasFunction[5] = true; break;
-				case KEY_NUMPAD_1: g_numlockKeyWasFunction[6] = true; break;
-				case KEY_NUMPAD_2: g_numlockKeyWasFunction[7] = true; break;
-				case KEY_NUMPAD_3: g_numlockKeyWasFunction[8] = true; break;
-				case KEY_NUMPAD_0: g_numlockKeyWasFunction[9] = true; break;
-				case KEY_NUMPAD_DOT: g_numlockKeyWasFunction[10] = true; break;
+				case KEY_NUMPAD_7: m_numlockKeyWasFunction[0] = true; break;
+				case KEY_NUMPAD_8: m_numlockKeyWasFunction[1] = true; break;
+				case KEY_NUMPAD_9: m_numlockKeyWasFunction[2] = true; break;
+				case KEY_NUMPAD_4: m_numlockKeyWasFunction[3] = true; break;
+				case KEY_NUMPAD_5: m_numlockKeyWasFunction[4] = true; return;
+				case KEY_NUMPAD_6: m_numlockKeyWasFunction[5] = true; break;
+				case KEY_NUMPAD_1: m_numlockKeyWasFunction[6] = true; break;
+				case KEY_NUMPAD_2: m_numlockKeyWasFunction[7] = true; break;
+				case KEY_NUMPAD_3: m_numlockKeyWasFunction[8] = true; break;
+				case KEY_NUMPAD_0: m_numlockKeyWasFunction[9] = true; break;
+				case KEY_NUMPAD_DOT: m_numlockKeyWasFunction[10] = true; break;
 			}
 			keycode = getNumpadKey_NoNumluck(keycode);
 		}
 	}
 
 	char c = getChar_AZERTY(keycode);
-	executeCallbacks(keycode, (int) c, KB_KEYMODE_KEY_PRESSED, g_modifierKeys);
+	executeCallbacks(keycode, (int) c, KB_KEYMODE_KEY_PRESSED, m_modifierKeys);
 }
 
 void Keyboard_notifySysRq(){

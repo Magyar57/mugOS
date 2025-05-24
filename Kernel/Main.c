@@ -21,17 +21,17 @@ void kmain(){
 	memset(&__bss_start, 0, (&__end) - (&__bss_start));
 
 	// Early graphics setup (for logging)
-	Graphics_initialize(GRAPHICS_LIMINE_FRAMEBUFFER, (void *)framebufferReq.response->framebuffers[0]);
+	Graphics_initialize(GRAPHICS_LIMINE_FRAMEBUFFER, (void *)g_framebufferReq.response->framebuffers[0]);
 	Graphics_clearScreen();
 	log(INFO, NULL, "Supposons que je sois dans votre kernel !");
-	log(INFO, "mugOS", "Loaded by: %s v%s", infoReq.response->name, infoReq.response->version);
+	log(INFO, "mugOS", "Loaded by: %s v%s", g_infoReq.response->name, g_infoReq.response->version);
 
 	// Hardware-specific initialization
 	HAL_initialize();
 
 	// Memory management initialization
-	MMap_initialize(&g_memoryMap, memmapReq.response);
-	VMM_setHHDM(hhdmReq.response->offset);
+	MMap_initialize(&g_memoryMap, g_memmapReq.response);
+	VMM_setHHDM(g_hhdmReq.response->offset);
 	PMM_initialize();
 	VMM_initialize();
 
