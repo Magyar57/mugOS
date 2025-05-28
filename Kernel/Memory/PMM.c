@@ -48,9 +48,9 @@ static void clearBits(struct BitmapAllocator* allocator, uint64_t start_bit, uin
 	uint64_t index_in_first_uint64 = start_bit % 64;
 	uint64_t index_in_last_uint64 = end_bit % 64;
 	start_mask = (index_in_first_uint64 == 0) ? 0x0000000000000000 :
-		~((1llu << (64 - index_in_first_uint64)) - 1); // e.g. 3 => 0b00000111
+		~((1llu << (64 - index_in_first_uint64)) - 1); // e.g. 3 => 0b11100000
 	end_mask = (index_in_last_uint64 == 0) ? 0xffffffffffffffff :
-		~(((1llu << index_in_last_uint64) - 1) << (64 - index_in_last_uint64)); // e.g. 3 => 0b11100000
+		~(((1llu << index_in_last_uint64) - 1) << (64 - index_in_last_uint64)); // e.g. 3 => 0b00000111
 
 	// Apply masks
 
@@ -93,9 +93,9 @@ static void setBits(struct BitmapAllocator* allocator, uint64_t start_bit, uint6
 	uint64_t index_in_first_uint64 = start_bit % 64;
 	uint64_t index_in_last_uint64 = end_bit % 64;
 	start_mask = (index_in_first_uint64 == 0) ? 0xffffffffffffffff :
-		(1llu << (64 - index_in_first_uint64)) - 1; // e.g. 3 => 0b11111000
+		(1llu << (64 - index_in_first_uint64)) - 1; // e.g. 3 => 0b00011111
 	end_mask = (index_in_last_uint64 == 0) ? 0x0000000000000000 :
-		((1llu << index_in_last_uint64) - 1) << (64 - index_in_last_uint64); // e.g. 3 => 0b00011111
+		((1llu << index_in_last_uint64) - 1) << (64 - index_in_last_uint64); // e.g. 3 => 0b11111000
 
 	// Apply masks
 
