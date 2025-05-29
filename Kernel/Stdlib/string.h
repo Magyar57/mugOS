@@ -11,11 +11,11 @@ char* strchr(const char* str, int chr);
 char* strcpy(char* dst, const char* src);
 
 /// @brief Computes the length of a string
-/// @return The number of bytes in the string pointed to by `str`
+/// @returns The number of bytes in the string pointed to by `str`
 size_t strlen(const char* str);
 
 /// @brief Compares the strings s1 and s2
-/// @return 0 if string are equal, negative value if s1 is less than s2, positive value otherwise
+/// @returns 0 if string are equal, negative value if s1 is less than s2, positive value otherwise
 int strncmp(const char* s1, const char* s2, size_t n);
 
 /// @brief Copies `size` bytes from memory area `src` to `dest`. The memory regions must NOT overlap
