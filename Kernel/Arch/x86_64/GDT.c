@@ -4,7 +4,7 @@
 
 #include "GDT.h"
 
-// =========== GDT Entries ===========
+// ================ GDT Entries ================
 
 // A GDT entry is either a Segment Descriptor (describing memory segments, loaded in the
 // segment registers), or a System Segment Descriptor (describing TSS or LDT).
@@ -62,7 +62,7 @@ enum Flags {
 	// bit 0 is reserved
 };
 
-// =========== GDT Descriptor ===========
+// ================ GDT Descriptor ================
 
 // GDT Descriptor (long mode)
 struct GDTDescriptor {
@@ -70,7 +70,7 @@ struct GDTDescriptor {
 	uint64_t offset;	// GDT address in memory
 } packed;
 
-// =========== [System] Segment descriptor generation maccros ===========
+// ================ [System] Segment descriptor generation maccros ================
 
 #define getLimit0to15(limit)						(uint16_t) (limit & 0xffff)
 #define getBase0to15(base)							(uint16_t) (base & 0xffff)
@@ -85,7 +85,7 @@ struct GDTDescriptor {
 #define getEmptySystemSegmentDescriptor() \
 	getSegmentDescriptor(0x0, 0x0, 0, 0), getSegmentDescriptor(0x0, 0x0, 0, 0)
 
-// =========== Declare GDT ===========
+// ================ Declare GDT ================
 
 #define GDT_KTEXT_ACCESS ACCESS_PRESENT|ACCESS_RING0|ACCESS_TYPE_SD|ACCESS_SD_EXEC_ALLOW|ACCESS_SD_DC_UP|ACCESS_SD_RW_ALLOW
 #define GDT_KTEXT_FLAGS  SD_FLAG_GRANULARITY_4K|SD_FLAG_LONGMODE_ON
