@@ -8,6 +8,8 @@
 
 void VMM_initialize();
 
+// ================ Map memory ================
+
 /// @brief Map physical memory to virtual memory
 /// @param phys The starting address of the physical memory region
 /// @param virt The starting address of the virtual memory region
@@ -20,13 +22,31 @@ void VMM_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, 
 /// @warning Can only be called so many times !
 void VMM_premap(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags);
 
-// Mappings - translates physical <-> virtual
+virtual_address_t VMM_mapInHHDM(physical_address_t addr);
+virtual_address_t VMM_mapInHeap(physical_address_t addr, uint64_t n_pages, int flags);
+virtual_address_t VMM_mapInPaging(physical_address_t addr, uint64_t n_pages, int flags);
 
+// ================ Unmap memory ================
+
+void VMM_unmap(virtual_address_t addr); // unimplemented
+
+// ================ Physical -> Virtual ================
+
+/// @brief Get the physical address from any virtual address
 physical_address_t VMM_toPhysical(virtual_address_t addr);
 
-virtual_address_t VMM_toHHDM(physical_address_t addr); // DON'T USE THIS
+// ================ Virtual -> Physical ================
+
+// /// @brief Get virtual address from HHDM-mapped physical address
+virtual_address_t VMM_toHHDM(physical_address_t addr);
+
+/// @brief Get virtual address from heap-structures-region-mapped physical address
 virtual_address_t VMM_toHeap(physical_address_t addr);
+
+// /// @brief Get virtual address from page-structures-region-mapped physical address
 virtual_address_t VMM_toPaging(physical_address_t addr);
+
+// ================ Misc ================
 
 void VMM_setHHDM(uint64_t offset);
 

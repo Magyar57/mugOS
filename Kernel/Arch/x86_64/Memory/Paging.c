@@ -350,7 +350,7 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		// PML4
 		if (g_pml4[pml4_index].present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_toPaging(page_phys);
+			page_virt = VMM_mapInPaging(page_phys, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			memset((void*) page_virt, 0, PAGE_SIZE);
 			setPDPT(g_pml4+pml4_index, page_phys);
 		}
@@ -372,7 +372,7 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		// Page directory pointer
 		if (cur_pdp[pdp_index].pageDirectory.present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_toPaging(page_phys);
+			page_virt = VMM_mapInPaging(page_phys, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			memset((void*) page_virt, 0, PAGE_SIZE);
 			setPageDirectory(&cur_pdp[pdp_index].pageDirectory, page_phys);
 		}
@@ -394,7 +394,7 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		// Page directory
 		if (cur_pd[pd_index].pageTable.present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_toPaging(page_phys);
+			page_virt = VMM_mapInPaging(page_phys, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			memset((void*) page_virt, 0, PAGE_SIZE);
 			setPageTable(&cur_pd[pd_index].pageTable, page_phys);
 		}

@@ -627,7 +627,7 @@ static void* allocatePages(int n, bool clear){
 	#ifdef KERNEL
 	physical_address_t addr = PMM_allocatePages(n);
 	if (addr == 0) return NULL;
-	res = (void*) VMM_toHeap(addr);
+	res = (void*) VMM_mapInHeap(addr, n, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 	#else
 	res = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	if (res == NULL) return NULL;

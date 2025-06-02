@@ -45,14 +45,11 @@ void VMM_initialize(){
 			m_premappings[i].n_pages, m_premappings[i].flags);
 	}
 
-	// Paging structures
-	VMM_map(0x0, m_psdmOffset, roundToPage(m_psdmSize), PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-	// Kernel heap
-	VMM_map(0x0, m_hsdmOffset, roundToPage(m_hsdmSize), PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-
 	Paging_enable();
 	m_pagingInitialized = true;
 }
+
+// ================ Map memory ================
 
 void VMM_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
 	return Paging_map(phys, virt, n_pages, flags);
@@ -71,6 +68,48 @@ void VMM_premap(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 	m_nPremappings++;
 }
 
+virtual_address_t VMM_mapInHHDM(physical_address_t addr){
+	assert(m_hhdmOffset != HHDM_BULLSHIT_VALUE);
+	return addr + m_hhdmOffset;
+}
+
+virtual_address_t VMM_mapInHeap(physical_address_t addr, uint64_t n_pages, int flags){
+	if (addr >= m_hsdmSize){
+		log(PANIC, MODULE,
+			"Heap structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_psdmSize));
+		panic();
+	}
+
+	virtual_address_t mapped_addr = addr + m_hsdmOffset;
+	VMM_map(addr, mapped_addr, n_pages, flags);
+	return mapped_addr;
+}
+
+virtual_address_t VMM_mapInPaging(physical_address_t addr, uint64_t n_pages, int flags){
+	if (!m_pagingInitialized){
+		return VMM_mapInHHDM(addr); // mapped in the bootloader
+	}
+
+	if (addr >= m_psdmSize){
+		log(PANIC, MODULE,
+			"Paging structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_psdmSize));
+		panic();
+	}
+
+	virtual_address_t mapped_addr = addr + m_psdmOffset;
+	VMM_map(addr, mapped_addr, n_pages, flags);
+	return mapped_addr;
+}
+
+// ================ Unmap memory ================
+
+void VMM_unmap(virtual_address_t addr){
+	log(PANIC, MODULE, "VMM_unmap unimplemented !! %p", addr);
+	panic();
+}
+
+// ================ Physical -> Virtual ================
+
 physical_address_t VMM_toPhysical(virtual_address_t addr){
 	// Special regions: direct mappings, easy
 	if (addr & (0xfffff00000000000)){
@@ -85,18 +124,14 @@ physical_address_t VMM_toPhysical(virtual_address_t addr){
 	unreachable();
 }
 
+// ================ Virtual -> Physical ================
+
 virtual_address_t VMM_toHHDM(physical_address_t addr){
 	assert(m_hhdmOffset != HHDM_BULLSHIT_VALUE);
 	return addr + m_hhdmOffset;
 }
 
 virtual_address_t VMM_toHeap(physical_address_t addr){
-	if (addr >= m_hsdmSize){
-		log(PANIC, MODULE,
-			"Heap structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_psdmSize));
-		panic();
-	}
-
 	return addr + m_hsdmOffset;
 }
 
@@ -105,14 +140,10 @@ virtual_address_t VMM_toPaging(physical_address_t addr){
 		return VMM_toHHDM(addr); // mapped in the bootloader
 	}
 
-	if (addr >= m_psdmSize){
-		log(PANIC, MODULE,
-			"Paging structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_psdmSize));
-		panic();
-	}
-
 	return m_psdmOffset + addr;
 }
+
+// ================ Misc ================
 
 void VMM_setHHDM(uint64_t offset){
 	m_hhdmOffset = offset;

@@ -50,7 +50,6 @@ tools:
 #
 run:
 	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
-		-cpu qemu64,+pdpe1gb \
 		-m 128M \
 		-drive if=pflash,file=$(UEFI_FIRMWARE),format=raw,readonly=on \
 		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
