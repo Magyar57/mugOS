@@ -8,13 +8,17 @@
 
 void VMM_initialize();
 
-// Higher half direct map
+// Higher half direct map (avoid using it ! it's necessary for paging intialization)
 void VMM_setHHDM(uint64_t offset);
 virtual_address_t VMM_HHDM_physToVirt(physical_address_t addr);
 physical_address_t VMM_HHDM_virtToPhys(virtual_address_t addr);
 
-// Paging structure are mapped in their own virtual memory region
+// Direct Mappings that are mapped in their own virtual memory region
+// Paging structures
 virtual_address_t VMM_pagingStructures_physToVirt(physical_address_t addr);
+// Heap structures and allocations
+virtual_address_t VMM_Heap_physToVirt(physical_address_t addr);
+physical_address_t VMM_Heap_virtToPhys(virtual_address_t addr);
 
 void VMM_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags);
 

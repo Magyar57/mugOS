@@ -11,6 +11,9 @@ static uint64_t m_hhdmOffset = 0xffffffffffffffff; // init with invalid offset
 // PSDM: Paging Structure Direct Mapping. They are mapped with an offset:
 static constexpr uint64_t m_psdmOffset = 0xffffe00000000000;
 static constexpr uint64_t m_psdmSize = 0x0000100000000000; // 0xffffe00000000000 - 0xfffff00000000000
+// HDM: Heap Direct Mapping
+static constexpr uint64_t m_hsdmOffset = 0xffffd00000000000;
+static constexpr uint64_t m_hsdmSize = 0x0000100000000000; // 0xffffd00000000000 - 0xffffe00000000000
 
 static bool m_pagingInitialized = false;
 
@@ -39,9 +42,6 @@ void VMM_premap(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 }
 
 void VMM_initialize(){
-	// Premap the paging structures
-	VMM_premap(0, m_psdmOffset, m_psdmSize/PAGE_SIZE, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-
 	// Initialize the paging structures
 	Paging_initializeTables();
 
@@ -50,6 +50,11 @@ void VMM_initialize(){
 		VMM_map(m_premappings[i].phys, m_premappings[i].virt,
 			m_premappings[i].n_pages, m_premappings[i].flags);
 	}
+
+	// Paging structures
+	VMM_map(0x0, m_psdmOffset, roundToPage(m_psdmSize), PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+	// Kernel heap
+	VMM_map(0x0, m_hsdmOffset, roundToPage(m_hsdmSize), PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 
 	Paging_enable();
 	m_pagingInitialized = true;
@@ -78,6 +83,14 @@ virtual_address_t VMM_pagingStructures_physToVirt(physical_address_t addr){
 	}
 
 	return m_psdmOffset + addr;
+}
+
+virtual_address_t VMM_Heap_physToVirt(physical_address_t addr){
+	return addr + m_hsdmOffset;
+}
+
+physical_address_t VMM_Heap_virtToPhys(virtual_address_t addr){
+	return addr - m_hsdmOffset;
 }
 
 void VMM_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
