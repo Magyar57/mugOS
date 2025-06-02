@@ -43,7 +43,7 @@
 #define get1GBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000ffffc0000000) >> 30 )
 #define getTableEntryAddress(addr) 				get4KBEntryAddress(addr)
 
-#define parseEntryAddress(entry_addr)			(void*) VMM_pagingStructures_physToVirt(entry_addr << 12)
+#define parseEntryAddress(entry_addr)			(void*) VMM_toPaging(entry_addr << 12)
 
 #define PRIVILEGE_KERNEL 0
 #define PRIVILEGE_USER 1
@@ -350,7 +350,7 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		// PML4
 		if (g_pml4[pml4_index].present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_pagingStructures_physToVirt(page_phys);
+			page_virt = VMM_toPaging(page_phys);
 			memset((void*) page_virt, 0, PAGE_SIZE);
 			setPDPT(g_pml4+pml4_index, page_phys);
 		}
@@ -372,7 +372,7 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		// Page directory pointer
 		if (cur_pdp[pdp_index].pageDirectory.present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_pagingStructures_physToVirt(page_phys);
+			page_virt = VMM_toPaging(page_phys);
 			memset((void*) page_virt, 0, PAGE_SIZE);
 			setPageDirectory(&cur_pdp[pdp_index].pageDirectory, page_phys);
 		}
@@ -394,7 +394,7 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		// Page directory
 		if (cur_pd[pd_index].pageTable.present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_pagingStructures_physToVirt(page_phys);
+			page_virt = VMM_toPaging(page_phys);
 			memset((void*) page_virt, 0, PAGE_SIZE);
 			setPageTable(&cur_pd[pd_index].pageTable, page_phys);
 		}
@@ -500,14 +500,14 @@ void Paging_initializeTables(){
 			break;
 		case MEMORY_FRAMEBUFFER:
 			// Framebuffer is/are mapped in the HHDM
-			Paging_map(cur->address, VMM_HHDM_physToVirt(cur->address), n_pages,
+			Paging_map(cur->address, VMM_toHHDM(cur->address), n_pages,
 				PAGE_READ|PAGE_WRITE|PAGE_KERNEL|PAGE_CACHE_DISABLED);
 			break;
 		case MEMORY_ACPI_NVS:
 		case MEMORY_ACPI_RECLAIMABLE:
 			break;
 		case MEMORY_BOOTLOADER_RECLAIMABLE:
-			Paging_map(cur->address, VMM_HHDM_physToVirt(cur->address), n_pages,
+			Paging_map(cur->address, VMM_toHHDM(cur->address), n_pages,
 				PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			break;
 		default:
@@ -533,5 +533,5 @@ void Paging_enable(){
 
 	log(SUCCESS, MODULE,
 		"Kernel page table set successfully ! Higher Half Direct Map starts at %p, kernel at %p",
-		VMM_HHDM_physToVirt(0), kernel_virt);
+		VMM_toHHDM(0), kernel_virt);
 }

@@ -369,7 +369,7 @@ void PMM_initialize(){
 	size_t bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
 	uint64_t n_pages = getSizeAsPages(bitmapSize);
 	physical_address_t allocated = earlyAllocate(g_memmapReq.response, n_pages);
-	virtual_address_t allocated_virt = VMM_HHDM_physToVirt(allocated);
+	virtual_address_t allocated_virt = VMM_toHHDM(allocated);
 	VMM_premap(allocated, allocated_virt, n_pages, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 	m_bitmapAllocator.bitmap = (uint64_t*) allocated_virt;
 

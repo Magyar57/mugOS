@@ -627,7 +627,7 @@ static void* allocatePages(int n, bool clear){
 	#ifdef KERNEL
 	physical_address_t addr = PMM_allocatePages(n);
 	if (addr == 0) return NULL;
-	res = (void*) VMM_Heap_physToVirt(addr);
+	res = (void*) VMM_toHeap(addr);
 	#else
 	res = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	if (res == NULL) return NULL;
@@ -640,7 +640,7 @@ static void* allocatePages(int n, bool clear){
 
 static void freePages(void* pages, int n){
 	#ifdef KERNEL
-	physical_address_t addr = VMM_Heap_virtToPhys((virtual_address_t) pages);
+	physical_address_t addr = VMM_toPhysical((virtual_address_t) pages);
 	PMM_freePages(addr, n);
 	#else
 	munmap(pages, n*PAGE_SIZE);
