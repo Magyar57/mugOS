@@ -107,8 +107,8 @@ struct Heap {
 
 static struct Heap m_heap;
 
-static void* allocatePages(int n, bool clear);
-static void freePages(void* pages, int n);
+static void* allocatePages(long n, bool clear);
+static void freePages(void* pages, long n);
 
 // ================ Doubly-linked lists ================
 // Note: code is dupplicated, to simplify code structure
@@ -264,7 +264,7 @@ static bool Hashmap_grow(hashmap_t* map){
 
 	// Double the capacity
 	long new_total = (map->totalEntries == 0) ? HASHMAP_DEFAULT_SIZE : 2*map->totalEntries;
-	int n_pages = roundToPage(new_total * sizeof(entry_t));
+	long n_pages = roundToPage(new_total * sizeof(entry_t));
 	uint64_t mask = new_total - 1;
 
 	new_values = allocatePages(n_pages, true);
@@ -409,7 +409,7 @@ static void freeBlock(struct ChunkInfo* chunk, void* ptr){
 
 static bool allocateChunk(struct ChunkInfo* chunk, size_t size){
 	assert(chunk);
-	int n_pages = roundToPage(size);
+	long n_pages = roundToPage(size);
 
 	chunk->base = allocatePages(n_pages, false);
 	if (!chunk->base) return false;
@@ -619,8 +619,8 @@ static bool shouldFreeChungus(struct ChungusList* chunguses, struct Chungus* chu
 
 // ================ Allocations / freeing ================
 
-static void* allocatePages(int n, bool clear){
-	assert(n > 0);
+static void* allocatePages(long n, bool clear){
+	if (n <= 0) return NULL;
 	void* res;
 	size_t size = n*PAGE_SIZE;
 
@@ -630,7 +630,7 @@ static void* allocatePages(int n, bool clear){
 	res = (void*) VMM_mapInHeap(addr, n, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 	#else
 	res = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	if (res == NULL) return NULL;
+	if (res == NULL || (long)res < 0) return NULL;
 	#endif
 
 	if (clear)
@@ -638,7 +638,7 @@ static void* allocatePages(int n, bool clear){
 	return res;
 }
 
-static void freePages(void* pages, int n){
+static void freePages(void* pages, long n){
 	#ifdef KERNEL
 	physical_address_t addr = VMM_toPhysical((virtual_address_t) pages);
 	PMM_freePages(addr, n);
