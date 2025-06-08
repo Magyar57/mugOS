@@ -147,9 +147,9 @@ static void Bucket_pop(struct ChunkBucket* bucket, struct ChunkInfo* chunk){
 
 	// Block is ONLY head
 	if (chunk == bucket->head){
-		bucket->head = chunk->next;
-		bucket->tail->prev = chunk->next;
-		chunk->next->prev = chunk->next; // loop head
+		bucket->head = bucket->head->next; // update head
+		bucket->head->prev = bucket->head; // loop head on itself
+		bucket->tail->next = bucket->head; // next of tail loops to head
 		chunk->next = NULL;
 		chunk->prev = NULL;
 		return;
@@ -205,9 +205,9 @@ static void Chunguses_pop(struct ChungusList* chunguses, struct Chungus* chungus
 
 	// Block is ONLY head
 	if (chungus == chunguses->head){
-		chunguses->head = chungus->next;
-		chunguses->tail->prev = chungus->next;
-		chungus->next->prev = chungus->next; // loop head
+		chunguses->head = chunguses->head->next; // update head
+		chunguses->head->prev = chunguses->head; // loop head on itself
+		chunguses->tail->next = chunguses->head; // next of tail loops to head
 		chungus->next = NULL;
 		chungus->prev = NULL;
 		return;
@@ -649,6 +649,9 @@ static void freePages(void* pages, long n){
 
 static int getSmallbucketOrder(size_t size){
 	assert(size >= MIN_BLOCK_SIZE);
+
+	// Note: we don't care about overflows (when size_t = 0x8000000000000000)
+	// since this function is never called with size>=BIGBUCKET_THRESHOLD
 
 	// int power_of_two = 63 - __builtin_clzll(size); // floor(log2(size))
 	int power_of_two = 64 - __builtin_clzll(size - 1); // ceil(log2(size))
