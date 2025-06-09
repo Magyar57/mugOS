@@ -108,6 +108,7 @@ void* memcpy(void* dst, const void* src, size_t size){
 }
 
 void* memset(void* ptr, int value, size_t size){
+	if (ptr == NULL) return NULL;
 	uint8_t* u8ptdr = (uint8_t*) ptr;
 
 	for(size_t i = 0 ; i<size ; i++){

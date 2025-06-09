@@ -10,6 +10,10 @@ char* strchr(const char* str, int chr);
 /// @brief Copies the string `src` into a destination `dst`. The memory regions must NOT overlap
 char* strcpy(char* dst, const char* src);
 
+/// @brief Copies the string `src` into a destination `dst`, for maximum size of size.
+//         Null character not copied if src is too long. The memory regions must NOT overlap.
+char* strncpy(char* dst, const char* src, size_t size);
+
 /// @brief Computes the length of a string
 /// @returns The number of bytes in the string pointed to by `str`
 size_t strlen(const char* str);
