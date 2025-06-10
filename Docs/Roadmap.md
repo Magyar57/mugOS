@@ -24,11 +24,12 @@
 - [X] Memory detection (map)
 - [X] Physical memory allocator (bitmap)
 - [X] Virtual memory management (paging)
-- [ ] Heap (malloc/kmalloc)
+- [X] Kernel heap (kmalloc, slab allocator)
 - [ ] Virtual filesystem
 - [ ] Kernel FAT driver
 - [ ] ELF binary loading
 - [X] Userland
+- [X] Userspace heap (malloc, custom hashmap+bitmap implementation)
 - [ ] Init process
 - [ ] System calls
 - [ ] mush (the **mu**gOS **sh**ell)
