@@ -15,9 +15,6 @@ static uint64_t m_hhdmOffset = HHDM_BULLSHIT_VALUE;
 // Special region mappings. They are mapped with an offset, which are the bits
 // 0x0000f00000000000 ; these are reserved for this purpose.
 
-// PSDM: Paging Structures Direct Mapping
-static constexpr uint64_t m_psdmOffset = 0xffffe00000000000;
-static constexpr uint64_t m_psdmSize = 0x0000100000000000; // 0xffffe00000000000 - 0xfffff00000000000
 // HSDM: Heap Structures Direct Mapping
 static constexpr uint64_t m_hsdmOffset = 0xffffd00000000000;
 static constexpr uint64_t m_hsdmSize = 0x0000100000000000; // 0xffffd00000000000 - 0xffffe00000000000
@@ -76,27 +73,11 @@ virtual_address_t VMM_mapInHHDM(physical_address_t addr){
 virtual_address_t VMM_mapInHeap(physical_address_t addr, uint64_t n_pages, int flags){
 	if (addr >= m_hsdmSize){
 		log(PANIC, MODULE,
-			"Heap structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_psdmSize));
+			"Heap structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_hsdmSize));
 		panic();
 	}
 
 	virtual_address_t mapped_addr = addr + m_hsdmOffset;
-	VMM_map(addr, mapped_addr, n_pages, flags);
-	return mapped_addr;
-}
-
-virtual_address_t VMM_mapInPaging(physical_address_t addr, uint64_t n_pages, int flags){
-	if (!m_pagingInitialized){
-		return VMM_mapInHHDM(addr); // mapped in the bootloader
-	}
-
-	if (addr >= m_psdmSize){
-		log(PANIC, MODULE,
-			"Paging structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_psdmSize));
-		panic();
-	}
-
-	virtual_address_t mapped_addr = addr + m_psdmOffset;
 	VMM_map(addr, mapped_addr, n_pages, flags);
 	return mapped_addr;
 }
@@ -133,14 +114,6 @@ virtual_address_t VMM_toHHDM(physical_address_t addr){
 
 virtual_address_t VMM_toHeap(physical_address_t addr){
 	return addr + m_hsdmOffset;
-}
-
-virtual_address_t VMM_toPaging(physical_address_t addr){
-	if (!m_pagingInitialized){
-		return VMM_toHHDM(addr); // mapped in the bootloader
-	}
-
-	return m_psdmOffset + addr;
 }
 
 // ================ Misc ================

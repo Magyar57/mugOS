@@ -18,13 +18,12 @@ void VMM_initialize();
 void VMM_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags);
 
 /// @brief Store a mapping to be applied at paging intialization ; use instead of VMM_map
-// when VMM_intialize hasn't been called already. See VMM_map for arguments description
+/// when VMM_intialize hasn't been called already. See VMM_map for arguments description
 /// @warning Can only be called so many times !
 void VMM_premap(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags);
 
 virtual_address_t VMM_mapInHHDM(physical_address_t addr);
 virtual_address_t VMM_mapInHeap(physical_address_t addr, uint64_t n_pages, int flags);
-virtual_address_t VMM_mapInPaging(physical_address_t addr, uint64_t n_pages, int flags);
 
 // ================ Unmap memory ================
 
@@ -42,9 +41,6 @@ virtual_address_t VMM_toHHDM(physical_address_t addr);
 
 /// @brief Get virtual address from heap-structures-region-mapped physical address
 virtual_address_t VMM_toHeap(physical_address_t addr);
-
-// /// @brief Get virtual address from page-structures-region-mapped physical address
-virtual_address_t VMM_toPaging(physical_address_t addr);
 
 // ================ Misc ================
 

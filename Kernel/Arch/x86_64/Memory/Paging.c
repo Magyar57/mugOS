@@ -43,7 +43,7 @@
 #define get1GBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000ffffc0000000) >> 30 )
 #define getTableEntryAddress(addr) 				get4KBEntryAddress(addr)
 
-#define parseEntryAddress(entry_addr)			(void*) VMM_toPaging(entry_addr << 12)
+#define getEntryAddress(entry_addr)				((entry_addr) << 12)
 
 #define PRIVILEGE_KERNEL 0
 #define PRIVILEGE_USER 1
@@ -191,23 +191,58 @@ compile_assert(sizeof(struct PageDescriptor4KB) == 8);
 
 #pragma endregion
 
+static bool m_enabled = false;
 static bool m_has1GBPages = false;
 
-aligned(PAGE_SIZE) struct PDTPDescriptor g_pml4[TABLE_SIZE];
-compile_assert(sizeof(g_pml4) == PAGE_SIZE);
+aligned(PAGE_SIZE) static struct PDTPDescriptor m_pml4[TABLE_SIZE];
+compile_assert(sizeof(m_pml4) == PAGE_SIZE);
 
 // Note:
 // When the most restrictive bit applies, we set the most permissive
 // rights in the tables, and the correct rights in the pages descriptors.
 // -> Concerns bits R/W "writable", U/S "privilege", XD "executeDisabled"
 // When the last level met applies, we do the opposite (set caching on)
-// -> Concerns btis PWT "writeThrough", PCD "cacheDisabled"
+// -> Concerns bits PWT "writeThrough", PCD "cacheDisabled"
 
 // Paging.asm
 bool setPML4(physical_address_t pml4);
 void flushTLB(void* addr);
 
 // ================ Paging_map ================
+
+// Dynamic dynamic tables.
+// Those are used by Paging_map when needing to access/modify tables.
+// We have 3 pages permanently map, that are switched dynamically to a table
+// when said table needs to be accessed. It avoids mapping permanenlty all tables :)
+static const virtual_address_t m_dynamicPDPT = 0xffffffffffffd000;
+static const virtual_address_t m_dynamicPD   = 0xffffffffffffe000;
+static const virtual_address_t m_dynamicPT   = 0xfffffffffffff000;
+// PageTable in which the dynamic tables are mapped in (for dynamically mapping said tables)
+static struct PageTableDescriptor* m_dynamicTablesHost = (void*) 0xffffffffffffc000;
+
+static inline void* mapDynamicPDPT(physical_address_t addr){
+	if (!m_enabled)
+		return (void*) VMM_mapInHHDM(addr);
+
+	m_dynamicTablesHost[509].address = getTableEntryAddress(addr);
+	return (void*) m_dynamicPDPT;
+}
+
+static inline void* mapDynamicPD(physical_address_t addr){
+	if (!m_enabled)
+		return (void*) VMM_mapInHHDM(addr);
+
+	m_dynamicTablesHost[510].address = getTableEntryAddress(addr);
+	return (void*) m_dynamicPD;
+}
+
+static inline void* mapDynamicPT(physical_address_t addr){
+	if (!m_enabled)
+		return (void*) VMM_mapInHHDM(addr);
+
+	m_dynamicTablesHost[511].address = getTableEntryAddress(addr);
+	return (void*) m_dynamicPT;
+}
 
 static void setPDPT(struct PDTPDescriptor* entry, physical_address_t address){
 	assert(!entry->present);
@@ -330,9 +365,9 @@ static physical_address_t allocatePageOrPanic(){
 }
 
 void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
-	physical_address_t page_phys, page_virt;
-	physical_address_t phys_cur = phys;
+	physical_address_t page_phys, phys_cur = phys;
 	virtual_address_t virt_cur = virt;
+	void* page_virt;
 
 	union PageDirectoryPointerTableEntry* cur_pdp;
 	union PageDirectoryEntry* cur_pd;
@@ -348,13 +383,13 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		uint64_t pt_index = getIndexPageTable(virt_cur);
 
 		// PML4
-		if (g_pml4[pml4_index].present == 0){
+		if (m_pml4[pml4_index].present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_mapInPaging(page_phys, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-			memset((void*) page_virt, 0, PAGE_SIZE);
-			setPDPT(g_pml4+pml4_index, page_phys);
+			page_virt = mapDynamicPDPT(page_phys);
+			memset(page_virt, 0, PAGE_SIZE);
+			setPDPT(m_pml4+pml4_index, page_phys);
 		}
-		cur_pdp = parseEntryAddress(g_pml4[pml4_index].address);
+		cur_pdp = mapDynamicPDPT(getEntryAddress(m_pml4[pml4_index].address));
 
 		// Try to map as 1GB pages (if addr is 1GB aligned AND we have more than 1GB to map)
 		if (m_has1GBPages && phys_cur % SIZE_1GB == 0 && pages_remaining >= SIZE_1GB/PAGE_SIZE){
@@ -372,11 +407,11 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		// Page directory pointer
 		if (cur_pdp[pdp_index].pageDirectory.present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_mapInPaging(page_phys, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-			memset((void*) page_virt, 0, PAGE_SIZE);
+			page_virt = mapDynamicPD(page_phys);
+			memset(page_virt, 0, PAGE_SIZE);
 			setPageDirectory(&cur_pdp[pdp_index].pageDirectory, page_phys);
 		}
-		cur_pd = parseEntryAddress(cur_pdp[pdp_index].pageDirectory.address);
+		cur_pd = mapDynamicPD(getEntryAddress(cur_pdp[pdp_index].pageDirectory.address));
 
 		// Try to map as 2MB pages
 		if (phys_cur % SIZE_2MB == 0 && pages_remaining >= SIZE_2MB/PAGE_SIZE){
@@ -394,11 +429,11 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		// Page directory
 		if (cur_pd[pd_index].pageTable.present == 0){
 			page_phys = allocatePageOrPanic();
-			page_virt = VMM_mapInPaging(page_phys, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-			memset((void*) page_virt, 0, PAGE_SIZE);
+			page_virt = mapDynamicPT(page_phys);
+			memset(page_virt, 0, PAGE_SIZE);
 			setPageTable(&cur_pd[pd_index].pageTable, page_phys);
 		}
-		cur_pt = parseEntryAddress(cur_pd[pd_index].pageTable.address);
+		cur_pt = mapDynamicPT(getEntryAddress(cur_pd[pd_index].pageTable.address));
 
 		// Map 4KB pages in the page table
 		mappable = min(TABLE_SIZE - pt_index, pages_remaining);
@@ -413,31 +448,6 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 }
 
 // ================ Paging initialization ================
-
-static inline void mapKernel(){
-	extern uint8_t LOAD_ADDRESS;
-	extern uint8_t __text_start, __rodata_start, __data_start;
-	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
-	virtual_address_t kernel_virt = (virtual_address_t) &LOAD_ADDRESS;
-
-	// Compute size (in #pages) of kernel regions to map
-	// Note: since the __end symbol from the linker map points before the actual end of the bss,
-	// we use the size that the bootloader gave us instead to know the bss' size
-	uint64_t text_size = (&__rodata_start - &__text_start) / PAGE_SIZE;
-	uint64_t rodata_size = (&__data_start - &__rodata_start) / PAGE_SIZE;
-
-	uint64_t data_size = (g_memoryMap.kernelSize/PAGE_SIZE - (rodata_size+text_size));
-	physical_address_t ktext_phys = (physical_address_t)&__text_start - kernel_virt + kernel_phys;
-	physical_address_t rodata_phys = (physical_address_t)&__rodata_start - kernel_virt + kernel_phys;
-	physical_address_t data_phys = (physical_address_t)&__data_start - kernel_virt + kernel_phys;
-
-	// .text section: r-x
-	Paging_map(ktext_phys, (virtual_address_t) &__text_start, text_size, PAGE_READ|PAGE_EXEC|PAGE_KERNEL);
-	// .rodata section: r--
-	Paging_map(rodata_phys, (virtual_address_t) &__rodata_start, rodata_size, PAGE_READ|PAGE_KERNEL);
-	// .data and .bss sections: rw-
-	Paging_map(data_phys, (virtual_address_t) &__data_start, data_size, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-}
 
 static void initializeFeatures(){
 	union CR4 cr4;
@@ -476,15 +486,61 @@ static void initializeFeatures(){
 	Registers_writeMSR(MSR_ADDR_IA32_EFER, efer.value);
 }
 
+static inline void mapKernel(){
+	extern uint8_t LOAD_ADDRESS;
+	extern uint8_t __text_start, __rodata_start, __data_start;
+	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
+	virtual_address_t kernel_virt = (virtual_address_t) &LOAD_ADDRESS;
+
+	// Compute size (in #pages) of kernel regions to map
+	// Note: since the __end symbol from the linker map points before the actual end of the bss,
+	// we use the size that the bootloader gave us instead to know the bss' size
+	uint64_t text_size = (&__rodata_start - &__text_start) / PAGE_SIZE;
+	uint64_t rodata_size = (&__data_start - &__rodata_start) / PAGE_SIZE;
+
+	uint64_t data_size = (g_memoryMap.kernelSize/PAGE_SIZE - (rodata_size+text_size));
+	physical_address_t ktext_phys = (physical_address_t)&__text_start - kernel_virt + kernel_phys;
+	physical_address_t rodata_phys = (physical_address_t)&__rodata_start - kernel_virt + kernel_phys;
+	physical_address_t data_phys = (physical_address_t)&__data_start - kernel_virt + kernel_phys;
+
+	// .text section: r-x
+	Paging_map(ktext_phys, (virtual_address_t) &__text_start, text_size, PAGE_READ|PAGE_EXEC|PAGE_KERNEL);
+	// .rodata section: r--
+	Paging_map(rodata_phys, (virtual_address_t) &__rodata_start, rodata_size, PAGE_READ|PAGE_KERNEL);
+	// .data and .bss sections: rw-
+	Paging_map(data_phys, (virtual_address_t) &__data_start, data_size, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+}
+
+void mapDynamicTables(){
+	// Finally, we can prepare mappings for the temporary directories
+	Paging_map(0xfffffffffffff000, m_dynamicPDPT, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+	Paging_map(0xfffffffffffff000, m_dynamicPD, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+	Paging_map(0xfffffffffffff000, m_dynamicPT, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+
+	// Now get the physical address of the allocated page table for those last 3 pages
+	// Note: if in the future, we happen to not have HHDM setup by the bootloader,
+	// instead of calling Paging_map, we simply need to map manually the pages here to
+	// get the page table physical address
+	uint64_t pml4_index = getIndexPML4(m_dynamicPDPT);
+	uint64_t pdp_index = getIndexPageDirectoryPointerTable(m_dynamicPDPT);
+	uint64_t pd_index = getIndexPageDirectory(m_dynamicPDPT);
+	struct PDTPDescriptor* pdpt = (void*) VMM_toHHDM(getEntryAddress(m_pml4[pml4_index].address));
+	struct PageTableDescriptor* pd = (void*) VMM_toHHDM(getEntryAddress(pdpt[pdp_index].address));
+	physical_address_t pt_phys = getEntryAddress(pd[pd_index].address);
+
+	// Now that we have our physical address, map it
+	Paging_map(pt_phys, (virtual_address_t) m_dynamicTablesHost, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+}
+
 void Paging_initializeTables(){
 	// Clear the PML4 (sets all entries to invalid)
-	memset(g_pml4, 0, PAGE_SIZE);
+	memset(m_pml4, 0, PAGE_SIZE);
 
 	// Assert that we have the features we need, and enable them
 	initializeFeatures();
 
-	// Map the kernel
 	mapKernel();
+	mapDynamicTables();
 
 	// Map the HHDM & framebuffer
 	for(int i=0 ; i<g_memoryMap.size ; i++){
@@ -492,7 +548,8 @@ void Paging_initializeTables(){
 		uint64_t n_pages = (cur->length + PAGE_SIZE-1) / PAGE_SIZE; // round up
 		switch (cur->type){
 		case MEMORY_USABLE:
-			// Paging_map(cur->address, VMM_HHDM_physToVirt(cur->address), n_pages, // TODO I WANT TO GET RID OF THIS
+			// HHDM (deprecated)
+			// Paging_map(cur->address, VMM_HHDM_physToVirt(cur->address), n_pages,
 			// 	PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			break;
 		case MEMORY_RESERVED:
@@ -524,12 +581,14 @@ void Paging_enable(){
 	// Now load our page table
 	// Note: g_pml4 is not in the HHDM region, so we cannot use VMM_hhdm_virtualToPhysical
 	// It is in the kernel data section, so we use the kernel code offset
-	physical_address_t pml4_phys = kernel_phys + ((uint64_t)g_pml4 - kernel_virt);
+	physical_address_t pml4_phys = kernel_phys + ((uint64_t)m_pml4 - kernel_virt);
 	bool res = setPML4(pml4_phys);
 	if (!res){
 		log(PANIC, MODULE, "Could not set page table !!");
 		panic();
 	}
+
+	m_enabled = true;
 
 	log(SUCCESS, MODULE,
 		"Kernel page table set successfully ! Higher Half Direct Map starts at %p, kernel at %p",
