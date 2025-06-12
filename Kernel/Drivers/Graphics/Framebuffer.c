@@ -164,7 +164,6 @@ void Framebuffer_putchar(Framebuffer* this, const char c){
 
 	switch (c){
 	case '\t':
-		// TODO recursive call instead
 		do {
 			Framebuffer_putchar(this, ' ');
 		} while (this->cursorX % TAB_SIZE != 0);

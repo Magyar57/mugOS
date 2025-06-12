@@ -142,11 +142,9 @@ void ISR_pageFault(struct ISR_Params* params){
 	bool shadow_stack = (params->err & 0b01000000);
 	bool sgx_violation = (params->err & 0b10000000);
 
-	// TODO protection key, shadow stack, software guard extensions
-
 	log(PANIC, MODULE, "Page fault (error=%#llx) ! Access to %p from code at %p", params->err, cr2, params->rip);
 	log(PANIC, MODULE, "Cause: %s, from a %s, with CPU in %s mode", cause, type, cpu_mode);
-	if (reserved) log(PANIC, MODULE, "Accessed to reserved entries !");
+	if (reserved) log(PANIC, MODULE, "Reserved bits are set in some entries that were accessed !");
 	if (instruction_fetch) log(PANIC, MODULE, "Source: instruction fetch");
 	if (protection_key_violation) log(PANIC, MODULE, "Source: protection key violation");
 	if (shadow_stack) log(PANIC, MODULE, "Source: shadow stack access");

@@ -10,6 +10,6 @@ void abort(){
 	#ifdef KERNEL
 		panic();
 	#else
-		// TODO we need an kill or exit syscall
+		#error we need a kill or exit syscall
 	#endif
 }
