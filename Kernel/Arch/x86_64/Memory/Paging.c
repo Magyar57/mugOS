@@ -214,9 +214,9 @@ void flushTLB(void* addr);
 // Those are used by Paging_map when needing to access/modify tables.
 // We have 3 pages permanently map, that are switched dynamically to a table
 // when said table needs to be accessed. It avoids mapping permanenlty all tables :)
-static const virtual_address_t m_dynamicPDPT = 0xffffffffffffd000;
-static const virtual_address_t m_dynamicPD   = 0xffffffffffffe000;
-static const virtual_address_t m_dynamicPT   = 0xfffffffffffff000;
+static constexpr virtual_address_t m_dynamicPDPT = 0xffffffffffffd000;
+static constexpr virtual_address_t m_dynamicPD   = 0xffffffffffffe000;
+static constexpr virtual_address_t m_dynamicPT   = 0xfffffffffffff000;
 // PageTable in which the dynamic tables are mapped in (for dynamically mapping said tables)
 static struct PageTableDescriptor* m_dynamicTablesHost = (void*) 0xffffffffffffc000;
 
@@ -244,56 +244,8 @@ static inline void* mapDynamicPT(physical_address_t addr){
 	return (void*) m_dynamicPT;
 }
 
-static void setPDPT(struct PDTPDescriptor* entry, physical_address_t address){
-	assert(!entry->present);
-
-	entry->present = true;
-	entry->writable = true;
-	entry->privilege = PRIVILEGE_USER;
-	entry->writeThrough = false;
-	entry->cacheDisabled = false;
-	entry->accessed = false;
-	entry->reserved0 = 0b0;
-	entry->restart = false;
-	entry->address = getTableEntryAddress(address);
-	entry->reserved1 = 0b0000;
-	entry->executeDisabled = false;
-}
-
-static void setPageDirectory(struct PageDirectoryDescriptor* entry, physical_address_t addr){
-	assert(!entry->present);
-
-	entry->present = true;
-	entry->writable = true;
-	entry->privilege = PRIVILEGE_USER;
-	entry->writeThrough = false;
-	entry->cacheDisabled = false;
-	entry->accessed = false;
-	entry->pageSize = 0;
-	entry->restart = false;
-	entry->address = getTableEntryAddress(addr);
-	entry->reserved = 0b0000;
-	entry->executeDisabled = false;
-}
-
-static void setPageTable(struct PageTableDescriptor* entry, physical_address_t addr){
-	assert(!entry->present);
-
-	entry->present = true;
-	entry->writable = true;
-	entry->privilege = PRIVILEGE_USER;
-	entry->writeThrough = false;
-	entry->cacheDisabled = false;
-	entry->accessed = false;
-	entry->pageSize = 0;
-	entry->restart = false;
-	entry->address = getTableEntryAddress(addr);
-	entry->reserved = 0b0000;
-	entry->executeDisabled = false;
-}
-
 static void set4KBPage(struct PageDescriptor4KB* entry, physical_address_t addr, int flags){
-	assert(!entry->present); // prevent overrides (temp)
+	assert(!entry->present);
 
 	entry->present = true;
 	entry->writable = ((flags & PAGE_WRITE) != 0);
@@ -312,7 +264,7 @@ static void set4KBPage(struct PageDescriptor4KB* entry, physical_address_t addr,
 }
 
 static void set2MBPage(struct PageDescriptor2MB* entry, physical_address_t addr, int flags){
-	assert(!entry->present); // prevent overrides (temp)
+	assert(!entry->present);
 
 	entry->present = true;
 	entry->writable = ((flags & PAGE_WRITE) != 0);
@@ -333,7 +285,7 @@ static void set2MBPage(struct PageDescriptor2MB* entry, physical_address_t addr,
 }
 
 static void set1GBPage(struct PageDescriptor1GB* entry, physical_address_t addr, int flags){
-	assert(!entry->present); // prevent overrides (temp)
+	assert(!entry->present);
 	assert(m_has1GBPages);
 
 	entry->present = true;
@@ -364,32 +316,104 @@ static physical_address_t allocatePageOrPanic(){
 	return res;
 }
 
-void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
-	physical_address_t page_phys, phys_cur = phys;
-	virtual_address_t virt_cur = virt;
-	void* page_virt;
+static inline union PageDirectoryPointerTableEntry* getPDP(struct PDTPDescriptor* entry){
+	union PageDirectoryPointerTableEntry* pdp;
+	physical_address_t page_phys;
 
+	if (entry->present)
+		return mapDynamicPDPT(getEntryAddress(entry->address));
+
+	// Allocate a new table
+	page_phys = allocatePageOrPanic();
+	pdp = mapDynamicPDPT(page_phys);
+	memset(pdp, 0, PAGE_SIZE);
+
+	entry->present = true;
+	entry->writable = true;
+	entry->privilege = PRIVILEGE_USER;
+	entry->writeThrough = false;
+	entry->cacheDisabled = false;
+	entry->accessed = false;
+	entry->reserved0 = 0b0;
+	entry->restart = false;
+	entry->address = getTableEntryAddress(page_phys);
+	entry->reserved1 = 0b0000;
+	entry->executeDisabled = false;
+
+	return pdp;
+}
+
+static inline union PageDirectoryEntry* getPD(union PageDirectoryPointerTableEntry* entry){
+	union PageDirectoryEntry* pd;
+	physical_address_t page_phys;
+
+	if (entry->pageDirectory.present)
+		return mapDynamicPD(getEntryAddress(entry->pageDirectory.address));
+
+	// Allocate a new table
+	page_phys = allocatePageOrPanic();
+	pd = mapDynamicPD(page_phys);
+	memset(pd, 0, PAGE_SIZE);
+
+	entry->pageDirectory.present = true;
+	entry->pageDirectory.writable = true;
+	entry->pageDirectory.privilege = PRIVILEGE_USER;
+	entry->pageDirectory.writeThrough = false;
+	entry->pageDirectory.cacheDisabled = false;
+	entry->pageDirectory.accessed = false;
+	entry->pageDirectory.pageSize = 0;
+	entry->pageDirectory.restart = false;
+	entry->pageDirectory.address = getTableEntryAddress(page_phys);
+	entry->pageDirectory.reserved = 0b0000;
+	entry->pageDirectory.executeDisabled = false;
+
+	return pd;
+}
+
+static inline struct PageDescriptor4KB* getPT(union PageDirectoryEntry* entry){
+	struct PageDescriptor4KB* pt;
+	physical_address_t page_phys;
+
+	if (entry->pageTable.present)
+		return mapDynamicPT(getEntryAddress(entry->pageTable.address));
+
+	// Allocate a new table
+	page_phys = allocatePageOrPanic();
+	pt = mapDynamicPT(page_phys);
+	memset(pt, 0, PAGE_SIZE);
+
+	entry->pageTable.present = true;
+	entry->pageTable.writable = true;
+	entry->pageTable.privilege = PRIVILEGE_USER;
+	entry->pageTable.writeThrough = false;
+	entry->pageTable.cacheDisabled = false;
+	entry->pageTable.accessed = false;
+	entry->pageTable.pageSize = 0;
+	entry->pageTable.restart = false;
+	entry->pageTable.address = getTableEntryAddress(page_phys);
+	entry->pageTable.reserved = 0b0000;
+	entry->pageTable.executeDisabled = false;
+
+	return pt;
+}
+
+void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
 	union PageDirectoryPointerTableEntry* cur_pdp;
 	union PageDirectoryEntry* cur_pd;
 	struct PageDescriptor4KB* cur_pt;
+	physical_address_t phys_cur = phys;
+	virtual_address_t virt_cur = virt;
 
-	uint64_t pages_remaining = n_pages; // in 4KB pages
 	uint64_t mappable;
+	uint64_t pages_remaining = n_pages; // in 4KB pages
 
 	while(pages_remaining > 0){
-		uint64_t pml4_index = getIndexPML4(virt_cur);
 		uint64_t pdp_index = getIndexPageDirectoryPointerTable(virt_cur);
 		uint64_t pd_index = getIndexPageDirectory(virt_cur);
 		uint64_t pt_index = getIndexPageTable(virt_cur);
 
-		// PML4
-		if (m_pml4[pml4_index].present == 0){
-			page_phys = allocatePageOrPanic();
-			page_virt = mapDynamicPDPT(page_phys);
-			memset(page_virt, 0, PAGE_SIZE);
-			setPDPT(m_pml4+pml4_index, page_phys);
-		}
-		cur_pdp = mapDynamicPDPT(getEntryAddress(m_pml4[pml4_index].address));
+		// Get PDP in the PML4
+		cur_pdp = getPDP(m_pml4 + getIndexPML4(virt_cur));
 
 		// Try to map as 1GB pages (if addr is 1GB aligned AND we have more than 1GB to map)
 		if (m_has1GBPages && phys_cur % SIZE_1GB == 0 && pages_remaining >= SIZE_1GB/PAGE_SIZE){
@@ -404,14 +428,8 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			continue;
 		}
 
-		// Page directory pointer
-		if (cur_pdp[pdp_index].pageDirectory.present == 0){
-			page_phys = allocatePageOrPanic();
-			page_virt = mapDynamicPD(page_phys);
-			memset(page_virt, 0, PAGE_SIZE);
-			setPageDirectory(&cur_pdp[pdp_index].pageDirectory, page_phys);
-		}
-		cur_pd = mapDynamicPD(getEntryAddress(cur_pdp[pdp_index].pageDirectory.address));
+		// Get Page Directory in PDP
+		cur_pd = getPD(cur_pdp + pdp_index);
 
 		// Try to map as 2MB pages
 		if (phys_cur % SIZE_2MB == 0 && pages_remaining >= SIZE_2MB/PAGE_SIZE){
@@ -426,14 +444,8 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			continue;
 		}
 
-		// Page directory
-		if (cur_pd[pd_index].pageTable.present == 0){
-			page_phys = allocatePageOrPanic();
-			page_virt = mapDynamicPT(page_phys);
-			memset(page_virt, 0, PAGE_SIZE);
-			setPageTable(&cur_pd[pd_index].pageTable, page_phys);
-		}
-		cur_pt = mapDynamicPT(getEntryAddress(cur_pd[pd_index].pageTable.address));
+		// Get Page Table in Page Directory
+		cur_pt = getPT(cur_pd + pd_index);
 
 		// Map 4KB pages in the page table
 		mappable = min(TABLE_SIZE - pt_index, pages_remaining);
