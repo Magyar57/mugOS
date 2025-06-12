@@ -26,4 +26,9 @@
 #define max(a,b) \
 	({ __typeof__(a) _a = (a); __typeof__(b) _b = (b); (_a > _b) ? _a : _b; })
 
+// Apple clang does not support C23 features yet
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
+#define constexpr const
+#endif
+
 #endif
