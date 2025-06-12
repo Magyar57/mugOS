@@ -1,3 +1,4 @@
+#include "stdlib.h"
 #include "string.h"
 #include "Logging.h"
 #include "Boot/LimineRequests.h"
@@ -34,6 +35,7 @@ void kmain(){
 	VMM_setHHDM(g_hhdmReq.response->offset);
 	PMM_initialize();
 	VMM_initialize();
+	SlabAllocator_initialize(); // Kernel heap (kmalloc, caches...)
 
 	// Initialize IRQs
 	IRQ_initialize();
