@@ -225,6 +225,7 @@ static inline void* mapDynamicPDPT(physical_address_t addr){
 		return (void*) VMM_mapInHHDM(addr);
 
 	m_dynamicTablesHost[509].address = getTableEntryAddress(addr);
+	flushTLB((void*)m_dynamicPDPT);
 	return (void*) m_dynamicPDPT;
 }
 
@@ -233,6 +234,7 @@ static inline void* mapDynamicPD(physical_address_t addr){
 		return (void*) VMM_mapInHHDM(addr);
 
 	m_dynamicTablesHost[510].address = getTableEntryAddress(addr);
+	flushTLB((void*)m_dynamicPD);
 	return (void*) m_dynamicPD;
 }
 
@@ -241,6 +243,7 @@ static inline void* mapDynamicPT(physical_address_t addr){
 		return (void*) VMM_mapInHHDM(addr);
 
 	m_dynamicTablesHost[511].address = getTableEntryAddress(addr);
+	flushTLB((void*)m_dynamicPT);
 	return (void*) m_dynamicPT;
 }
 
@@ -561,7 +564,7 @@ void Paging_initializeTables(){
 		switch (cur->type){
 		case MEMORY_USABLE:
 			// HHDM (deprecated)
-			// Paging_map(cur->address, VMM_HHDM_physToVirt(cur->address), n_pages,
+			// Paging_map(cur->address, VMM_toHHDM(cur->address), n_pages,
 			// 	PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 			break;
 		case MEMORY_RESERVED:
@@ -602,7 +605,5 @@ void Paging_enable(){
 
 	m_enabled = true;
 
-	log(SUCCESS, MODULE,
-		"Kernel page table set successfully ! Higher Half Direct Map starts at %p, kernel at %p",
-		VMM_toHHDM(0), kernel_virt);
+	log(SUCCESS, MODULE, "Kernel page table set successfully ! Kernel starts at %p", kernel_virt);
 }
