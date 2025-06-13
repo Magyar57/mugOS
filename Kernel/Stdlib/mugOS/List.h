@@ -17,14 +17,14 @@ typedef struct List {
 	struct ListNode* tail;
 } list_t;
 
-/// @brief Statically declare a list variable, with name `list_name`.
-/// Use this if you need the list initialized at compile time. Or use List_init at runtime.
-/// Example: `DECLARE_LIST(my_list);` declares and initialize a `list_t my_list` variable
-#define DECLARE_LIST(list_name) \
-	list_t list_name = { .head=(lnode_t*)&list_name, .tail=(lnode_t*)&list_name }
+/// @brief Statically initialize a list at compile time.
+/// Use List_init for runtime equivalent. Example:
+/// ```c
+/// list_t my_list = LIST_STATIC_INIT(my_list);
+/// ```
+#define LIST_STATIC_INIT(list_name)	{ .head=(lnode_t*)&(list_name), .tail=(lnode_t*)&(list_name) }
 
-#define List_isEmpty(list_ptr) \
-	((list_ptr)->head == (lnode_t*)(list_ptr))
+#define List_isEmpty(list_ptr)		((list_ptr)->head == (lnode_t*)(list_ptr))
 
 /// @brief Get the pointer to the object of type `obj_type` that contains the
 /// list node pointer `ptr`, where the object contains a list node member named
