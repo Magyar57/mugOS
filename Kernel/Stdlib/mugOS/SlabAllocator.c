@@ -2,19 +2,21 @@
 #include "string.h"
 #include "stdio.h"
 #include "assert.h"
-#include "stdlib.h"
+#include "mugOS/List.h"
 #include "Preprocessor.h"
 #include "Memory/Memory.h"
 
 #ifdef KERNEL
-#include "Memory/PMM.h" // PMM_allocatePages
-#include "Memory/VMM.h" // VMM_Heap_physToVirt / virtToPhys
+#include "Logging.h"
+#include "Panic.h"
+#include "Memory/PMM.h"
+#include "Memory/VMM.h"
 #else
-// #include <sys/mman.h> // mmap
 #error "Implement a mmap-like system call"
 #endif
 
 #include "SlabAllocator.h"
+#define MODULE "Slab allocator"
 
 #define OBJ_ROUND						8 // in bytes
 #define roundMultiple(val, power_of_2)	((val + power_of_2-1) & ~(power_of_2-1))
@@ -35,19 +37,13 @@ struct Slab {
 	void* payload; // Actual objects. Points to the first obj
 	int n_allocated; // current #allocated objects
 
-	struct Slab* next;
-	struct Slab* prev;
+	lnode_t slab_lnode;
 
 	// Index of the first free element in freeObjects
 	uint32_t firstFree;
 	// Keeps track of free object in the slab with an array of variable size,
 	// of length = #objects in the slab. Ends with 'SLAB_ENDLIST_MARKER'
 	uint32_t* freeObjects;
-};
-
-struct SlabList {
-	struct Slab* head;
-	struct Slab* tail;
 };
 
 // Object cache, with optional constructors and destructors
@@ -59,18 +55,12 @@ typedef struct Cache {
 	int n_objects;		// objects per slab
 	ctor_t constructor;	// function pointer to object's constructor
 
-	struct SlabList full_slabs;
-	struct SlabList partial_slabs;
-	struct SlabList empty_slabs;
+	list_t full_slabs;
+	list_t partial_slabs;
+	list_t empty_slabs;
 
-	struct Cache* next;
-	struct Cache* prev;
+	lnode_t cache_lnode;
 } cache_t;
-
-struct CacheList {
-	struct Cache* head;
-	struct Cache* tail;
-};
 
 typedef void* key_t;
 typedef struct Slab* value_t;
@@ -95,9 +85,9 @@ static struct Cache m_cacheCache = {
 	.n_objects = (1*PAGE_SIZE - sizeof(struct Slab)) / (128 + getSlabFreelistSize(1)), // 30
 	.constructor = NULL,
 
-	.full_slabs = {NULL, NULL},
-	.partial_slabs = {NULL, NULL},
-	.empty_slabs = {NULL, NULL},
+	.full_slabs = LIST_STATIC_INIT(m_cacheCache.full_slabs),
+	.partial_slabs = LIST_STATIC_INIT(m_cacheCache.partial_slabs),
+	.empty_slabs = LIST_STATIC_INIT(m_cacheCache.empty_slabs),
 };
 compile_assert(sizeof(cache_t) % OBJ_ROUND == 0);
 
@@ -113,128 +103,10 @@ static struct Cache m_kmallocCaches[KMALLOC_N_CACHES] = {
 };
 
 static hashmap_t m_hashmap;
-static struct CacheList m_caches;
+static list_t m_caches = LIST_STATIC_INIT(m_caches);
 
 static void* allocatePages(long n, bool clear);
 static void freePages(void* pages, long n);
-
-// ================ Doubly-linked lists ================
-
-static void SlabList_pushFront(struct SlabList* list, struct Slab* slab){
-	assert(list && slab);
-	slab->prev = slab;
-
-	// Note: we don't need to check list->tail because it is NULL <=> list->head is NULL
-	if (list->head){
-		slab->next = list->head;
-		list->head->prev = slab;
-		list->tail->next = slab;
-	}
-	// List is empty
-	else {
-		slab->next = slab;
-		list->tail = slab;
-	}
-
-	// Change the head AT THE LAST MOMENT to not loose access to the previous one
-	list->head = slab;
-}
-
-static void SlabList_pop(struct SlabList* list, struct Slab* slab){
-	assert(list && slab);
-	assert(list->head); // cannot call pop if linked list is empty
-
-	if (slab == list->head && slab == list->tail){
-		list->head = NULL;
-		list->tail = NULL;
-		slab->next = NULL;
-		slab->prev = NULL;
-		return;
-	}
-
-	// Node is ONLY head
-	if (slab == list->head){
-		list->head = list->head->next; // update head
-		list->head->prev = list->head; // loop head on itself
-		list->tail->next = list->head; // next of tail loops to head
-		slab->next = NULL;
-		slab->prev = NULL;
-		return;
-	}
-
-	// Node is ONLY tail
-	if (slab == list->tail){
-		list->tail = slab->prev;
-		slab->prev->next = list->head;
-		slab->next = NULL;
-		slab->prev = NULL;
-		return;
-	}
-
-	slab->next->prev = slab->prev;
-	slab->prev->next = slab->next;
-
-	slab->next = NULL;
-	slab->prev = NULL;
-}
-
-static void CacheList_pushFront(struct CacheList* list, struct Cache* cache){
-	assert(list && cache);
-	cache->prev = cache;
-
-	// Note: we don't need to check list->tail because it is NULL <=> list->head is NULL
-	if (list->head){
-		cache->next = list->head;
-		list->head->prev = cache;
-		list->tail->next = cache;
-	}
-	// List is empty
-	else {
-		cache->next = cache;
-		list->tail = cache;
-	}
-
-	// Change the head AT THE LAST MOMENT to not loose access to the previous one
-	list->head = cache;
-}
-
-static void CacheList_pop(struct CacheList* list, struct Cache* cache){
-	assert(list && cache);
-	assert(list->head); // cannot call pop if linked list is empty
-
-	if (cache == list->head && cache == list->tail){
-		list->head = NULL;
-		list->tail = NULL;
-		cache->next = NULL;
-		cache->prev = NULL;
-		return;
-	}
-
-	// Node is ONLY head
-	if (cache == list->head){
-		list->head = list->head->next; // update head
-		list->head->prev = list->head; // loop head on itself
-		list->tail->next = list->head; // next of tail loops to head
-		cache->next = NULL;
-		cache->prev = NULL;
-		return;
-	}
-
-	// Node is ONLY tail
-	if (cache == list->tail){
-		list->tail = cache->prev;
-		cache->prev->next = list->head;
-		cache->next = NULL;
-		cache->prev = NULL;
-		return;
-	}
-
-	cache->next->prev = cache->prev;
-	cache->prev->next = cache->next;
-
-	cache->next = NULL;
-	cache->prev = NULL;
-}
 
 // ================ Hashmap ================
 
@@ -486,14 +358,9 @@ static void initCache(struct Cache* cache, const char* name, size_t objsize, cto
 	cache->n_objects = n_objects;
 	cache->constructor = ctor;
 
-	cache->full_slabs.head = NULL;
-	cache->full_slabs.tail = NULL;
-	cache->partial_slabs.head = NULL;
-	cache->partial_slabs.tail = NULL;
-	cache->empty_slabs.head = NULL;
-	cache->empty_slabs.tail = NULL;
-	cache->next = NULL;
-	cache->prev = NULL;
+	List_init(&cache->full_slabs);
+	List_init(&cache->partial_slabs);
+	List_init(&cache->empty_slabs);
 }
 
 static bool growCache(cache_t* cache){
@@ -504,7 +371,6 @@ static bool growCache(cache_t* cache){
 	if (new_slab == NULL) return false;
 
 	// Add entry for all pages to the hashmap
-	// void* page_base = (cache->offslab) ? new_slab->payload : new_slab;
 	void* obj_base = new_slab->payload;
 	for (int i=0 ; i<cache->n_pages ; i++){
 		success = Hashmap_insert(&m_hashmap, obj_base + i*PAGE_SIZE, new_slab);
@@ -527,7 +393,7 @@ static bool growCache(cache_t* cache){
 	}
 
 	new_slab->owner = cache;
-	SlabList_pushFront(&cache->empty_slabs, new_slab);
+	List_pushFront(&cache->empty_slabs, &new_slab->slab_lnode);
 	return true;
 }
 
@@ -538,22 +404,22 @@ static void freeCacheInSlab(struct Cache* cache, struct Slab* slab, void* ptr){
 	freeObject(slab, ptr);
 
 	if (was_full){
-		SlabList_pop(&cache->full_slabs, slab);
-		SlabList_pushFront(&cache->partial_slabs, slab);
+		List_pop(&cache->full_slabs, &slab->slab_lnode);
+		List_pushFront(&cache->partial_slabs, &slab->slab_lnode);
 	}
 	else if (isSlabEmpty(slab)){
-		SlabList_pop(&cache->partial_slabs, slab);
-		SlabList_pushFront(&cache->empty_slabs, slab);
+		List_pop(&cache->partial_slabs, &slab->slab_lnode);
+		List_pushFront(&cache->empty_slabs, &slab->slab_lnode);
 	}
 }
 
-static void removeCacheSlab(cache_t* cache, struct SlabList* list, struct Slab* to_remove){
+static void removeCacheSlab(cache_t* cache, list_t* list, struct Slab* to_remove){
 	entry_t* entry;
 	long n_pages = cache->n_pages;
 	bool offslab = cache->offslab;
 
 	// Remove the slab from our structures
-	SlabList_pop(list, to_remove);
+	List_pop(list, &to_remove->slab_lnode);
 	for (int i=0 ; i<cache->n_pages ; i++){
 		entry = Hashmap_find(&m_hashmap, to_remove->payload + i*PAGE_SIZE);
 		if (entry != NULL) // Shouldn't happen
@@ -566,21 +432,18 @@ static void removeCacheSlab(cache_t* cache, struct SlabList* list, struct Slab* 
 
 static void shrinkCache(cache_t* cache, int n_slabs){
 	for (int i=0 ; i<n_slabs ; i++){
-		removeCacheSlab(cache, &cache->empty_slabs, cache->empty_slabs.head);
+		struct Slab* to_remove = List_getObject(cache->empty_slabs.head, struct Slab, slab_lnode);
+		removeCacheSlab(cache, &cache->empty_slabs, to_remove);
 	}
 }
 
 static int getReapablePages(struct Cache* cache){
 	int n_pages = 0;
-	struct Slab* cur_slab = cache->empty_slabs.head;
 
-	if (cur_slab == NULL)
-		return 0;
-
-	do {
+	lnode_t* node;
+	List_foreach(&cache->empty_slabs, node){
 		n_pages += cache->n_pages;
-		cur_slab = cur_slab->next;
-	} while (cur_slab->prev != cur_slab);
+	}
 
 	if (cache->constructor != NULL)
 		n_pages /= 2;
@@ -606,7 +469,9 @@ static void* allocatePages(long n, bool clear){
 
 static void freePages(void* pages, long n){
 	physical_address_t addr = VMM_toPhysical((virtual_address_t) pages);
-	PMM_freePages(addr, n);
+	if (false) // this avoids warnings
+		PMM_freePages(addr, n);
+	// TODO add VMM_unmap, then put back the PMM_freePages call
 }
 
 static int getKmallocCache(size_t size){
@@ -623,11 +488,14 @@ void SlabAllocator_initialize(){
 	char name[32];
 	size_t size;
 
+	// Note: m_caches and m_cacheCache.full/partial/empty_list are initialized
+	// at compile time
+
 	for (int i=0 ;i<KMALLOC_N_CACHES ; i++){
 		size = m_kmallocCaches[i].objSize;
 		snprintf(name, sizeof(name), "kmalloc-%lu", size);
 		initCache(m_kmallocCaches+i, name, size, NULL);
-		CacheList_pushFront(&m_caches, m_kmallocCaches+i);
+		List_pushFront(&m_caches, &m_kmallocCaches[i].cache_lnode);
 	}
 }
 
@@ -635,19 +503,18 @@ void SlabAllocator_reapAndTear(){
 	struct Cache* cur, *cache_to_reap = NULL;
 	int cur_n_pages, to_reap_n_pages = 0;
 
-	cur = m_caches.head;
-	if (cur == NULL) return; // nothing to reap
+	if (List_isEmpty(&m_caches))
+		return;
 
-	do {
-		// Count how many free pages we can reap on this slab
+	lnode_t* node;
+	List_foreach(&m_caches, node){
+		cur = List_getObject(node, struct Cache, cache_lnode);
 		cur_n_pages = getReapablePages(cur);
-		// If it's bigger than the previous, replace
 		if (cur_n_pages > to_reap_n_pages){
 			to_reap_n_pages = cur_n_pages;
 			cache_to_reap = cur;
 		}
-		cur = cur->next;
-	} while (cur->prev != cur);
+	}
 
 	if (cache_to_reap == NULL)
 		return;
@@ -667,7 +534,7 @@ cache_t* Cache_create(const char* name, size_t objsize, ctor_t ctor){
 	if (cache == NULL) return NULL;
 
 	initCache(cache, name, objsize, ctor);
-	CacheList_pushFront(&m_caches, cache);
+	List_pushFront(&m_caches, &cache->cache_lnode);
 	return cache;
 }
 
@@ -676,20 +543,20 @@ void Cache_destroy(cache_t* cache){
 	struct Slab* slab_to_free;
 
 	// Delete all slabs
-	while (cache->empty_slabs.head != NULL){
-		slab_to_free = cache->empty_slabs.head;
+	while (!List_isEmpty(&cache->empty_slabs)){
+		slab_to_free = List_getObject(cache->empty_slabs.head, struct Slab, slab_lnode);
 		removeCacheSlab(cache, &cache->empty_slabs, slab_to_free);
 	}
-	while (cache->partial_slabs.head != NULL){
-		slab_to_free = cache->partial_slabs.head;
+	while (!List_isEmpty(&cache->partial_slabs)){
+		slab_to_free = List_getObject(cache->partial_slabs.head, struct Slab, slab_lnode);
 		removeCacheSlab(cache, &cache->partial_slabs, slab_to_free);
 	}
-	while (cache->full_slabs.head != NULL){
-		slab_to_free = cache->full_slabs.head;
+	while (!List_isEmpty(&cache->full_slabs)){
+		slab_to_free = List_getObject(cache->full_slabs.head, struct Slab, slab_lnode);
 		removeCacheSlab(cache, &cache->full_slabs, slab_to_free);
 	}
 
-	CacheList_pop(&m_caches, cache);
+	List_pop(&m_caches, &cache->cache_lnode);
 	Cache_free(&m_cacheCache, cache);
 }
 
@@ -700,26 +567,26 @@ void* Cache_malloc(cache_t* cache){
 	if (cache == NULL) return NULL;
 
 	// Allocate from partial slabs
-	if (cache->partial_slabs.head != NULL){
-		slab = cache->partial_slabs.head;
+	if (!List_isEmpty(&cache->partial_slabs)){
+		slab = List_getObject(cache->partial_slabs.head, struct Slab, slab_lnode);
 	}
 	// Allocate from free slabs. Grow if necessary
 	else {
-		if (cache->empty_slabs.head==NULL && !growCache(cache))
+		if (List_isEmpty(&cache->empty_slabs) && !growCache(cache))
 			return NULL;
 		was_empty = true;
-		slab = cache->empty_slabs.head;
+		slab = List_getObject(cache->empty_slabs.head, struct Slab, slab_lnode);
 	}
 
 	void* res = allocateObject(slab);
 
 	if (was_empty){
-		SlabList_pop(&cache->empty_slabs, slab);
-		SlabList_pushFront(&cache->partial_slabs, slab);
+		List_pop(&cache->empty_slabs, &slab->slab_lnode);
+		List_pushFront(&cache->partial_slabs, &slab->slab_lnode);
 	}
 	else if (isSlabFull(slab)){
-		SlabList_pop(&cache->partial_slabs, slab);
-		SlabList_pushFront(&cache->full_slabs, slab);
+		List_pop(&cache->partial_slabs, &slab->slab_lnode);
+		List_pushFront(&cache->full_slabs, &slab->slab_lnode);
 	}
 
 	return res;
@@ -760,8 +627,8 @@ void kfree(void* ptr){
 
 	entry_t* entry = Hashmap_find(&m_hashmap, ptr);
 	if (entry == NULL){
-		fprintf(stderr, "Bogus pointer passed to realloc !!\n");
-		abort();
+		log(PANIC, MODULE, "Bogus pointer passed to kfree !");
+		panic();
 	}
 
 	struct Slab* slab = entry->value;
@@ -794,8 +661,8 @@ void* krealloc(void* ptr, size_t new_size){
 
 	struct HashmapEntry* map_entry = Hashmap_find(&m_hashmap, ptr);
 	if (!map_entry){
-		fprintf(stderr, "Bogus pointer passed to realloc !!\n");
-		abort();
+		log(PANIC, MODULE, "Bogus pointer passed to realloc !");
+		panic();
 	}
 	old_size = map_entry->value->owner->objSize;
 	if (old_size >= new_size)
