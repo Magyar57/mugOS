@@ -1,6 +1,8 @@
 #ifndef __LIST_H__
 #define __LIST_H__
 
+#include "Preprocessor.h"
+
 // List.h: Circular doubly-linked list implementation
 // Note: an empty list head (list_t) refers itself. In the same way, first->prev & last->next
 // nodes refers to the the head too. This avoids checking for NULL all the time.
@@ -34,8 +36,10 @@ typedef struct List {
 /// lnode_t* node; // supposing this is set to a valid node in a valid MyList instance
 /// struct MyList* my_list = List_getObject(node, struct MyList, list_node);
 /// ```
-#define List_getObject(ptr, obj_type, member_name) \
-	( (obj_type *) ((char *)(ptr) - offsetof(obj_type, member_name)) )
+#define List_getObject(ptr, obj_type, member_name) ({ \
+	typecheck(lnode_t*, ptr); \
+	(obj_type *) ((char *)(ptr) - offsetof(obj_type, member_name)); \
+})
 
 /// @brief Iterate over a list (node is updated at each iteration). Usage:
 /// ```c
