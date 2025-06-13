@@ -1,9 +1,10 @@
 #include <stdint.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
+#include "stdio.h"
+#include "assert.h"
+#include "string.h"
+#include "stdlib.h"
+#include "mugOS/List.h"
 #include "Preprocessor.h"
 #include "Memory/Memory.h"
 
@@ -57,29 +58,14 @@ struct ChunkInfo {
 	void* base;				// Base address
 	size_t size;			// Size of the allocated region
 	uint64_t bitmap;		// Allocation bitmap. It must fit in one uint64_t
-
-	struct ChunkInfo* next; // Doubly-linked list: next node
-	struct ChunkInfo* prev; // Doubly-linked list: previous node
-};
-
-struct ChunkBucket {
-	// Note: buckets are simply a doubly-linked list of partial ChunkInfo
-	struct ChunkInfo* head;
-	struct ChunkInfo* tail;
+	lnode_t lnode; 			// chunks are stored in buckets (linked lists)
 };
 
 struct Chungus {
 	uint64_t bitmap[CHUNGUS_BITMAP_SIZE];
-
-	struct Chungus* next;
-	struct Chungus* prev;
+	lnode_t lnode; // chunguses can be part of a list
 
 	struct ChunkInfo chunks[];
-};
-
-struct ChungusList {
-	struct Chungus* head;
-	struct Chungus* tail;
 };
 
 compile_assert(sizeof(struct Chungus) + CHUNGUS_N_CHUNKS*sizeof(struct Chungus) <= PAGE_SIZE);
@@ -100,134 +86,25 @@ typedef struct Hashmap {
 
 struct Heap {
 	hashmap_t allocMap;									// Map of allocated blocks -> size
-	struct ChungusList partialChunguses;				// Pools of allocatable BlockInfo
-	struct ChunkBucket smallBuckets[N_SMALLBUCKET];		// Buckets of free chunks (doubly-linked lists)
+	list_t partialChunguses;							// Pools of allocatable BlockInfo
+	list_t smallBuckets[N_SMALLBUCKET];					// Buckets of free chunks (doubly-linked lists)
 	struct ChunkInfo freeCache[N_BIGBLOCKS_CACHED];		// Cache for freed large blocks (we reuse some)
 };
 
-static struct Heap m_heap;
+static struct Heap m_heap = {
+	.partialChunguses = LIST_STATIC_INIT(m_heap.partialChunguses),
+	.smallBuckets = {
+		LIST_STATIC_INIT(m_heap.smallBuckets[0]),
+		LIST_STATIC_INIT(m_heap.smallBuckets[1]),
+		LIST_STATIC_INIT(m_heap.smallBuckets[2]),
+		LIST_STATIC_INIT(m_heap.smallBuckets[3]),
+		LIST_STATIC_INIT(m_heap.smallBuckets[4]),
+		LIST_STATIC_INIT(m_heap.smallBuckets[5]),
+	},
+};
 
 static void* allocatePages(long n, bool clear);
 static void freePages(void* pages, long n);
-
-// ================ Doubly-linked lists ================
-// Note: code is dupplicated, to simplify code structure
-
-static void Bucket_pushFront(struct ChunkBucket* bucket, struct ChunkInfo* chunk){
-	assert(bucket && chunk);
-	chunk->prev = chunk;
-
-	// Note: we don't need to check bucket->tail because it is NULL <=> bucket->head is NULL
-	if (bucket->head){
-		chunk->next = bucket->head;
-		bucket->head->prev = chunk;
-		bucket->tail->next = chunk;
-	}
-	// Bucket is empty
-	else {
-		chunk->next = chunk;
-		bucket->tail = chunk;
-	}
-
-	// Change the head AT THE LAST MOMENT to not loose access to the previous one
-	bucket->head = chunk;
-}
-
-static void Bucket_pop(struct ChunkBucket* bucket, struct ChunkInfo* chunk){
-	assert(bucket && chunk);
-	assert(bucket->head); // cannot call pop if linked list is empty
-
-	if (chunk == bucket->head && chunk == bucket->tail){
-		bucket->head = NULL;
-		bucket->tail = NULL;
-		chunk->next = NULL;
-		chunk->prev = NULL;
-		return;
-	}
-
-	// Block is ONLY head
-	if (chunk == bucket->head){
-		bucket->head = bucket->head->next; // update head
-		bucket->head->prev = bucket->head; // loop head on itself
-		bucket->tail->next = bucket->head; // next of tail loops to head
-		chunk->next = NULL;
-		chunk->prev = NULL;
-		return;
-	}
-
-	// Block is ONLY tail
-	if (chunk == bucket->tail){
-		bucket->tail = chunk->prev;
-		chunk->prev->next = bucket->head;
-		chunk->next = NULL;
-		chunk->prev = NULL;
-		return;
-	}
-
-	chunk->next->prev = chunk->prev;
-	chunk->prev->next = chunk->next;
-
-	chunk->next = NULL;
-	chunk->prev = NULL;
-}
-
-static void ChungusList_pushFront(struct ChungusList* chunguses, struct Chungus* chungus){
-	assert(chunguses && chungus);
-	chungus->prev = chungus;
-
-	// Note: we don't need to check chunguses->tail because it is NULL <=> chunguses->head is NULL
-	if (chunguses->head){
-		chungus->next = chunguses->head;
-		chunguses->head->prev = chungus;
-		chunguses->tail->next = chungus;
-	}
-	// List is empty
-	else {
-		chungus->next = chungus;
-		chunguses->tail = chungus;
-	}
-
-	// Change the head AT THE LAST MOMENT to not loose access to the previous one
-	chunguses->head = chungus;
-}
-
-static void Chunguses_pop(struct ChungusList* chunguses, struct Chungus* chungus){
-	assert(chunguses && chungus);
-	assert(chunguses->head); // cannot call pop if linked list is empty
-
-	if (chungus == chunguses->head && chungus == chunguses->tail){
-		chunguses->head = NULL;
-		chunguses->tail = NULL;
-		chungus->next = NULL;
-		chungus->prev = NULL;
-		return;
-	}
-
-	// Block is ONLY head
-	if (chungus == chunguses->head){
-		chunguses->head = chunguses->head->next; // update head
-		chunguses->head->prev = chunguses->head; // loop head on itself
-		chunguses->tail->next = chunguses->head; // next of tail loops to head
-		chungus->next = NULL;
-		chungus->prev = NULL;
-		return;
-	}
-
-	// Block is ONLY tail
-	if (chungus == chunguses->tail){
-		chunguses->tail = chungus->prev;
-		chungus->prev->next = chunguses->head;
-		chungus->next = NULL;
-		chungus->prev = NULL;
-		return;
-	}
-
-	chungus->next->prev = chungus->prev;
-	chungus->prev->next = chungus->next;
-
-	chungus->next = NULL;
-	chungus->prev = NULL;
-}
 
 // ================ Hashmap ================
 
@@ -412,11 +289,9 @@ static bool allocateChunk(struct ChunkInfo* chunk, size_t size){
 	long n_pages = roundToPage(size);
 
 	chunk->base = allocatePages(n_pages, false);
-	if (!chunk->base) return false;
+	if (chunk->base == NULL) return false;
 
 	chunk->size = size;
-	chunk->next = NULL;
-	chunk->prev = NULL;
 
 	// Mark ChunkInfo as allocated in its Chungus
 	struct Chungus* chungus = getChungus(chunk);
@@ -455,21 +330,22 @@ static inline bool isChunkEmpty(struct ChunkInfo* chunk){
 	return (chunk->bitmap == empty_mask);
 }
 
-static bool shouldFreeChunk(struct ChunkBucket* bucket, struct ChunkInfo* chunk){
+static bool shouldFreeChunk(list_t* bucket, struct ChunkInfo* chunk){
 	// We can free chunk if we got enough (>=target) free blocks in the bucket
 	const int target_n_blocks = 3*PAGE_SIZE / (2*chunk->size); // threshold: 1.5 fully empty chunks
 	int n_free_blocks = 0;
-	struct ChunkInfo* cur = bucket->head;
+	struct ChunkInfo* cur;
 
-	do {
+	lnode_t* node;
+	List_foreach(bucket, node){
+		cur = List_getObject(node, struct ChunkInfo, lnode);
 		if (cur != chunk){
-			int n_bits_to_zero = 64 - __builtin_popcountll(chunk->bitmap);
+			int n_bits_to_zero = 64 - __builtin_popcountll(cur->bitmap);
 			n_free_blocks += n_bits_to_zero;
 		}
 		if (n_free_blocks >= target_n_blocks)
 			return true;
-		cur = cur->next;
-	} while(cur->prev != cur);
+	}
 
 	return false;
 }
@@ -487,9 +363,6 @@ static struct Chungus* allocateChungus(){
 	uint64_t mask = (index == 0) ? 0x0 :
 		(1ull << (64 - index)) - 1; // e.g. 3 => 0b00011111
 	chungus->bitmap[CHUNGUS_BITMAP_SIZE-1] = mask;
-
-	chungus->next = NULL;
-	chungus->prev = NULL;
 
 	return chungus;
 }
@@ -523,7 +396,7 @@ static inline bool isChungusEmpty(struct Chungus* chungus){
 	return last_fully_free;
 }
 
-static struct ChunkInfo* findFreeChunkInChungus_chungus(struct Chungus* chungus){
+static struct ChunkInfo* findFreeChunk_chungus(struct Chungus* chungus){
 	// Note: This is an internal function for findFreeChunk_chungusList
 
 	for (int i=0 ; i<CHUNGUS_BITMAP_SIZE ; i++){
@@ -539,31 +412,27 @@ static struct ChunkInfo* findFreeChunkInChungus_chungus(struct Chungus* chungus)
 	return NULL;
 }
 
-static struct ChunkInfo* findFreeChunk_chungusList(struct ChungusList* chunguses){
+static struct ChunkInfo* findFreeChunk_chungusList(list_t* chunguses){
 	assert(chunguses);
-	struct Chungus* curChungus = chunguses->head;
+	struct Chungus* cur;
 	struct ChunkInfo* res;
 
 	// Note: This is an internal function for getFreeChunk
 
-	if (!curChungus)
-		return NULL;
-
 	// Iterate over all chunguses
-	do {
-		res = findFreeChunkInChungus_chungus(curChungus);
-		if (res)
-			return res;
-
-		curChungus = curChungus->next;
-	} while (curChungus->next != curChungus);
+	lnode_t* node;
+	List_foreach(chunguses, node){
+		cur = List_getObject(node, struct Chungus, lnode);
+		res = findFreeChunk_chungus(cur);
+		if (res) return res;
+	}
 
 	return NULL;
 }
 
 /// @brief Searches a free chunk from the `chunguses`, allocating a new chungus if needed
 /// @returns Address of the initialized chunk, NULL on failure
-static struct ChunkInfo* getFreeChunk(struct ChungusList* chunguses){
+static struct ChunkInfo* getFreeChunk(list_t* chunguses){
 	struct ChunkInfo* chunk;
 	struct Chungus* chungus;
 
@@ -572,14 +441,14 @@ static struct ChunkInfo* getFreeChunk(struct ChungusList* chunguses){
 	if (chunk){
 		chungus = getChungus(chunk);
 		if (isChungusFull(chungus))
-			Chunguses_pop(chunguses, chungus);
+			List_pop(chunguses, &chungus->lnode);
 		return chunk;
 	}
 
 	// No available ChunkInfo to allocate, aka chungus list is empty. Allocate new chungus
 	chungus = allocateChungus();
 	if (!chungus) return NULL;
-	ChungusList_pushFront(chunguses, chungus);
+	List_pushFront(chunguses, &chungus->lnode);
 
 	// Note: no need to check whether the chungus is full here :)
 	chunk = findFreeChunk_chungusList(chunguses);
@@ -600,19 +469,20 @@ static inline int countFreeChunkInChungus(struct Chungus* chungus){
 	return free_chunks;
 }
 
-static bool shouldFreeChungus(struct ChungusList* chunguses, struct Chungus* chungus){
+static bool shouldFreeChungus(list_t* chunguses, struct Chungus* chungus){
 	// We can free a chungus if we got enough (>=target) free BlockInfo in the chunguses
 	const int target_n_chunks = 3*PAGE_SIZE / (2*CHUNGUS_N_CHUNKS); // threshold: 1.5 fully empty chungus
 	int n_free_chunks = 0;
-	struct Chungus* cur = chunguses->head;
+	struct Chungus* cur;
 
-	do {
+	lnode_t* node;
+	List_foreach(chunguses, node){
+		cur = List_getObject(node, struct Chungus, lnode);
 		if (cur != chungus)
 			n_free_chunks += countFreeChunkInChungus(chungus);
 		if (n_free_chunks >= target_n_chunks)
 			return true;
-		cur = cur->next;
-	} while(cur->prev != cur);
+	}
 
 	return false;
 }
@@ -641,7 +511,9 @@ static void* allocatePages(long n, bool clear){
 static void freePages(void* pages, long n){
 	#ifdef KERNEL
 	physical_address_t addr = VMM_toPhysical((virtual_address_t) pages);
-	PMM_freePages(addr, n);
+	if (false)
+		PMM_freePages(addr, n);
+	// TODO add VMM_unmap
 	#else
 	munmap(pages, n*PAGE_SIZE);
 	#endif
@@ -662,15 +534,14 @@ static int getSmallbucketOrder(size_t size){
 static void* allocateSmallbucket(size_t size){
 	assert(size < BIGBUCKET_THRESHOLD);
 	void* res;
+	struct ChunkInfo* chunk;
 
 	size = max(size, MIN_BLOCK_SIZE);
 	int order = getSmallbucketOrder(size);
-
-	struct ChunkBucket* bucket = m_heap.smallBuckets + order;
-	struct ChunkInfo* chunk = bucket->head;
+	list_t* bucket = m_heap.smallBuckets + order;
 
 	// We need to allocate a Chunk
-	if (!chunk){
+	if (List_isEmpty(bucket)){
 		chunk = getFreeChunk(&m_heap.partialChunguses);
 		if (!chunk) return NULL;
 		if (!allocateChunk(chunk, size))
@@ -679,13 +550,16 @@ static void* allocateSmallbucket(size_t size){
 			freeChunk(chunk);
 			return NULL;
 		}
-		Bucket_pushFront(bucket, chunk);
+		List_pushFront(bucket, &chunk->lnode);
+	}
+	else {
+		chunk = List_getObject(bucket->head, struct ChunkInfo, lnode);
 	}
 
 	// Allocate a block in our chunk
 	res = allocateBlock(chunk);
 	if (isChunkFull(chunk))
-		Bucket_pop(bucket, chunk);
+		List_pop(bucket, &chunk->lnode);
 
 	return res;
 }
@@ -693,21 +567,21 @@ static void* allocateSmallbucket(size_t size){
 static void freeSmallbucket(struct HashmapEntry* entry, void* ptr){
 	struct ChunkInfo* chunk = entry->value;
 	int order = getSmallbucketOrder(chunk->size);
-	struct ChunkBucket* bucket = m_heap.smallBuckets + order;
+	list_t* bucket = m_heap.smallBuckets + order;
 
 	bool add_to_bucket = isChunkFull(chunk);
 	freeBlock(chunk, ptr);
 
 	// Bucket was full, add it back to the allocatable buckets
 	if (add_to_bucket){
-		Bucket_pushFront(bucket, chunk);
+		List_pushFront(bucket, &chunk->lnode);
 		return;
 	}
 
 	// Emptyied the chunk, handle it
 	if (isChunkEmpty(chunk) && shouldFreeChunk(bucket, chunk)){
 		// Free chunk & update the hashmap
-		Bucket_pop(bucket, chunk);
+		List_pop(bucket, &chunk->lnode);
 		freeChunk(chunk);
 		Hashmap_delete(&m_heap.allocMap, entry);
 
@@ -720,13 +594,13 @@ static void freeSmallbucket(struct HashmapEntry* entry, void* ptr){
 		chungus->bitmap[bitmapMajorIndex] &= ~(0x8000000000000000 >> bitmapMinorIndex);
 
 		if (was_full){
-			ChungusList_pushFront(&m_heap.partialChunguses, chungus);
+			List_pushFront(&m_heap.partialChunguses, &chungus->lnode);
 			return;
 		}
 
 		// Emptyied the chungus, handle it
 		if (isChungusEmpty(chungus) && shouldFreeChungus(&m_heap.partialChunguses, chungus)){
-			Chunguses_pop(&m_heap.partialChunguses, chungus);
+			List_pop(&m_heap.partialChunguses, &chungus->lnode);
 			freeChungus(chungus);
 		}
 	}
@@ -802,8 +676,11 @@ void* Heap_calloc(size_t size){
 }
 
 void Heap_free(void* ptr){
+	if (ptr == NULL)
+		return;
+
 	struct HashmapEntry* res = Hashmap_find(&m_heap.allocMap, ptr);
-	if (!res){
+	if (res == NULL){
 		fprintf(stderr, "Bogus pointer or double free detected !!\n");
 		abort();
 	}
