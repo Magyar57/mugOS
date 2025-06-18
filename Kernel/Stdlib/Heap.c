@@ -511,7 +511,7 @@ static void* allocatePages(long n, bool clear){
 static void freePages(void* pages, long n){
 	#ifdef KERNEL
 	physical_address_t addr = VMM_toPhysical((virtual_address_t) pages);
-	VMM_unmap(pages, n);
+	VMM_unmap((virtual_address_t)pages, n);
 	PMM_freePages(addr, n);
 	#else
 	munmap(pages, n*PAGE_SIZE);

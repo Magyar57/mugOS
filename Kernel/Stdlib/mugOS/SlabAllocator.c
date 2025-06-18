@@ -469,7 +469,7 @@ static void* allocatePages(long n, bool clear){
 
 static void freePages(void* pages, long n){
 	physical_address_t addr = VMM_toPhysical((virtual_address_t) pages);
-	VMM_unmap(pages, n);
+	VMM_unmap((virtual_address_t)pages, n);
 	PMM_freePages(addr, n);
 }
 
