@@ -278,8 +278,8 @@ void PMM_freePages(physical_address_t addr, uint64_t n_pages){
 // ================ Functions ================
 
 void PMM_printMemoryUsage(){
-	uint64_t total = m_bitmapAllocator.allocatableBlocks * PAGE_SIZE;
-	uint64_t used = m_bitmapAllocator.allocatedBlocks * PAGE_SIZE;
+	const uint64_t total = m_bitmapAllocator.allocatableBlocks * PAGE_SIZE;
+	const uint64_t used = m_bitmapAllocator.allocatedBlocks * PAGE_SIZE;
 
 	int magnitude_totalMem = getMagnitude(total);
 	magnitude_totalMem = (magnitude_totalMem > 6) ? 6 : magnitude_totalMem;
@@ -295,6 +295,13 @@ void PMM_printMemoryUsage(){
 		used_atMagnitude, SIZE_UNITS[magnitude_usedMem],
 		total_atMagnitude, SIZE_UNITS[magnitude_totalMem]
 	);
+}
+
+void PMM_printPagesUsage(){
+	const uint64_t total = m_bitmapAllocator.allocatableBlocks;
+	const uint64_t used = m_bitmapAllocator.allocatedBlocks;
+
+	log(DEBUG, MODULE, "Pages usage: %lu / %lu", used, total);
 }
 
 // ================ Initialization ================
