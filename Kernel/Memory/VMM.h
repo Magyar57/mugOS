@@ -27,7 +27,7 @@ virtual_address_t VMM_mapInHeap(physical_address_t addr, uint64_t n_pages, int f
 
 // ================ Unmap memory ================
 
-void VMM_unmap(virtual_address_t addr); // unimplemented
+void VMM_unmap(virtual_address_t addr, uint64_t n_pages);
 
 // ================ Physical -> Virtual ================
 

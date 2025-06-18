@@ -20,6 +20,6 @@ typedef address_t virtual_address_t;
 #define roundToPage(size)		(((size) + PAGE_SIZE-1) / PAGE_SIZE)
 
 #define toCanonical(addr) \
-	(addr & 0x0000800000000000) ? (addr | 0xffff000000000000) : (addr & 0x0000ffffffffffff)
+	(((addr) & 0x0000800000000000) ? ((addr) | 0xffff000000000000) : ((addr) & 0x0000ffffffffffff))
 
 #endif

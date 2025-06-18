@@ -23,7 +23,7 @@
 - [X] Add kernel step by step debugging support (gdb)
 - [X] Memory detection (map)
 - [X] Physical memory allocator (bitmap)
-- [X] Virtual memory management (paging)
+- [X] Virtual memory management (paging: mapping/unmapping)
 - [X] Kernel heap (kmalloc, slab allocator)
 - [ ] Virtual filesystem
 - [ ] Kernel FAT driver

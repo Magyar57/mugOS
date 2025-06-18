@@ -84,9 +84,8 @@ virtual_address_t VMM_mapInHeap(physical_address_t addr, uint64_t n_pages, int f
 
 // ================ Unmap memory ================
 
-void VMM_unmap(virtual_address_t addr){
-	log(PANIC, MODULE, "VMM_unmap unimplemented !! %p", addr);
-	panic();
+void VMM_unmap(virtual_address_t addr, uint64_t n_pages){
+	return Paging_unmap(addr, n_pages);
 }
 
 // ================ Physical -> Virtual ================

@@ -319,12 +319,17 @@ static physical_address_t allocatePageOrPanic(){
 	return res;
 }
 
-static inline union PageDirectoryPointerTableEntry* getPDP(struct PDTPDescriptor* entry){
+static inline union PageDirectoryPointerTableEntry* getPDP(struct PDTPDescriptor* entry, bool alloc){
 	union PageDirectoryPointerTableEntry* pdp;
 	physical_address_t page_phys;
 
 	if (entry->present)
 		return mapDynamicPDPT(getEntryAddress(entry->address));
+
+	if (!alloc){
+		log(PANIC, MODULE, "Tried to retrieve a non-present page directory pointer table");
+		panic();
+	}
 
 	// Allocate a new table
 	page_phys = allocatePageOrPanic();
@@ -346,12 +351,17 @@ static inline union PageDirectoryPointerTableEntry* getPDP(struct PDTPDescriptor
 	return pdp;
 }
 
-static inline union PageDirectoryEntry* getPD(union PageDirectoryPointerTableEntry* entry){
+static inline union PageDirectoryEntry* getPD(union PageDirectoryPointerTableEntry* entry, bool alloc){
 	union PageDirectoryEntry* pd;
 	physical_address_t page_phys;
 
 	if (entry->pageDirectory.present)
 		return mapDynamicPD(getEntryAddress(entry->pageDirectory.address));
+
+	if (!alloc){
+		log(PANIC, MODULE, "Tried to retrieve a non-present page directory");
+		panic();
+	}
 
 	// Allocate a new table
 	page_phys = allocatePageOrPanic();
@@ -373,12 +383,17 @@ static inline union PageDirectoryEntry* getPD(union PageDirectoryPointerTableEnt
 	return pd;
 }
 
-static inline struct PageDescriptor4KB* getPT(union PageDirectoryEntry* entry){
+static inline struct PageDescriptor4KB* getPT(union PageDirectoryEntry* entry, bool alloc){
 	struct PageDescriptor4KB* pt;
 	physical_address_t page_phys;
 
 	if (entry->pageTable.present)
 		return mapDynamicPT(getEntryAddress(entry->pageTable.address));
+
+	if (!alloc){
+		log(PANIC, MODULE, "Tried to retrieve a non-present page table");
+		panic();
+	}
 
 	// Allocate a new table
 	page_phys = allocatePageOrPanic();
@@ -411,12 +426,13 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 	uint64_t pages_remaining = n_pages; // in 4KB pages
 
 	while(pages_remaining > 0){
+		uint64_t pml4_index = getIndexPML4(virt_cur);
 		uint64_t pdp_index = getIndexPageDirectoryPointerTable(virt_cur);
 		uint64_t pd_index = getIndexPageDirectory(virt_cur);
 		uint64_t pt_index = getIndexPageTable(virt_cur);
 
 		// Get PDP in the PML4
-		cur_pdp = getPDP(m_pml4 + getIndexPML4(virt_cur));
+		cur_pdp = getPDP(m_pml4 + pml4_index, true);
 
 		// Try to map as 1GB pages (if addr is 1GB aligned AND we have more than 1GB to map)
 		if (m_has1GBPages && phys_cur % SIZE_1GB == 0 && pages_remaining >= SIZE_1GB/PAGE_SIZE){
@@ -432,7 +448,7 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		}
 
 		// Get Page Directory in PDP
-		cur_pd = getPD(cur_pdp + pdp_index);
+		cur_pd = getPD(cur_pdp + pdp_index, true);
 
 		// Try to map as 2MB pages
 		if (phys_cur % SIZE_2MB == 0 && pages_remaining >= SIZE_2MB/PAGE_SIZE){
@@ -448,7 +464,7 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 		}
 
 		// Get Page Table in Page Directory
-		cur_pt = getPT(cur_pd + pd_index);
+		cur_pt = getPT(cur_pd + pd_index, true);
 
 		// Map 4KB pages in the page table
 		mappable = min(TABLE_SIZE - pt_index, pages_remaining);
@@ -459,6 +475,103 @@ void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 			virt_cur += PAGE_SIZE;
 		}
 		pages_remaining -= mappable;
+	}
+}
+
+// ================ Paging_unmap ================
+
+static inline bool tableIsEmpty(void* table){
+	struct PageDescriptor4KB* polymorphic_table = table;
+
+	for (int i=0 ; i<TABLE_SIZE ; i++)
+		if (polymorphic_table[i].present)
+			return false;
+
+	return true;
+}
+
+static void freeTable(void* table){
+	struct PageDescriptor4KB* polymorphic_table = table;
+	polymorphic_table->present = false;
+
+	physical_address_t phys = getEntryAddress(polymorphic_table->address);
+	PMM_freePages(phys, 1);
+}
+
+void Paging_unmap(virtual_address_t virt, uint64_t n_pages){
+	union PageDirectoryPointerTableEntry* cur_pdp;
+	union PageDirectoryEntry* cur_pd;
+	struct PageDescriptor4KB* cur_pt;
+	virtual_address_t virt_cur = virt;
+
+	uint64_t removable;
+	uint64_t pages_remaining = n_pages; // in 4KB pages
+
+	while(pages_remaining > 0){
+		uint64_t pml4_index = getIndexPML4(virt_cur);
+		uint64_t pdp_index = getIndexPageDirectoryPointerTable(virt_cur);
+		uint64_t pd_index = getIndexPageDirectory(virt_cur);
+		uint64_t pt_index = getIndexPageTable(virt_cur);
+
+		// Get PDP in the PML4
+		cur_pdp = getPDP(m_pml4 + pml4_index, false);
+
+		// Mapped as 1GB pages
+		if (cur_pdp->page1GB.pageSize == 1){
+			removable = min(TABLE_SIZE - pdp_index, pages_remaining*SIZE_4KB / SIZE_1GB);
+			for (uint64_t i=0 ; i<removable ; i++){
+				assert(cur_pdp[pdp_index+i].page1GB.present == true);
+				cur_pdp[pdp_index+i].page1GB.present = false;
+				flushTLB((void*) virt_cur);
+				virt_cur += SIZE_1GB;
+			}
+			if (tableIsEmpty(cur_pdp))
+				freeTable(m_pml4 + pml4_index);
+			pages_remaining -= removable * SIZE_1GB/PAGE_SIZE;
+			continue;
+		}
+
+		// Get Page Directory in PDP
+		cur_pd = getPD(cur_pdp + pdp_index, false);
+
+		// Mapped as 2MB pages
+		if (cur_pd->page2MB.pageSize == 1){
+			removable = min(TABLE_SIZE - pd_index, pages_remaining*SIZE_4KB / SIZE_2MB);
+			for (uint64_t i=0 ; i<removable ; i++){
+				assert(cur_pd[pd_index+i].page2MB.present == true);
+				cur_pd[pd_index+i].page2MB.present = false;
+				flushTLB((void*) virt_cur);
+				virt_cur += SIZE_2MB;
+			}
+			if (tableIsEmpty(cur_pd)){
+				freeTable(cur_pdp + pdp_index);
+				if (tableIsEmpty(cur_pdp))
+					freeTable(m_pml4 + pml4_index);
+			}
+			pages_remaining -= removable * SIZE_2MB/PAGE_SIZE;
+			continue;
+		}
+
+		// Get Page Table in Page Directory
+		cur_pt = getPT(cur_pd + pd_index, false);
+
+		// Unmap the 4KB pages in the page table
+		removable = min(TABLE_SIZE - pt_index, pages_remaining);
+		for (uint64_t i=0 ; i<removable ; i++){
+			assert(cur_pt[pt_index+i].present == true);
+			cur_pt[pt_index+i].present = false;
+			flushTLB((void*) virt_cur);
+			virt_cur += PAGE_SIZE;
+		}
+		if (tableIsEmpty(cur_pt)){
+			freeTable(cur_pd + pd_index);
+			if (tableIsEmpty(cur_pd)){
+				freeTable(cur_pdp + pdp_index);
+				if (tableIsEmpty(cur_pdp))
+					freeTable(m_pml4 + pml4_index);
+			}
+		}
+		pages_remaining -= removable;
 	}
 }
 
