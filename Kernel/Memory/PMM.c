@@ -159,10 +159,10 @@ static bool isFullyAllocated(struct BitmapAllocator* allocator, uint64_t start_b
 	int index_in_first_uint64 = start_bit % 64;
 	int index_in_last_uint64 = end_bit % 64;
 
-	// Special case: only one uint64 to check
+	// Edge case: only one uint64 to check
 	if (start_index == end_index){
 		cur = allocator->bitmap[start_index] >> (64 - index_in_last_uint64);
-		for (uint64_t i=0 ; i<end_bit-start_bit ; i++){
+		for (uint64_t i=start_bit ; i<end_bit ; i++){
 			if ((cur & 1) == 0)
 				return false;
 			cur >>= 1;
@@ -172,7 +172,7 @@ static bool isFullyAllocated(struct BitmapAllocator* allocator, uint64_t start_b
 
 	// First uint64
 	if (index_in_first_uint64 != 0){
-		cur = allocator->bitmap[start_index] >> index_in_first_uint64;
+		cur = allocator->bitmap[start_index];
 		start_index++;
 		for (int j=index_in_first_uint64 ; j<64 ; j++){
 			if ((cur & 1) == 0)
@@ -267,7 +267,7 @@ void PMM_freePages(physical_address_t addr, uint64_t n_pages){
 
 	// Check that we don't free stuff that's already free
 	if (!isFullyAllocated(&m_bitmapAllocator, start_bit, end_bit)){
-		log(ERROR, MODULE, "Detected double free or bad address and size !! In %s", __FUNCTION__);
+		log(ERROR, MODULE, "PMM_freePages: double free or bogus pointer detected");
 		return;
 	}
 
