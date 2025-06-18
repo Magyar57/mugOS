@@ -469,9 +469,8 @@ static void* allocatePages(long n, bool clear){
 
 static void freePages(void* pages, long n){
 	physical_address_t addr = VMM_toPhysical((virtual_address_t) pages);
-	if (false) // this avoids warnings
-		PMM_freePages(addr, n);
-	// TODO add VMM_unmap, then put back the PMM_freePages call
+	VMM_unmap(pages, n);
+	PMM_freePages(addr, n);
 }
 
 static int getKmallocCache(size_t size){
