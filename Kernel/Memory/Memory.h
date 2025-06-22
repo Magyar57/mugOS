@@ -10,8 +10,9 @@ typedef address_t virtual_address_t;
 #define SIZE_4KB 0x00001000 // 4 KiB is 4 * 2^10 = 4*1024
 #define SIZE_2MB 0x00200000 // 2 MiB is 2 * 2^20 = 2*1024*1024
 #define SIZE_1GB 0x40000000 // 1 GiB is 1 * 2^30 = 1*1024*1024*1024
-
 #define PAGE_SIZE				SIZE_4KB
+
+#define ADDRESS_SIZE			48	// In bits ; aka MAXPHYADDR aka M
 
 #define PAGE_SHIFT				12
 #define PAGE_MASK 				~(PAGE_SIZE-1)

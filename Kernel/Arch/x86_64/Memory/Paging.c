@@ -14,7 +14,6 @@
 #define MODULE "Paging"
 
 #define TABLE_SIZE		512	// Number of entries in the tables
-#define ADDRESS_SIZE	48	// In bits ; aka MAXPHYADDR aka M
 
 #pragma region "Paging structures"
 
