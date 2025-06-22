@@ -93,7 +93,7 @@ static inline bool writeControllerConfigurationByte(uint8_t byte){
 	return true;
 }
 
-void i8042_initialize(){
+void i8042_init(){
 	uint8_t buff;
 	IRQ_disableSpecific(IRQ_PS2_KEYBOARD);
 	IRQ_disableSpecific(IRQ_PS2_MOUSE);

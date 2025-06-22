@@ -360,7 +360,7 @@ static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memm
 	assert(freeBlocks - nPages == countFreeBlocks(allocator)); // check that we removed 'nPages' bits
 }
 
-void PMM_initialize(){
+void PMM_init(){
 	if (g_memoryMap.size == 0){
 		log(PANIC, MODULE, "PMM initialization needs the MemoryMap to be initialized first !");
 		panic();

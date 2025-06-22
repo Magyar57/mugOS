@@ -155,10 +155,10 @@ void ISR_pageFault(struct ISR_Params* params){
 // ================ Initialize ================
 
 // In ISR_defs.c
-void ISR_initializeInterruptHandlers();
+void ISR_initInterruptHandlers();
 
-void ISR_initialize(){
-	ISR_initializeInterruptHandlers();
+void ISR_init(){
+	ISR_initInterruptHandlers();
 
 	// Enable all ISR assembly methods (in ISR_defs.s)
 	// They all call ISR_Common with unified parameters

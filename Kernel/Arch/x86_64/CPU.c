@@ -135,7 +135,7 @@ static void parseCpuid_extended_8(struct CPU* cpu){
 	cpu->extFeatures.ints[5] = rbx;
 }
 
-void CPU_initialize(struct CPU* cpu){
+void CPU_init(struct CPU* cpu){
 	if (!CPU_supportsCpuid())
 		panicForMissingFeature("CPUID instruction");
 

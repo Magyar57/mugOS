@@ -32,9 +32,9 @@ struct Mapping {
 static struct Mapping m_premappings[MAX_PREMAPPINGS];
 static int m_nPremappings = 0;
 
-void VMM_initialize(){
+void VMM_init(){
 	// Initialize the paging structures
-	Paging_initializeTables();
+	Paging_initTables();
 
 	// Apply pre-mappings
 	for (int i=0 ; i<m_nPremappings ; i++){

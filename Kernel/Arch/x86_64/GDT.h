@@ -8,7 +8,7 @@
 #define GDT_SEGMENT_TSS_CPU0	0x28
 
 // Initialize the GDT
-void GDT_initialize();
+void GDT_init();
 
 // Initialize the TSS for CPU0
 void GDT_setTSS();

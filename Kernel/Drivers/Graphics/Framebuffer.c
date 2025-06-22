@@ -272,7 +272,7 @@ void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y
 	}
 }
 
-bool Framebuffer_initialize(Framebuffer* this){
+bool Framebuffer_init(Framebuffer* this){
 	// Sanitize check the needed variables were intialized correctly beforehand
 	if (this->address == NULL || this->width==0 || this->height==0 || this->pitch==0 || this->bpp==0)
 		return false;

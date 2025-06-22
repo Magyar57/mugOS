@@ -13,8 +13,9 @@ struct ISR_Params {
 
 typedef void (*ISR)(struct ISR_Params*);
 
-// Initialize the ISR (Interrupt Service Routines) in the IDT (important: call IDT_initialize beforehand !)
-void ISR_initialize();
+/// @brief Initialize the ISR (Interrupt Service Routines) in the IDT
+/// @note Call IDT_init beforehand !
+void ISR_init();
 
 // Register a handler for a given interrupt vector
 void ISR_registerHandler(uint8_t vector, ISR handler);

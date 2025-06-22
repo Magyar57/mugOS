@@ -9,7 +9,7 @@
 // Can be either the PIC or the APIC (not implemented yet)
 
 // Initialize the plateform's IRQs
-void IRQChip_initialize();
+void IRQChip_init();
 
 void IRQChip_registerHandler(int irq, IRQHandler handler);
 void IRQChip_deregisterHandler(int irq);

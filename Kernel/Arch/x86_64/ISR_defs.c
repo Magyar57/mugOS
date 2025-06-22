@@ -6,7 +6,7 @@
 #include "ISR.h"
 
 // Define the ISR function (for the C code),
-// as well as the ISR_Initialize function
+// as well as the ISR_init function
 // The functions are implemented in ISR_defs.asm
 // See ISR.asm as well
 
@@ -267,7 +267,7 @@ void ISR_253();
 void ISR_254();
 void ISR_255();
 
-void ISR_initializeInterruptHandlers(){
+void ISR_initInterruptHandlers(){
 	IDT_setInterruptHandler(  0, ISR_0  , GDT_SEGMENT_KTEXT, IDT_ATTR_GATE_INTERRUPT64|IDT_ATTR_RING0);
 	IDT_setInterruptHandler(  1, ISR_1  , GDT_SEGMENT_KTEXT, IDT_ATTR_GATE_INTERRUPT64|IDT_ATTR_RING0);
 	IDT_setInterruptHandler(  2, ISR_2  , GDT_SEGMENT_KTEXT, IDT_ATTR_GATE_INTERRUPT64|IDT_ATTR_RING0);

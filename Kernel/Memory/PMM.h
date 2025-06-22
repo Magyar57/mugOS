@@ -5,7 +5,7 @@
 
 // PMM.h: Physical Memory Manager
 
-void PMM_initialize();
+void PMM_init();
 
 /// @brief Allocate `n_pages` contiguous physical pages
 /// @returns The start address of the allocated block

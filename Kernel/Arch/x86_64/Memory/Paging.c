@@ -659,7 +659,7 @@ void mapDynamicTables(){
 	Paging_map(pt_phys, (virtual_address_t) m_dynamicTablesHost, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 }
 
-void Paging_initializeTables(){
+void Paging_initTables(){
 	// Clear the PML4 (sets all entries to invalid)
 	memset(m_pml4, 0, PAGE_SIZE);
 

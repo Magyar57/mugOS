@@ -102,7 +102,7 @@ static void scrollDown(int n){
 	setCursorPosition(m_screenX, m_screenY);
 }
 
-bool VGA_initialize(){
+bool VGA_init(){
 	// Test for color or not
 	enum VGATextMode videoMode = detectVideoTextMode();
 	if (videoMode == VGA_TEXTMODE_NONE)

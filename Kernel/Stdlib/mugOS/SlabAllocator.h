@@ -9,7 +9,7 @@ typedef struct Cache cache_t;
 // Object constructor: sets an object to its initialized state
 typedef void (*ctor_t)(void* obj);
 
-void SlabAllocator_initialize();
+void SlabAllocator_init();
 
 /// @brief Reap (reclaim) free memory. Use when memory is tight
 void SlabAllocator_reapAndTear();

@@ -40,7 +40,7 @@ static struct IDTLocationDescriptor m_IDTLocationDescriptor = { sizeof(m_IDT)-1,
 // setIDT (IDT.asm) - Sets the IDT located at 'descriptor'
 void setIDT(struct IDTLocationDescriptor* descriptor);
 
-void IDT_initialize(){
+void IDT_init(){
 	setIDT(&m_IDTLocationDescriptor);
 }
 

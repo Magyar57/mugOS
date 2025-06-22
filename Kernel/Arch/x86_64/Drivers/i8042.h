@@ -6,7 +6,7 @@
 // i8042.h: Intel 8042 PS/2 controller driver
 
 // Initialize the i8042 PS/2 controller
-void i8042_initialize();
+void i8042_init();
 
 void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out, bool* translationOut);
 void i8042_setDevicesIRQ(bool device1, bool device2);

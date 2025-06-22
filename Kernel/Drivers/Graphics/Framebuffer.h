@@ -72,6 +72,6 @@ void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y
 ///        fields `framebuffer`, `width`, `height`, `pitch` and `bpp` set
 /// @returns A boolean indicating initialization success
 /// @note This method and its object are meant to be used and abstracted by the Graphics subsystem
-bool Framebuffer_initialize(Framebuffer* this);
+bool Framebuffer_init(Framebuffer* this);
 
 #endif

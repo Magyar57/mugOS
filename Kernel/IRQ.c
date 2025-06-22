@@ -2,8 +2,8 @@
 
 #include "IRQ.h"
 
-void IRQ_initialize(){
-	IRQChip_initialize();
+void IRQ_init(){
+	IRQChip_init();
 }
 
 void IRQ_enableSpecific(int irq){

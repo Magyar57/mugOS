@@ -42,7 +42,7 @@ void Keyboard_unregisterKeyCallback(KeyCallback callback);
 const char* Keyboard_getKeyString(Keycode keycode);
 
 // Internal use
-void Keyboard_initialize();
+void Keyboard_init();
 void Keyboard_notifyReleased(Keycode keycode);
 void Keyboard_notifyPressed(Keycode keycode);
 void Keyboard_notifySysRq();

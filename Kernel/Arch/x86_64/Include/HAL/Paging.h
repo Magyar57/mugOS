@@ -15,9 +15,9 @@
 
 /// @brief Initializes the tables (allocate, and map everything needed).
 /// @note `Paging_map` becomes callable after tables have been prepared
-void Paging_initializeTables();
+void Paging_initTables();
 
-/// @brief Actually loads CR3 with our root page table. Call `Paging_initializeTables` first !
+/// @brief Actually loads CR3 with our root page table. Call `Paging_initTables` first !
 void Paging_enable();
 
 void Paging_unmap(virtual_address_t virt, uint64_t n_pages);

@@ -17,7 +17,7 @@ enum IDT_ATTRIBUTES_64 {
 };
 
 // Initialize the IDT (after this call, all interrupt handlers are invalid!)
-void IDT_initialize();
+void IDT_init();
 
 // Enable the 'interrupt' interrupt handler
 void IDT_enableInterruptHandler(uint8_t interrupt);

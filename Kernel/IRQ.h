@@ -8,7 +8,7 @@
 typedef void (*IRQHandler)(void* registers);
 
 /// @brief Initialise the IRQs & the IRQ chip
-void IRQ_initialize();
+void IRQ_init();
 
 /// @brief Enable a specific IRQ
 void IRQ_enableSpecific(int irq);

@@ -17,7 +17,7 @@
 #define incrementRingBeginIndex() \
 	this->readBeginIndex = (this->readBeginIndex + 1) % this->size
 
-void Ringbuffer_initialize(Ringbuffer* this, size_t){
+void Ringbuffer_init(Ringbuffer* this, size_t){
 	this->isAllocated = true;
 	// this->buffer = (int*) kmalloc(n*sizeof(int));
 	// this->size = n;
@@ -25,11 +25,11 @@ void Ringbuffer_initialize(Ringbuffer* this, size_t){
 	this->readBeginIndex = 0;
 	this->inReadBuffer = 0;
 
-	log(PANIC, MODULE, "Ringbuffer_initialize with kmalloc unimplemented");
+	log(PANIC, MODULE, "Ringbuffer_init with kmalloc unimplemented");
 	panic();
 }
 
-void Ringbuffer_initializeWithBuffer(Ringbuffer* this, size_t n, int* buffer){
+void Ringbuffer_initWithBuffer(Ringbuffer* this, size_t n, int* buffer){
 	assert(buffer);
 	assert(n > 0);
 

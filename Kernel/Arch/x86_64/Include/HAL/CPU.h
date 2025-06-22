@@ -294,7 +294,7 @@ bool CPU_supportsCpuid();
 
 /// @brief Fill the CPU struct with CPU identification informations
 /// @note Acts as an assertion to some arch-specific mugOS-required features
-void CPU_initialize(struct CPU* cpu);
+void CPU_init(struct CPU* cpu);
 
 void CPU_print(struct CPU* cpu);
 

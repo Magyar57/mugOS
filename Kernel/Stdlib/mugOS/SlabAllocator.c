@@ -483,7 +483,7 @@ static int getKmallocCache(size_t size){
 
 // ================ Public cache API and kmalloc ================
 
-void SlabAllocator_initialize(){
+void SlabAllocator_init(){
 	char name[32];
 	size_t size;
 

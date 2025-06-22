@@ -1018,7 +1018,7 @@ static inline bool resetDevice(int device){
 }
 
 // Note: check that port 1 is available and populated before calling this method
-void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
+void PS2_initKeyboard(struct PS2Keyboard* keyboard){
 	uint8_t buff1, buff2;
 	keyboard->enabled = false;
 
@@ -1069,7 +1069,7 @@ void PS2_initializeKeyboard(struct PS2Keyboard* keyboard){
 }
 
 // Note: check that port 2 is available and populated before calling this method
-void PS2_initializeMouse(struct PS2Mouse* mouse){
+void PS2_initMouse(struct PS2Mouse* mouse){
 	mouse->enabled = false;
 
 	// Enable interrupts for keyboard
@@ -1140,8 +1140,8 @@ void PS2_initializeMouse(struct PS2Mouse* mouse){
 	log(INFO, MODULE, "Identified mouse as '%s'", mouse->name);
 }
 
-void PS2_initialize(){
-	PS2Controller_initialize();
+void PS2_init(){
+	PS2Controller_init();
 	// By default, the PS/2 controller leaves the device's IRQs disabled
 
 	// Temporary handler for intialization
@@ -1160,8 +1160,8 @@ void PS2_initialize(){
 	m_enabled = true;
 
 	// Note: the initialize function print necessary informations already
-	if (port1_enabled) PS2_initializeKeyboard(&m_PS2Keyboard);
-	if (port2_enabled) PS2_initializeMouse(&m_PS2Mouse);
+	if (port1_enabled) PS2_initKeyboard(&m_PS2Keyboard);
+	if (port2_enabled) PS2_initMouse(&m_PS2Mouse);
 
 	// After intialization, we can re-enable irqs for functionning devices
 	PS2Controller_setDevicesIRQ(m_PS2Keyboard.enabled, m_PS2Mouse.enabled);

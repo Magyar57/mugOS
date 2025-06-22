@@ -4,8 +4,8 @@
 #include "Preprocessor.h"
 #include "Arch/x86_64/Drivers/i8042.h"
 
-always_inline void PS2Controller_initialize(){
-	i8042_initialize();
+always_inline void PS2Controller_init(){
+	i8042_init();
 }
 
 /// @returns Returns whether the controller/driver is initialized and enabled, and which ports are enabled

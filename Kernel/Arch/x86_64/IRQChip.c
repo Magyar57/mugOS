@@ -104,7 +104,7 @@ void timer(void*){
 	clock = !clock;
 }
 
-void IRQChip_initialize(){
+void IRQChip_init(){
 	// Remap the PIC
 	i8259_remap(IRQ_MASTER_PIC_REMAP_OFFSET, IRQ_MASTER_PIC_REMAP_OFFSET+8);
 	i8259_disableAllIRQ();

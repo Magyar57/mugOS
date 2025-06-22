@@ -14,11 +14,11 @@ struct s_Ringbuffer {
 typedef struct s_Ringbuffer Ringbuffer;
 
 /// @brief Initialize the Ringbuffer by allocating an internal buffer of n ints
-void Ringbuffer_initialize(Ringbuffer* this, size_t n);
+void Ringbuffer_init(Ringbuffer* this, size_t n);
 
 /// @brief Initialize the Ringbuffer to use the provided buffer
 /// @note The buffer HAS to be of size n, otherwise it is undefinied behaviour
-void Ringbuffer_initializeWithBuffer(Ringbuffer* this, size_t n, int* buffer);
+void Ringbuffer_initWithBuffer(Ringbuffer* this, size_t n, int* buffer);
 
 /// @brief Free the Ringbuffer
 /// @note Using the Ringbuffer afterwards is undefinied behaviour

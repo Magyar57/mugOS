@@ -12,7 +12,7 @@ enum GraphicsSource {
 /// @param graphics The type of graphic structure to initialize
 /// @param pointer The pointer to the graphics data structure (eg: limine framebuffer,
 /// 				UEFI EFI_GRAPHICS_OUTPUT_PROTOCOL*). It musts correspond to the graphics parameter
-void Graphics_initialize(enum GraphicsSource graphics, void* pointer);
+void Graphics_init(enum GraphicsSource graphics, void* pointer);
 
 void Graphics_clearScreen();
 void Graphics_putchar(char c);

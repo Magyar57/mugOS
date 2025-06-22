@@ -4,6 +4,6 @@
 #include <stdint.h>
 
 // Initialize the PS/2 device driver
-void PS2_initialize();
+void PS2_init();
 
 #endif

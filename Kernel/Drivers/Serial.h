@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void Serial_initialize();
+void Serial_init();
 bool Serial_isEnabled();
 
 bool Serial_sendByte(int device, uint8_t byte);

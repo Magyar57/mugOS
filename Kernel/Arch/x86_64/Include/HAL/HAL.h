@@ -7,6 +7,6 @@
 #error "Invalid architecture provided ! Please define a valid architecture maccro from the supported list."
 #endif
 
-void HAL_initialize();
+void HAL_init();
 
 #endif

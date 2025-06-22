@@ -7,15 +7,15 @@
 #include "Arch/x86_64/IDT.h"
 #include "Arch/x86_64/ISR.h"
 
-void HAL_initialize(){
+void HAL_init(){
 	IRQ_disable();
 
-	CPU_initialize(&g_CPU);
+	CPU_init(&g_CPU);
 
-	GDT_initialize();
+	GDT_init();
 	GDT_setTSS();
-	IDT_initialize();
-	ISR_initialize();
+	IDT_init();
+	ISR_init();
 
 	log(SUCCESS, "x86_64 HAL", "Initalization success");
 }

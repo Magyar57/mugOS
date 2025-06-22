@@ -112,7 +112,7 @@ static struct GDTDescriptor m_GDTLocationDescriptor = { sizeof(m_GDT)-1, (uint64
 // (GDT.asm) Sets the GDT located at 'descriptor' and loads the segments registers accordingly (kcodeSegment & kdataSegment)
 void setGDT(struct GDTDescriptor* descriptor, uint16_t kcodeSegment, uint16_t kdataSegment);
 
-void GDT_initialize(){
+void GDT_init(){
 	setGDT(&m_GDTLocationDescriptor, GDT_SEGMENT_KTEXT, GDT_SEGMENT_KDATA);
 }
 

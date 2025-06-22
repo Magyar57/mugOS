@@ -6,7 +6,7 @@
 
 // VMM.h: Virtual Memory Manager
 
-void VMM_initialize();
+void VMM_init();
 
 // ================ Map memory ================
 

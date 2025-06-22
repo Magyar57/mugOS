@@ -596,7 +596,7 @@ const char* Keyboard_getKeyString(Keycode keycode){
 	return NULL;
 }
 
-void Keyboard_initialize(){
+void Keyboard_init(){
 	m_modifierKeys = 0;
 	m_leftShiftPressed = false;
 	m_rightShiftPressed = false;

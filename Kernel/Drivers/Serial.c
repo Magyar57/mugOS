@@ -432,7 +432,7 @@ static void enableDeviceInterrupts(int port){
 	outb(port+SERIAL_OFFSET_IER, val);
 }
 
-void Serial_initialize(){
+void Serial_init(){
 	int nDevices = 0;
 
 	// Initialize UART Controllers, Serial Devices (if present), and set m_devices accordingly
@@ -445,8 +445,8 @@ void Serial_initialize(){
 		curDev->controllerName = UART_CONTROLLERS_NAMES[curDev->controller];
 		if (curDev->controller == UART_NONE) continue;
 		curDev->internalBufferSize = (curDev->controller == UART_16550A) ? 14 : 1;
-		Ringbuffer_initializeWithBuffer(&curDev->externalWriteBuff, UARTDEVICE_EXT_BUFF_SIZE, curDev->buffer1);
-		Ringbuffer_initializeWithBuffer(&curDev->externalReadBuff, UARTDEVICE_EXT_BUFF_SIZE, curDev->buffer2);
+		Ringbuffer_initWithBuffer(&curDev->externalWriteBuff, UARTDEVICE_EXT_BUFF_SIZE, curDev->buffer1);
+		Ringbuffer_initWithBuffer(&curDev->externalReadBuff, UARTDEVICE_EXT_BUFF_SIZE, curDev->buffer2);
 
 		curDev->present = initializeUARTController(curDev->port);
 		if (!curDev->present){

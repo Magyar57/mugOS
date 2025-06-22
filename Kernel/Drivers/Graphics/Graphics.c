@@ -15,7 +15,7 @@ static enum GraphicsSource m_driverType; // Which drive we're using
 // Supported drivers
 Framebuffer m_framebuffer;
 
-void Graphics_initialize(enum GraphicsSource graphics, void* pointer){
+void Graphics_init(enum GraphicsSource graphics, void* pointer){
 	m_driverType = graphics;
 
 	switch (graphics){
@@ -31,7 +31,7 @@ void Graphics_initialize(enum GraphicsSource graphics, void* pointer){
 		m_framebuffer.height = fb->height;
 		m_framebuffer.pitch = fb->pitch;
 		m_framebuffer.bpp = fb->bpp;
-		m_initialized = Framebuffer_initialize(&m_framebuffer);
+		m_initialized = Framebuffer_init(&m_framebuffer);
 		if (!m_initialized)
 			log(WARNING, MODULE, "Failed to initialize, framebuffer error");
 		break;
