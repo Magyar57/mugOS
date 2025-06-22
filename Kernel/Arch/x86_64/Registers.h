@@ -2,6 +2,7 @@
 #define __REGISTERS_H__
 
 #include <stdint.h>
+#include "Memory/Memory.h"
 
 // Registers.h: CPU registers bitfields and flags (includes MSR)
 // Note: assembly functions are regrouped in CPU.asm
@@ -79,19 +80,6 @@ union CR4 {
 	} bits;
 };
 
-union MSR_IA32_EFER {
-	uint64_t value;
-	struct {
-		uint64_t SCE : 1;			// SYSCALL Enable (R/W)
-		uint64_t reserved_0 : 7;
-		uint64_t LME : 1;			// IA-32e Mode Enable (R/W)
-		uint64_t reserved_1 : 1;
-		uint64_t LMA : 1;			// IA-32e Mode Active (R)
-		uint64_t NXE : 1;			// Execute Disable bit Enable (R/W)
-		uint64_t reserved_2 : 52;
-	} bits;
-};
-
 union MSR_IA32_MISC_ENABLE {
 	uint64_t value;
 	struct {
@@ -103,7 +91,7 @@ union MSR_IA32_MISC_ENABLE {
 		uint64_t reserved_2 : 3;
 		// uint64_t FERRME : 1;			// FERR# Multiplexing Enable (R/W) => only for specific CPUs
 		uint64_t BTSU : 1;				// Branch Trace Storage Unavailable (R/O)
-		uint64_t PEBSU : 1;				// PRocessor Event Based Sampling Unavailable (R/O)
+		uint64_t PEBSU : 1;				// Processor Event Based Sampling Unavailable (R/O)
 		uint64_t reserved_3 : 3;
 		uint64_t EISTE : 1;				// Enhanced Intel SpeedStep Technology Enabled (R/W)
 		uint64_t reserved_4 : 1;
@@ -112,6 +100,32 @@ union MSR_IA32_MISC_ENABLE {
 		uint64_t LimitCPUIDMaxval : 1;	// (R/W)
 		uint64_t xPTRMD : 1;		// xTPR Message Disable (R/W)
 		uint64_t reserved_6 : 40;
+	} bits;
+};
+
+union MSR_IA32_APIC_BASE {
+	uint64_t value;
+	struct {
+		uint64_t reserved_0 : 8;
+		uint64_t BSP : 1; // BSP Flag (R/W)
+		uint64_t reserved_1 : 1;
+		uint64_t x2APIC : 1; // Enable x2APIC mode (R/W)
+		uint64_t GlobalEnable : 1; // APIC Global Enable (R/W)
+		uint64_t base : ADDRESS_SIZE - 12; // APIC Base (R/W)
+		uint64_t reserved_2 : 64 - ADDRESS_SIZE;
+	} bits;
+};
+
+union MSR_IA32_EFER {
+	uint64_t value;
+	struct {
+		uint64_t SCE : 1;			// SYSCALL Enable (R/W)
+		uint64_t reserved_0 : 7;
+		uint64_t LME : 1;			// IA-32e Mode Enable (R/W)
+		uint64_t reserved_1 : 1;
+		uint64_t LMA : 1;			// IA-32e Mode Active (R)
+		uint64_t NXE : 1;			// Execute Disable bit Enable (R/W)
+		uint64_t reserved_2 : 52;
 	} bits;
 };
 
