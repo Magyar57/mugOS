@@ -139,6 +139,14 @@ void CPU_init(struct CPU* cpu){
 	if (!CPU_supportsCpuid())
 		panicForMissingFeature("CPUID instruction");
 
+	// Setup CR0 features
+	union CR0 cr0;
+	cr0.value = Registers_readCR0();
+	cr0.bits.CD = 0; // enable cache
+	cr0.bits.NW = 0; // disable write-through
+	cr0.bits.WP = 1; // inhibits kernel writes to read-only pages
+	Registers_writeCR0(cr0.value);
+
 	parseCpuid_basic_0(cpu);
 	if (cpu->vendor == Vendor_Unsupported){
 		log(PANIC, MODULE, "Unsupported CPU vendor '%s'", cpu->vendorStr);
