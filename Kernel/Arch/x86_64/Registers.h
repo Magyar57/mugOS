@@ -47,6 +47,26 @@ void Registers_writeCR4(uint64_t val);
 
 // ================ Registers bitfields ================
 
+union CR0 {
+	uint64_t value;
+	struct {
+		uint64_t PE : 1; // Protection Enable (protected mode)
+		uint64_t MP : 1; // Monitor Coprocessor
+		uint64_t EM : 1; // Emulation (if clear, x87 FPU is present)
+		uint64_t ST : 1; // Task Switched
+		uint64_t ET : 1; // Extension Type
+		uint64_t NE : 1; // Numeric Error
+		uint64_t reserved_0 : 10;
+		uint64_t WP : 1; // Write Protect
+		uint64_t reserved_1 : 1;
+		uint64_t AM : 1; // Alignement Mask
+		uint64_t reserved_2 : 10;
+		uint64_t NW : 1; // Not Write-through
+		uint64_t CD : 1; // Cache Disable
+		uint64_t PG : 1; // Paging
+	} bits;
+};
+
 union CR4 {
 	uint64_t value;
 	struct {
