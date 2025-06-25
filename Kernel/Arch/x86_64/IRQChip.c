@@ -15,7 +15,7 @@
 // Global array of [un]registered IRQ handlers
 static IRQHandler m_IRQHandlers[16];
 
-static const char* const IRQ_TYPES[] = {
+static const char* const ISA_IRQ_NAMES[] = {
     "Programmable Interrupt Timer (PIT)",
     "PS/2 Keyboard",
     "Cascade",								// Used internally by the two PICs, never raised
@@ -67,27 +67,15 @@ static void prehandler(struct ISR_Params* params){
 	irq = irq - IRQ_MASTER_PIC_REMAP_OFFSET; // clamp irq to 0-15
 
 	// IRQ 7 and 15 may be spurious, in which case we must NOT send an EOI
-	if (irq==7 || irq==15){
-		uint16_t isr = i8259_getCombinedISR();
-		// Spurious IRQ 7
-		if ((isr & (1<<7)) == 0){
-			log(WARNING, MODULE, "Got spurious IRQ %d, ignored (no EOI sent)", irq);
-			return;
-		}
-		// Spurious IRQ 15
-		// We don't still need to ACK the interrupt to the slave PIC,
-		//  but we do for the master PIC though
-		if ((isr & (1<<15)) == 0){
-			log(WARNING, MODULE, "Got spurious IRQ %d, ignored (no EOI sent)", irq);
-			i8259_sendEIO(7); // Master PIC ACK
-			return;
-		}
-	}
+	if ((irq==7 || irq==15) && i8259_handleSpuriousIRQ(irq))
+		return;
 
 	// If we have a handler to call, we call it, and 'alles gut'
-	if (m_IRQHandlers[irq] != NULL) m_IRQHandlers[irq](params);
 	// Otherwise, we send a warning
-	else log(WARNING, MODULE, "Unhandled IRQ %d - %s", irq, IRQ_TYPES[irq]);
+	if (m_IRQHandlers[irq] != NULL)
+		m_IRQHandlers[irq](params);
+	else
+		log(WARNING, MODULE, "Unhandled IRQ %d - %s", irq, ISA_IRQ_NAMES[irq]);
 
 	// Finally, signal to the PIC that we handled the interrupt
 	i8259_sendEIO(irq);

@@ -1,8 +1,10 @@
 #include "io.h"
+#include "Preprocessor.h"
 #include "Logging.h"
 #include "Panic.h"
 
 #include "i8259.h"
+#define MODULE "i8259 PIC"
 
 #define PIC_MASTER_CMD		0x0020	// Master's PIC Command port
 #define PIC_MASTER_DATA		0x0021	// Master's PIC Data port
@@ -28,10 +30,30 @@ static inline bool isDivisibleBy8(uint8_t num){
 	return ((num & 7) == 0);
 }
 
+static inline uint16_t getCombinedRegister(int ocw3){
+	// OCW3 to PIC CMD to get the register values. PIC_SLAVE is chained, and
+	// represents IRQs 8-15. PIC_MASTER is IRQs 0-7, with 2 being the chain
+	outb(PIC_MASTER_CMD, ocw3);
+	outb(PIC_SLAVE_CMD, ocw3);
+	return (inb(PIC_SLAVE_CMD) << 8) | inb(PIC_MASTER_CMD);
+}
+
+// Returns the combined IRR (Interrupt Request Register) values:
+// [ bit 15-8 Slave's IRR - bit 8-0 Master's IRR ]
+static unused uint16_t i8259_getCombinedIRR(){
+	return getCombinedRegister(PIC_CMD_READ_IRR);
+}
+
+// Returns the combined ISR (In-Service Register) values:
+// [ bit 15-8 Slave's ISR - bit 8-0 Master's ISR ]
+static uint16_t i8259_getCombinedISR(){
+	return getCombinedRegister(PIC_CMD_READ_ISR);
+}
+
 void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	if ( !isDivisibleBy8(offsetMasterPIC) || !isDivisibleBy8(offsetSlavePIC) ){
-		log(PANIC, __FILE__, "PIC Configuration error: tried to remap with an incorrect offset");
-		log(PANIC, __FILE__, "Both %p and %p must be divisible by 8", offsetMasterPIC, offsetSlavePIC);
+		log(PANIC, MODULE, "PIC Configuration error: tried to remap with an incorrect offset");
+		log(PANIC, MODULE, "Both %p and %p must be divisible by 8", offsetMasterPIC, offsetSlavePIC);
 		panic();
 	}
 
@@ -113,18 +135,23 @@ void i8259_sendEIO(int irq){
 	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
 }
 
-static inline uint16_t getCombinedRegister(int ocw3){
-	// OCW3 to PIC CMD to get the register values. PIC_SLAVE is chained, and
-	// represents IRQs 8-15. PIC_MASTER is IRQs 0-7, with 2 being the chain
-	outb(PIC_MASTER_CMD, ocw3);
-	outb(PIC_SLAVE_CMD, ocw3);
-	return (inb(PIC_SLAVE_CMD) << 8) | inb(PIC_MASTER_CMD);
-}
+bool i8259_handleSpuriousIRQ(int irq){
+	uint16_t isr = i8259_getCombinedISR();
 
-uint16_t i8259_getCombinedIRR(){
-	return getCombinedRegister(PIC_CMD_READ_IRR);
-}
+	// Spurious IRQ 7
+	if ((isr & (1<<7)) == 0){
+		log(WARNING, MODULE, "Got spurious IRQ %d, ignored (no EOI sent)", irq);
+		return true;
+	}
 
-uint16_t i8259_getCombinedISR(){
-	return getCombinedRegister(PIC_CMD_READ_ISR);
+	// Spurious IRQ 15
+	// We don't still need to ACK the interrupt to the slave PIC,
+	//  but we do for the master PIC though
+	if ((isr & (1<<15)) == 0){
+		log(WARNING, MODULE, "Got spurious IRQ %d, ignored (no EOI sent)", irq);
+		i8259_sendEIO(7); // Master PIC ACK
+		return true;
+	}
+
+	return false;
 }

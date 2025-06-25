@@ -24,12 +24,7 @@ void i8259_disable();
 // Send EOI (end of interrupt) to the PIC
 void i8259_sendEIO(int irq);
 
-// Returns the combined IRR (Interrupt Request Register) values:
-// [ bit 15-8 Slave's IRR - bit 8-0 Master's IRR ]
-uint16_t i8259_getCombinedIRR();
-
-// Returns the combined ISR (In-Service Register) values:
-// [ bit 15-8 Slave's ISR - bit 8-0 Master's ISR ]
-uint16_t i8259_getCombinedISR();
+// Handle a spurious IRQ. Returns whether the IRQ was spurious or not
+bool i8259_handleSpuriousIRQ(int irq);
 
 #endif
