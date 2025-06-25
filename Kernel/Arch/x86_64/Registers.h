@@ -9,23 +9,23 @@
 
 // EFLAGS/RFLAGS register bits
 // S: status flag, C: control flag, X: system flag
-#define X86_64_RFLAGS_CF	1<<0		// (S) Carry flag
-#define X86_64_RFLAGS_PF	1<<2		// (S) Parity flag
-#define X86_64_RFLAGS_AF	1<<4		// (S) Auxiliary carry flag
-#define X86_64_RFLAGS_ZF	1<<6		// (S) Zero flag
-#define X86_64_RFLAGS_SF	1<<7		// (S) Sign flag
-#define X86_64_RFLAGS_TF	1<<8		// (X) Trap flag
-#define X86_64_RFLAGS_IF	1<<9		// (X) Interrupt enable flag
-#define X86_64_RFLAGS_DF	1<<10		// (C) Direction flag
-#define X86_64_RFLAGS_OF	1<<11		// (S) Overflow flag
-#define X86_64_RFLAGS_IOPL	1<<12|1<<13	// (X) I/O privilege level
-#define X86_64_RFLAGS_NT	1<<14		// (X) Nested task
-#define X86_64_RFLAGS_RF	1<<16		// (X) Resume flag
-#define X86_64_RFLAGS_VM	1<<17		// (X) Virtual-8086 mode
-#define X86_64_RFLAGS_AC	1<<18		// (X) Alignment check / access control
-#define X86_64_RFLAGS_VIF	1<<19		// (X) Virtual interrupt flag
-#define X86_64_RFLAGS_VIP	1<<20		// (X) Virtual interrupt pending
-#define X86_64_RFLAGS_ID	1<<21		// (X) ID flag
+#define X86_64_RFLAGS_CF	(1<<0)			// (S) Carry flag
+#define X86_64_RFLAGS_PF	(1<<2)			// (S) Parity flag
+#define X86_64_RFLAGS_AF	(1<<4)			// (S) Auxiliary carry flag
+#define X86_64_RFLAGS_ZF	(1<<6)			// (S) Zero flag
+#define X86_64_RFLAGS_SF	(1<<7)			// (S) Sign flag
+#define X86_64_RFLAGS_TF	(1<<8)			// (X) Trap flag
+#define X86_64_RFLAGS_IF	(1<<9)			// (X) Interrupt enable flag
+#define X86_64_RFLAGS_DF	(1<<10)			// (C) Direction flag
+#define X86_64_RFLAGS_OF	(1<<11)			// (S) Overflow flag
+#define X86_64_RFLAGS_IOPL	(1<<12|1<<13)	// (X) I/O privilege level
+#define X86_64_RFLAGS_NT	(1<<14)			// (X) Nested task
+#define X86_64_RFLAGS_RF	(1<<16)			// (X) Resume flag
+#define X86_64_RFLAGS_VM	(1<<17)			// (X) Virtual-8086 mode
+#define X86_64_RFLAGS_AC	(1<<18)			// (X) Alignment check / access control
+#define X86_64_RFLAGS_VIF	(1<<19)			// (X) Virtual interrupt flag
+#define X86_64_RFLAGS_VIP	(1<<20)			// (X) Virtual interrupt pending
+#define X86_64_RFLAGS_ID	(1<<21)			// (X) ID flag
 
 // MSR addresses
 #define MSR_ADDR_IA32_MISC_ENABLE	0x000001a0
@@ -118,7 +118,7 @@ union MSR_IA32_MISC_ENABLE {
 		uint64_t MFSME : 1;				// Monitor FSM Enabled (R/W)
 		uint64_t reserved_5 : 3;
 		uint64_t LimitCPUIDMaxval : 1;	// (R/W)
-		uint64_t xPTRMD : 1;		// xTPR Message Disable (R/W)
+		uint64_t xPTRMD : 1;			// xTPR Message Disable (R/W)
 		uint64_t reserved_6 : 40;
 	} bits;
 };
@@ -127,7 +127,7 @@ union MSR_IA32_APIC_BASE {
 	uint64_t value;
 	struct {
 		uint64_t reserved_0 : 8;
-		uint64_t BSP : 1; // BSP Flag (R/W)
+		uint64_t BSP : 1; // BootStrap Processor flag (R/W)
 		uint64_t reserved_1 : 1;
 		uint64_t x2APIC : 1; // Enable x2APIC mode (R/W)
 		uint64_t GlobalEnable : 1; // APIC Global Enable (R/W)
