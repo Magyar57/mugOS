@@ -50,35 +50,34 @@ void Graphics_clearScreen(){
 	if (!m_initialized) return;
 
 	switch (m_driverType){
-		case GRAPHICS_NONE:
-			break;
-		case GRAPHICS_BIOS_VGA:
-			break;
-		case GRAPHICS_UEFI_GOP:
-			break;
-		case GRAPHICS_LIMINE_FRAMEBUFFER:
-			Framebuffer_clearScreen(m_driver);
-			break;
+	case GRAPHICS_NONE:
+		break;
+	case GRAPHICS_BIOS_VGA:
+		break;
+	case GRAPHICS_UEFI_GOP:
+		break;
+	case GRAPHICS_LIMINE_FRAMEBUFFER:
+		Framebuffer_clearTerminal(m_driver);
+		Framebuffer_clearScreen(m_driver);
+		break;
 	default:
 		break;
 	}
-
-	Framebuffer_clearScreen(&m_framebuffer);
 }
 
 void Graphics_putchar(char c){
 	if (!m_initialized) return;
 
 	switch (m_driverType){
-		case GRAPHICS_NONE:
-			break;
-		case GRAPHICS_BIOS_VGA:
-			break;
-		case GRAPHICS_UEFI_GOP:
-			break;
-		case GRAPHICS_LIMINE_FRAMEBUFFER:
-			Framebuffer_putchar(m_driver, c);
-			break;
+	case GRAPHICS_NONE:
+		break;
+	case GRAPHICS_BIOS_VGA:
+		break;
+	case GRAPHICS_UEFI_GOP:
+		break;
+	case GRAPHICS_LIMINE_FRAMEBUFFER:
+		Framebuffer_putchar(m_driver, c);
+		break;
 	default:
 		break;
 	}
@@ -88,15 +87,15 @@ void Graphics_puts(const char* str){
 	if (!m_initialized) return;
 
 	switch (m_driverType){
-		case GRAPHICS_NONE:
-			break;
-		case GRAPHICS_BIOS_VGA:
-			break;
-		case GRAPHICS_UEFI_GOP:
-			break;
-		case GRAPHICS_LIMINE_FRAMEBUFFER:
-			Framebuffer_puts(m_driver, str);
-			break;
+	case GRAPHICS_NONE:
+		break;
+	case GRAPHICS_BIOS_VGA:
+		break;
+	case GRAPHICS_UEFI_GOP:
+		break;
+	case GRAPHICS_LIMINE_FRAMEBUFFER:
+		Framebuffer_puts(m_driver, str);
+		break;
 	default:
 		break;
 	}
@@ -106,16 +105,20 @@ void Graphics_puts_noLF(const char* str){
 	if (!m_initialized) return;
 
 	switch (m_driverType){
-		case GRAPHICS_NONE:
-			break;
-		case GRAPHICS_BIOS_VGA:
-			break;
-		case GRAPHICS_UEFI_GOP:
-			break;
-		case GRAPHICS_LIMINE_FRAMEBUFFER:
-			Framebuffer_puts_noLF(m_driver, str);
-			break;
+	case GRAPHICS_NONE:
+		break;
+	case GRAPHICS_BIOS_VGA:
+		break;
+	case GRAPHICS_UEFI_GOP:
+		break;
+	case GRAPHICS_LIMINE_FRAMEBUFFER:
+		Framebuffer_puts_noLF(m_driver, str);
+		break;
 	default:
 		break;
 	}
+}
+
+void Graphics_scrollDown(){
+	Framebuffer_scrollDown(m_driver);
 }

@@ -18,5 +18,6 @@ void Graphics_clearScreen();
 void Graphics_putchar(char c);
 void Graphics_puts(const char* str);
 void Graphics_puts_noLF(const char* str);
+void Graphics_scrollDown();
 
 #endif
