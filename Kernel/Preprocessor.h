@@ -7,6 +7,8 @@
 // Force the compiler to always inline the function
 #define always_inline inline __attribute__((__always_inline__))
 
+#define unused __attribute__((unused))
+
 // Pack a structure (aka do not pad it with zeroes entries)
 #define packed __attribute__((packed))
 
