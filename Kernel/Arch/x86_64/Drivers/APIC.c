@@ -1,8 +1,9 @@
 #include <stdint.h>
 #include "Logging.h"
-#include "Registers.h"
 #include "Memory/VMM.h"
 #include "IRQ.h"
+#include "Registers.h"
+#include "ISR.h"
 
 #include "APIC.h"
 #define MODULE_APIC "APIC"
@@ -74,7 +75,7 @@ union LINTRegister {
 		uint32_t vector : 8;
 		uint32_t deliveryMode : 3;
 		uint32_t reserved_0 : 1;
-		uint32_t deliveryStatus : 1;
+		uint32_t pending : 1;
 		uint32_t pinPolarity : 1;
 		uint32_t remoteIRR : 1;
 		uint32_t triggerMode : 1;
@@ -87,7 +88,7 @@ union TimerRegister {
 	struct {
 		uint32_t vector : 8;
 		uint32_t reserved_0 : 4;
-		uint32_t deliveryStatus : 1;
+		uint32_t pending : 1;
 		uint32_t reserved_1 : 3;
 		uint32_t masked : 1;
 		uint32_t timerMode : 2;
@@ -155,13 +156,15 @@ static unused inline void readRegister256(const int offset, struct Register256* 
 	reg_out->value7 = readRegister32(offset + 0x70);
 }
 
-// Temporary
-#include "Drivers/Graphics/Graphics.h"
-#include "ISR.h"
+// Temporary: blinking rectangle on the bottom right of the screen
+#include "Drivers/Graphics/Framebuffer.h"
 static void timerIRQ(struct ISR_Params*){
-	static int i = 0;
-	__asm__ volatile("nop");
-	debug("lapic timer %d", i++);
+	extern Framebuffer m_framebuffer;
+	static bool clock = false;
+	const int rect_size = 4;
+	color_t color = (clock) ? COLOR_32BPP(0,128,0) : LIGHT_GREY;
+	Framebuffer_fillRectangle(&m_framebuffer, m_framebuffer.width-2*rect_size-2, m_framebuffer.height-rect_size-1, rect_size, rect_size, color);
+	clock = !clock;
 	APIC_sendEIO();
 }
 
@@ -233,7 +236,7 @@ void APIC_init(){
 
 	ISR_registerHandler(IRQ_APIC_TIMER, timerIRQ);
 	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
-	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 0); // disable timer
+	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 1000000000); // 1GHz bus speed => 1s
 }
 
 void APIC_sendEIO(){
