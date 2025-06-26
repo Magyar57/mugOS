@@ -4,12 +4,16 @@
 #include "Preprocessor.h"
 #include "Arch/x86_64/Registers.h"
 
-// Standard ISA IRQ numbers
-#define IRQ_TIMER			0x00
+// Standard ISA IRQs
+#define IRQ_PIT				0x00 // Programmable Interval Timer
 #define IRQ_PS2_KEYBOARD	0x01
-#define IRQ_COM2			0x03
-#define IRQ_COM1			0x04
+#define IRQ_COM2			0x03 // Serial
+#define IRQ_COM1			0x04 // Serial
 #define IRQ_PS2_MOUSE		0x0c
+
+// Programmed IRQs (we can chose those)
+#define IRQ_APIC_TIMER		0x30
+#define IRQ_APIC_SPURIOUS	0xff
 
 // Flags manipulations
 
