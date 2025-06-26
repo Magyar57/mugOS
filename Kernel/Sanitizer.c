@@ -67,8 +67,8 @@ void __ubsan_handle_function_type_mismatch(void* handle){
 	};
 	struct Data_TypeMismatch* data = handle;
 
-	log(ERROR, MODULE, "function_type_mismatch at %s:%d:%d", data->location.fileName, data->location.line, data->location.column);
-	log(ERROR, MODULE, "%s", data->type->typeName);
+	log(ERROR, MODULE, "function_type_mismatch at %s:%d:%d (expected %s)",
+		data->location.fileName, data->location.line, data->location.column, data->type->typeName);
 }
 
 void __ubsan_handle_divrem_overflow(void*){
