@@ -26,6 +26,8 @@
 #define PIC_CMD_READ_IRR	0x0a	// Read IRR Interrupt Request Register
 #define PIC_CMD_READ_ISR	0x0b	// Read ISR In-Service Register
 
+#define isValidIRQ(irq)	(irq >= 0 && irq < 16)
+
 static inline bool isDivisibleBy8(uint8_t num){
 	return ((num & 7) == 0);
 }
@@ -76,8 +78,8 @@ void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	i8259_enableAllIRQ();
 }
 
-void i8259_disableIRQ(uint8_t irq){
-	if (irq>=16) return; // Ignore invalid IRQ number
+void i8259_disableIRQ(int irq){
+	if (isValidIRQ(irq)) return;
 
 	uint8_t port;
 
@@ -96,8 +98,8 @@ void i8259_disableIRQ(uint8_t irq){
 	outb(port, mask);
 }
 
-void i8259_enableIRQ(uint8_t irq){
-	if (irq>=16) return; // Ignore invalid IRQ number
+void i8259_enableIRQ(int irq){
+	if (isValidIRQ(irq)) return;
 	uint8_t port;
 
 	// Master PIC
@@ -126,12 +128,11 @@ void i8259_disableAllIRQ(){
 	outb(PIC_SLAVE_DATA, 0xff);
 }
 
-void i8259_disable(){
-	i8259_disableAllIRQ();
-}
-
 void i8259_sendEIO(int irq){
-	if (irq >= 8) outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
+	if (isValidIRQ(irq)) return;
+
+	if (irq >= 8)
+		outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
 	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
 }
 

@@ -9,17 +9,16 @@
 void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC);
 
 // Disables (masks) a given IRQ
-void i8259_disableIRQ(uint8_t irq);
+void i8259_disableIRQ(int irq);
+
 // Enables (unmasks) a given IRQ
-void i8259_enableIRQ(uint8_t irq);
+void i8259_enableIRQ(int irq);
 
 // Disables (masks) all IRQ
 void i8259_disableAllIRQ();
-// Enables (unmasks) all IRQ
-void i8259_enableAllIRQ();
 
-// Disable the PIC (by masking every single interrupt)
-void i8259_disable();
+// Enables (unmasks) all IRQ. This disables the PIC
+void i8259_enableAllIRQ();
 
 // Send EOI (end of interrupt) to the PIC
 void i8259_sendEIO(int irq);
