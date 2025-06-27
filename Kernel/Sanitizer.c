@@ -19,8 +19,18 @@ struct TypeDescriptor {
     char typeName[512];
 };
 
-void __ubsan_handle_type_mismatch_v1(void*){
-	log(ERROR, MODULE, "type_mismatch_v1");
+void __ubsan_handle_type_mismatch_v1(void* handle){
+	struct Data_TypeMismatchV1 {
+		struct SourceLocation location;
+		struct TypeDescriptor* type;
+		unsigned char log_alignment;
+		unsigned char type_check_kind;
+	};
+
+	struct Data_TypeMismatchV1* data = handle;
+
+	log(ERROR, MODULE, "type_mismatch_v1 at %s:%d:%d (expected %s)",
+		data->location.fileName, data->location.line, data->location.column, data->type->typeName);
 }
 
 void __ubsan_handle_pointer_overflow(void*){
