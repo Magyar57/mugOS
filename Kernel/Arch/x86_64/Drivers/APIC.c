@@ -3,6 +3,7 @@
 #include "Memory/VMM.h"
 #include "IRQ.h"
 #include "Registers.h"
+#include "Drivers/i8259.h"
 
 #include "APIC.h"
 #define MODULE_APIC "APIC"
@@ -173,6 +174,11 @@ static void handleSpuriousIRQ(void*){
 }
 
 void APIC_init(){
+	// Remap the PIC. We need to do it even if we don't use it, as it
+	// can still fire spurious IRQs
+	i8259_init();
+	i8259_disableAllIRQ();
+
 	// Setup the APIC in its MSR
 	union MSR_IA32_APIC_BASE apic_base;
 	apic_base.value = Registers_readMSR(MSR_ADDR_IA32_APIC_BASE);
@@ -217,7 +223,7 @@ void APIC_init(){
 	writeRegister32(APIC_REG_DFR, dfr.value);
 
 	// Install a spurious interrupt handler
-	IRQ_registerHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ);
+	IRQ_registerHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ); // TODO FIX this is wrong since generic IRQ handling sends EOI
 
 	// Finally, set the 'enable' bit in the Spurious Interrupt Register
 	union SpuriousInterruptRegister spur;

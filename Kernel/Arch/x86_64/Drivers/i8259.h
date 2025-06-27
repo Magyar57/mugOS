@@ -5,8 +5,8 @@
 
 // i8259.h: Intel 8259 PIC Driver
 
-// Initialize/configure (remap) the PIC. Offsets must be divisable by 8 !!
-void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC);
+// Initialize/configure (remap) the PIC
+void i8259_init();
 
 // Disables (masks) a given IRQ
 void i8259_disableIRQ(int irq);

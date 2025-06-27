@@ -54,7 +54,7 @@ static uint16_t i8259_getCombinedISR(){
 	return getCombinedRegister(PIC_CMD_READ_ISR);
 }
 
-void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
+static void remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	if ( !isDivisibleBy8(offsetMasterPIC) || !isDivisibleBy8(offsetSlavePIC) ){
 		log(PANIC, MODULE, "PIC Configuration error: tried to remap with an incorrect offset");
 		log(PANIC, MODULE, "Both %p and %p must be divisible by 8", offsetMasterPIC, offsetSlavePIC);
@@ -76,7 +76,10 @@ void i8259_remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	// ICW4
 	outb(PIC_MASTER_DATA, PIC_ICW4_8086); // Have the PICs use 8086 mode (and not 8080 mode)
 	outb(PIC_SLAVE_DATA, PIC_ICW4_8086);
+}
 
+void i8259_init(){
+	remap(ISA_IRQ_OFFSET, ISA_IRQ_OFFSET+8);
 	i8259_enableAllIRQ();
 }
 
