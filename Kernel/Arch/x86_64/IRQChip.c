@@ -1,109 +1,31 @@
-#include <stddef.h>
-#include "io.h"
 #include "Logging.h"
-#include "Panic.h"
-#include "ISR.h"
+#include "HAL/CPU.h"
 #include "Drivers/i8259.h"
+#include "Drivers/APIC.h"
+#include "HAL/IRQFlags.h"
 
 #include "HAL/IRQChip.h"
+#define MODULE "IRQ Chip"
 
-#define MODULE "x86_64 IRQ Chip"
+static struct IRQChip m_chip;
 
-// IRQ 0-7 are mapped to interrupts 32 to 39 ; IRQ 8-15 to interrupts 40 to 47
-#define IRQ_MASTER_PIC_REMAP_OFFSET 0x20
-
-// Global array of [un]registered IRQ handlers
-static IRQHandler m_IRQHandlers[16];
-
-static const char* const ISA_IRQ_NAMES[] = {
-    "Programmable Interrupt Timer (PIT)",
-    "PS/2 Keyboard",
-    "Cascade",								// Used internally by the two PICs, never raised
-    "COM2",									// If enabled
-    "COM1",									// If enabled
-    "LPT2",									// If enabled
-    "Floppy Disk",
-    "LPT1",
-    "CMOS real-time clock",					// If enabled
-    "Free for peripherals/legacy SCSI/NIC",
-    "Free for peripherals/legacy SCSI/NIC",
-    "Free for peripherals/legacy SCSI/NIC",
-    "PS/2 Mouse",
-    "FPU/Coprocessor/Inter-processor",
-    "Primary ATA Hard Disk",
-    "Secondary ATA Hard Disk",
-};
-
-#define isInvalidIRQ(irq) (irq<0 && irq>=16)
-
-void IRQChip_registerHandler(int irq, IRQHandler handler){
-	if (isInvalidIRQ(irq)) return;
-
-	m_IRQHandlers[irq] = handler;
-}
-
-void IRQChip_deregisterHandler(int irq){
-	if (isInvalidIRQ(irq)) return;
-
-	m_IRQHandlers[irq] = NULL;
-}
-
-void IRQChip_enableSpecific(int irq){
-	if (isInvalidIRQ(irq)) return;
-
-	i8259_enableIRQ(irq);
-}
-
-void IRQChip_disableSpecific(int irq){
-	if (isInvalidIRQ(irq)) return;
-
-	i8259_disableIRQ(irq);
-}
-
-// ================ IRQ Handlers ================
-
-static void prehandler(struct ISR_Params* params){
-	uint8_t irq = (uint8_t) params->vector;
-	irq = irq - IRQ_MASTER_PIC_REMAP_OFFSET; // clamp irq to 0-15
-
-	// IRQ 7 and 15 may be spurious, in which case we must NOT send an EOI
-	if ((irq==7 || irq==15) && i8259_handleSpuriousIRQ(irq))
-		return;
-
-	// If we have a handler to call, we call it, and 'alles gut'
-	// Otherwise, we send a warning
-	if (m_IRQHandlers[irq] != NULL)
-		m_IRQHandlers[irq](params);
-	else
-		log(WARNING, MODULE, "Unhandled IRQ %d - %s", irq, ISA_IRQ_NAMES[irq]);
-
-	// Finally, signal to the PIC that we handled the interrupt
-	i8259_sendEIO(irq);
-}
-
-// Simple blinking timer on the bottom right of the screen
-#include "Drivers/Graphics/Framebuffer.h"
-void timer(void*){
-	extern Framebuffer m_framebuffer;
-	static bool clock = false;
-	const int rect_size = 4;
-	color_t color = (clock) ? GREEN : LIGHT_GREY;
-	Framebuffer_fillRectangle(&m_framebuffer, m_framebuffer.width-rect_size-1, m_framebuffer.height-rect_size-1, rect_size, rect_size, color);
-	clock = !clock;
-}
-
-void IRQChip_init(){
-	// Remap the PIC
-	i8259_remap(IRQ_MASTER_PIC_REMAP_OFFSET, IRQ_MASTER_PIC_REMAP_OFFSET+8);
+struct IRQChip* IRQChip_get(){
+	// Remap the PIC. We need to do it even if we don't use it, as it
+	// can still fire spurious IRQs
+	i8259_remap(ISA_IRQ_OFFSET, ISA_IRQ_OFFSET+8);
 	i8259_disableAllIRQ();
 
-	// Register our IRQ Pre-handler
-	for(int i=0 ; i<16 ; i++){
-		ISR_registerHandler(IRQ_MASTER_PIC_REMAP_OFFSET+i, prehandler);
+	// Try to use the APIC if available
+	if (g_CPU.features.bits.APIC){
+		log(INFO, MODULE, "APIC found");
+		m_chip.init = APIC_init;
+		m_chip.sendEOI = APIC_sendEIO;
+	}
+	else {
+		log(INFO, MODULE, "APIC not found, using legacy 8259 PIC");
+		m_chip.init = i8259_enableAllIRQ;
+		m_chip.sendEOI = i8259_sendEIO;
 	}
 
-	// Temporary, until we have a Timer subsystem or whatever
-	IRQ_registerHandler(IRQ_TIMER, timer);
-
-	i8259_enableAllIRQ();
+	return &m_chip;
 }

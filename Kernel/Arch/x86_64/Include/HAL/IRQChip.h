@@ -2,19 +2,16 @@
 #define __IRQ_CHIP_H__
 
 #include <stdint.h>
-#include "HAL/CPU.h"
-#include "IRQ.h"
 
 // x86_64 IRQ Chip driver
-// Can be either the PIC or the APIC (not implemented yet)
+// Can be either the PIC or the APIC
 
-// Initialize the plateform's IRQs
-void IRQChip_init();
+struct IRQChip {
+	void (*init)(void);
+	void (*sendEOI)(int irq);
+};
 
-void IRQChip_registerHandler(int irq, IRQHandler handler);
-void IRQChip_deregisterHandler(int irq);
-
-void IRQChip_enableSpecific(int irq);
-void IRQChip_disableSpecific(int irq);
+// Get the plateform's (best) IRQ chip
+struct IRQChip* IRQChip_get();
 
 #endif

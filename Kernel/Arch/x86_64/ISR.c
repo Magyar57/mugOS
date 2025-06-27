@@ -1,13 +1,11 @@
 #include <stdint.h>
 #include <stddef.h>
-#include "Logging.h"
-#include "HAL/CPU.h"
-#include "GDT.h"
-#include "IDT.h"
+#include "assert.h"
 #include "Panic.h"
+#include "Logging.h"
+#include "IDT.h"
 
 #include "ISR.h"
-
 #define MODULE "ISR"
 
 #define ISR_DIVIDE_BY_ZERO_ERROR	0x00
@@ -15,8 +13,11 @@
 #define ISR_SEGMENT_NOT_PRESENT		0x0b
 #define ISR_PAGE_FAULT				0x0e
 
-// Global array of [un]registered interrupt handlers
-static ISR m_ISR[256];
+#define N_ISR						256
+#define N_EXCEPTIONS				32
+
+// Global array of [un]registered exception/trap handlers
+static ISR m_exceptions[N_EXCEPTIONS];
 
 static const char* const EXCEPTION_TYPES[] = {
     "Exception (Fault) - Divide by zero error",
@@ -55,11 +56,13 @@ static const char* const EXCEPTION_TYPES[] = {
 };
 
 void ISR_registerHandler(uint8_t vector, ISR handler){
-	m_ISR[vector] = handler;
+	assert(vector < N_EXCEPTIONS);
+	m_exceptions[vector] = handler;
 }
 
 void ISR_deregisterHandler(uint8_t vector){
-	m_ISR[vector] = NULL;
+	assert(vector < N_EXCEPTIONS);
+	m_exceptions[vector] = NULL;
 }
 
 static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
@@ -74,19 +77,21 @@ static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
 
 // ================ ISR Handlers ================
 
-// All ISR lead to a common ISR_Asm_Prehandler function, which calls this function
-void ISR_C_prehandler(struct ISR_Params* params){
-
+void ISR_exceptionPrehandler(struct ISR_Params* params){
 	// If we have a handler to call, we call it, and 'alles gut'
-	if (m_ISR[params->vector] != NULL){
-		m_ISR[params->vector](params);
+	if (m_exceptions[params->vector] != NULL){
+		m_exceptions[params->vector](params);
 		return;
 	}
 
 	// Otherwise we PANIC !
-	const char* interrupt_type = (params->vector < 32) ? EXCEPTION_TYPES[params->vector] : "Interrupt";
-	log(PANIC, MODULE, "Unhandled %s !", interrupt_type);
+	log(PANIC, MODULE, "Unhandled %s !", EXCEPTION_TYPES[params->vector]);
 	dumpRegisters(PANIC, params);
+	panic();
+}
+
+void ISR_syscallPrehandler(struct ISR_Params*){
+	log(PANIC, MODULE, "System calls are not implemented yet !");
 	panic();
 }
 
@@ -160,17 +165,17 @@ void ISR_initInterruptHandlers();
 void ISR_init(){
 	ISR_initInterruptHandlers();
 
-	// Enable all ISR assembly methods (in ISR_defs.s)
-	// They all call ISR_Common with unified parameters
-	for(int i=0 ; i<256 ; i++){
-		IDT_enableInterruptHandler(i); // Enable Asm ISR
-		m_ISR[i] = NULL; // Initialize C ISR
-	}
-	IDT_disableInterruptHandler(0x80); // until we implement system calls
+	// Initialize exceptions
+	for(int i=0 ; i<N_EXCEPTIONS ; i++)
+		m_exceptions[i] = NULL;
 
-	// Register our ISR handlers
+	// Register our exception handlers
 	ISR_registerHandler(ISR_DIVIDE_BY_ZERO_ERROR, ISR_divisionByZeroError);
 	ISR_registerHandler(ISR_DOUBLE_FAULT, ISR_doubleFault);
 	ISR_registerHandler(ISR_SEGMENT_NOT_PRESENT, ISR_segmentNotPresent);
 	ISR_registerHandler(ISR_PAGE_FAULT, ISR_pageFault);
+
+	// Enable all ISRs in the IDT
+	for (int i=0 ; i<N_ISR ; i++)
+		IDT_enableInterruptHandler(i);
 }

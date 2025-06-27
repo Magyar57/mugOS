@@ -3,7 +3,6 @@
 #include "Memory/VMM.h"
 #include "IRQ.h"
 #include "Registers.h"
-#include "ISR.h"
 
 #include "APIC.h"
 #define MODULE_APIC "APIC"
@@ -158,17 +157,16 @@ static unused inline void readRegister256(const int offset, struct Register256* 
 
 // Temporary: blinking rectangle on the bottom right of the screen
 #include "Drivers/Graphics/Framebuffer.h"
-static void timerIRQ(struct ISR_Params*){
+static void timerIRQ(void*){
 	extern Framebuffer m_framebuffer;
 	static bool clock = false;
 	const int rect_size = 4;
 	color_t color = (clock) ? COLOR_32BPP(0,128,0) : LIGHT_GREY;
 	Framebuffer_fillRectangle(&m_framebuffer, m_framebuffer.width-2*rect_size-2, m_framebuffer.height-rect_size-1, rect_size, rect_size, color);
 	clock = !clock;
-	APIC_sendEIO();
 }
 
-static void handleSpuriousIRQ(struct ISR_Params*){
+static void handleSpuriousIRQ(void*){
 	static int n_spurious_irqs = 0;
 	n_spurious_irqs++;
 	log(WARNING, MODULE_APIC, "Got spurious IRQ (count is now %d)", n_spurious_irqs);
@@ -219,7 +217,7 @@ void APIC_init(){
 	writeRegister32(APIC_REG_DFR, dfr.value);
 
 	// Install a spurious interrupt handler
-	ISR_registerHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ);
+	IRQ_registerHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ);
 
 	// Finally, set the 'enable' bit in the Spurious Interrupt Register
 	union SpuriousInterruptRegister spur;
@@ -234,12 +232,12 @@ void APIC_init(){
 	m_timerReg.bits.masked = false;
 	writeRegister32(APIC_REG_TIMER, m_timerReg.value);
 
-	ISR_registerHandler(IRQ_APIC_TIMER, timerIRQ);
+	IRQ_registerHandler(IRQ_APIC_TIMER, timerIRQ);
 	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
 	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 1000000000); // 1GHz bus speed => 1s
 }
 
-void APIC_sendEIO(){
+void APIC_sendEIO(int){
 	writeRegister32(APIC_REG_EOI, 0);
 }
 

@@ -7,6 +7,6 @@
 void APIC_init();
 
 // Send EOI (end of interrupt) to the local APIC
-void APIC_sendEIO();
+void APIC_sendEIO(int irq);
 
 #endif

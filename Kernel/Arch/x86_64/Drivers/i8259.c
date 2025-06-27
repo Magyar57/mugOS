@@ -1,7 +1,9 @@
+#include "assert.h"
 #include "io.h"
 #include "Preprocessor.h"
 #include "Logging.h"
 #include "Panic.h"
+#include "HAL/IRQFlags.h"
 
 #include "i8259.h"
 #define MODULE "i8259 PIC"
@@ -130,6 +132,8 @@ void i8259_disableAllIRQ(){
 
 void i8259_sendEIO(int irq){
 	if (isValidIRQ(irq)) return;
+	assert(irq >= ISA_IRQ_OFFSET);
+	irq -= ISA_IRQ_OFFSET;
 
 	if (irq >= 8)
 		outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
