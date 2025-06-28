@@ -13,11 +13,9 @@
 #define ISR_SEGMENT_NOT_PRESENT		0x0b
 #define ISR_PAGE_FAULT				0x0e
 
-#define N_ISR						256
-#define N_EXCEPTIONS				32
-
 // Global array of [un]registered exception/trap handlers
-static ISR m_exceptions[N_EXCEPTIONS];
+// It is handled (edited) in ISR.c, and handlers are called in ISR.asm
+ISR g_handlers[256];
 
 static const char* const EXCEPTION_TYPES[] = {
     "Exception (Fault) - Divide by zero error",
@@ -55,16 +53,6 @@ static const char* const EXCEPTION_TYPES[] = {
 	// After: only interrupts
 };
 
-void ISR_registerHandler(uint8_t vector, ISR handler){
-	assert(vector < N_EXCEPTIONS);
-	m_exceptions[vector] = handler;
-}
-
-void ISR_deregisterHandler(uint8_t vector){
-	assert(vector < N_EXCEPTIONS);
-	m_exceptions[vector] = NULL;
-}
-
 static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
 	log(logLevel, NULL, "vector=%#.2hhx rflags=%#.16llx err=%p", params->vector, params->rflags, params->err);
 	log(logLevel, NULL, "\trip=%#.16llx rsp=%#.16llx rbp=%#.16llx", params->rip, params->rsp, params->rbp);
@@ -77,21 +65,15 @@ static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
 
 // ================ ISR Handlers ================
 
-void ISR_exceptionPrehandler(struct ISR_Params* params){
-	// If we have a handler to call, we call it, and 'alles gut'
-	if (m_exceptions[params->vector] != NULL){
-		m_exceptions[params->vector](params);
+// This function is ran by the assembly stub when there is no handler to call
+void ISR_noHandler(struct ISR_Params* params){
+	if (params->vector >= 32){
+		log(WARNING, MODULE, "Unhandled IRQ %d !", params->vector);
 		return;
 	}
 
-	// Otherwise we PANIC !
 	log(PANIC, MODULE, "Unhandled %s !", EXCEPTION_TYPES[params->vector]);
 	dumpRegisters(PANIC, params);
-	panic();
-}
-
-void ISR_syscallPrehandler(struct ISR_Params*){
-	log(PANIC, MODULE, "System calls are not implemented yet !");
 	panic();
 }
 
@@ -159,23 +141,29 @@ void ISR_pageFault(struct ISR_Params* params){
 
 // ================ Initialize ================
 
-// In ISR_defs.c
+// (ISR_defs.c) Sets all assembly entry points in the IDT
 void ISR_initInterruptHandlers();
 
 void ISR_init(){
 	ISR_initInterruptHandlers();
 
-	// Initialize exceptions
-	for(int i=0 ; i<N_EXCEPTIONS ; i++)
-		m_exceptions[i] = NULL;
+	// Initialize handlers
+	for (int i=0 ; i<256 ; i++){
+		g_handlers[i] = NULL;
+		IDT_enableInterruptHandler(i);
+	}
 
 	// Register our exception handlers
-	ISR_registerHandler(ISR_DIVIDE_BY_ZERO_ERROR, ISR_divisionByZeroError);
-	ISR_registerHandler(ISR_DOUBLE_FAULT, ISR_doubleFault);
-	ISR_registerHandler(ISR_SEGMENT_NOT_PRESENT, ISR_segmentNotPresent);
-	ISR_registerHandler(ISR_PAGE_FAULT, ISR_pageFault);
+	ISR_installHandler(ISR_DIVIDE_BY_ZERO_ERROR, ISR_divisionByZeroError);
+	ISR_installHandler(ISR_DOUBLE_FAULT, ISR_doubleFault);
+	ISR_installHandler(ISR_SEGMENT_NOT_PRESENT, ISR_segmentNotPresent);
+	ISR_installHandler(ISR_PAGE_FAULT, ISR_pageFault);
+}
 
-	// Enable all ISRs in the IDT
-	for (int i=0 ; i<N_ISR ; i++)
-		IDT_enableInterruptHandler(i);
+void ISR_installHandler(uint8_t vector, ISR handler){
+	g_handlers[vector] = handler;
+}
+
+void ISR_removeHandler(uint8_t vector){
+	g_handlers[vector] = NULL;
 }

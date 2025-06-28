@@ -17,10 +17,10 @@ typedef void (*ISR)(struct ISR_Params*);
 /// @note Call IDT_init beforehand !
 void ISR_init();
 
-// Register a handler for a given interrupt vector
-void ISR_registerHandler(uint8_t vector, ISR handler);
+/// @brief Install a handler for a given interrupt vector
+void ISR_installHandler(uint8_t vector, ISR handler);
 
-// Deregister a handler for a given interrupt vector
-void ISR_deregisterHandler(uint8_t vector);
+/// @brief Remove (clear) a handler for a given interrupt vector
+void ISR_removeHandler(uint8_t vector);
 
 #endif

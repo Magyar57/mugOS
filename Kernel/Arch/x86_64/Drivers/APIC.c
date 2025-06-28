@@ -3,6 +3,7 @@
 #include "Memory/VMM.h"
 #include "IRQ.h"
 #include "Registers.h"
+#include "ISR.h"
 #include "Drivers/i8259.h"
 
 #include "APIC.h"
@@ -167,7 +168,7 @@ static void timerIRQ(void*){
 	clock = !clock;
 }
 
-static void handleSpuriousIRQ(void*){
+static void handleSpuriousIRQ(struct ISR_Params*){
 	static int n_spurious_irqs = 0;
 	n_spurious_irqs++;
 	log(WARNING, MODULE_APIC, "Got spurious IRQ (count is now %d)", n_spurious_irqs);
@@ -223,7 +224,7 @@ void APIC_init(){
 	writeRegister32(APIC_REG_DFR, dfr.value);
 
 	// Install a spurious interrupt handler
-	IRQ_registerHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ); // TODO FIX this is wrong since generic IRQ handling sends EOI
+	ISR_installHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ);
 
 	// Finally, set the 'enable' bit in the Spurious Interrupt Register
 	union SpuriousInterruptRegister spur;
