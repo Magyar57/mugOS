@@ -6,6 +6,10 @@
 
 // VMM.h: Virtual Memory Manager
 
+// Virtual addresses in this region are garanteed to be kernel-only
+// They can be used safely with VMM_map
+#define VMM_KERNEL_MEMORY		toCanonical(1ul << (ADDRESS_SIZE-1))
+
 void VMM_init();
 
 // ================ Map memory ================

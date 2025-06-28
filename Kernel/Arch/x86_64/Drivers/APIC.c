@@ -14,7 +14,7 @@
 
 // Memory-mapped APIC registers page address
 #define APIC_REGISTERS 0x00000000fee00000
-static const uint8_t* m_apicRegs = (uint8_t*) APIC_REGISTERS;
+static const uint8_t* m_apicRegs =  (uint8_t*) (VMM_KERNEL_MEMORY | APIC_REGISTERS);
 
 // Memory-mapped APIC registers offsets in the page
 #define APIC_REG_ID						0x020
@@ -208,8 +208,8 @@ void APIC_init(){
 	apic_base.bits.x2APIC = false; // we operate in xAPIC mode
 	Registers_writeMSR(MSR_ADDR_IA32_APIC_BASE, apic_base.value);
 
-	// Memory-map the APIC registers -> TODO use kernel memory instead !
-	VMM_map(APIC_REGISTERS, APIC_REGISTERS, 1, PAGE_READ|PAGE_WRITE|PAGE_CACHE_DISABLED|PAGE_KERNEL);
+	// Memory-map the APIC registers
+	VMM_map(APIC_REGISTERS, (virtual_address_t) m_apicRegs, 1, PAGE_READ|PAGE_WRITE|PAGE_CACHE_DISABLED|PAGE_KERNEL);
 
 	// DEBUG INFO
 	union VersionRegister version;
