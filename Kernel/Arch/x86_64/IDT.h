@@ -22,7 +22,7 @@ void IDT_init();
 // Enable the 'interrupt' interrupt handler
 void IDT_enableInterruptHandler(uint8_t interrupt);
 
-// Returns wheather an interrupt handler is enabled
+// Returns whether an interrupt handler is enabled
 bool IDT_isInterruptHandlerEnabled(uint8_t interrupt);
 
 // Disable the 'interrupt' interrupt handler

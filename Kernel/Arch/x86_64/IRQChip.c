@@ -12,8 +12,11 @@
 static struct IRQChip m_chip;
 
 static void installPrehandler(IRQHandler prehandler){
-	for (int irq=32 ; irq<256 ; irq++)
-		ISR_installHandler(irq, (ISR) prehandler);
+	for (int irq=32 ; irq<256 ; irq++){
+		if (!ISR_isHandlerPresent(irq)){
+			ISR_installHandler(irq, (ISR) prehandler);
+		}
+	}
 }
 
 struct IRQChip* IRQChip_get(){

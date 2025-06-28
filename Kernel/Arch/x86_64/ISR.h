@@ -23,4 +23,7 @@ void ISR_installHandler(uint8_t vector, ISR handler);
 /// @brief Remove (clear) a handler for a given interrupt vector
 void ISR_removeHandler(uint8_t vector);
 
+/// @returns Whether an handler is already installed for the given `vector` ISR
+bool ISR_isHandlerPresent(uint8_t vector);
+
 #endif

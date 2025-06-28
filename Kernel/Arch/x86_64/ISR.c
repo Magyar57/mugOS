@@ -167,3 +167,7 @@ void ISR_installHandler(uint8_t vector, ISR handler){
 void ISR_removeHandler(uint8_t vector){
 	g_handlers[vector] = NULL;
 }
+
+bool ISR_isHandlerPresent(uint8_t vector){
+	return (g_handlers[vector] != NULL);
+}
