@@ -3,7 +3,9 @@
 #include "Preprocessor.h"
 #include "Logging.h"
 #include "Panic.h"
+#include "IRQ.h"
 #include "HAL/IRQFlags.h"
+#include "ISR.h"
 
 #include "i8259.h"
 #define MODULE "i8259 PIC"
@@ -78,8 +80,38 @@ static void remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	outb(PIC_SLAVE_DATA, PIC_ICW4_8086);
 }
 
+static void handleSpuriousIRQ7(struct ISR_Params* params){
+	uint16_t isr = i8259_getCombinedISR();
+
+	// Actually spurious
+	if ((isr & (1<<7)) == 0){
+		log(WARNING, MODULE, "Got spurious IRQ 7, ignored (no EOI sent)");
+		return;
+	}
+
+	// Valid IRQ: execute its handler
+	IRQ_prehandler(params);
+}
+
+static void handleSpuriousIRQ15(struct ISR_Params* params){
+	uint16_t isr = i8259_getCombinedISR();
+
+	// Actually spurious
+	if ((isr & (1<<15)) == 0){
+		log(WARNING, MODULE, "Got spurious IRQ 15, ignored (no EOI sent)");
+		i8259_sendEIO(7); // Master PIC ACK
+		return;
+	}
+
+	// Valid IRQ: execute its handler
+	IRQ_prehandler(params);
+}
+
 void i8259_init(){
 	remap(ISA_IRQ_OFFSET, ISA_IRQ_OFFSET+8);
+	ISR_installHandler(IRQ_LPT1, handleSpuriousIRQ7);
+	ISR_installHandler(IRQ_ATA2, handleSpuriousIRQ15);
+
 	i8259_enableAllIRQ();
 }
 
@@ -141,25 +173,4 @@ void i8259_sendEIO(int irq){
 	if (irq >= 8)
 		outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
 	outb(PIC_MASTER_CMD, PIC_CMD_EOI);
-}
-
-bool i8259_handleSpuriousIRQ(int irq){
-	uint16_t isr = i8259_getCombinedISR();
-
-	// Spurious IRQ 7
-	if ((isr & (1<<7)) == 0){
-		log(WARNING, MODULE, "Got spurious IRQ %d, ignored (no EOI sent)", irq);
-		return true;
-	}
-
-	// Spurious IRQ 15
-	// We don't still need to ACK the interrupt to the slave PIC,
-	//  but we do for the master PIC though
-	if ((isr & (1<<15)) == 0){
-		log(WARNING, MODULE, "Got spurious IRQ %d, ignored (no EOI sent)", irq);
-		i8259_sendEIO(7); // Master PIC ACK
-		return true;
-	}
-
-	return false;
 }

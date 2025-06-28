@@ -23,7 +23,4 @@ void i8259_enableAllIRQ();
 // Send EOI (end of interrupt) to the PIC
 void i8259_sendEIO(int irq);
 
-// Handle a spurious IRQ. Returns whether the IRQ was spurious or not
-bool i8259_handleSpuriousIRQ(int irq);
-
 #endif

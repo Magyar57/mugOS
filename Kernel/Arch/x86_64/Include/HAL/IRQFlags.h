@@ -11,7 +11,9 @@
 #define IRQ_PS2_KEYBOARD	0x01 + ISA_IRQ_OFFSET
 #define IRQ_COM2			0x03 + ISA_IRQ_OFFSET // Serial
 #define IRQ_COM1			0x04 + ISA_IRQ_OFFSET // Serial
+#define IRQ_LPT1			0x07 + ISA_IRQ_OFFSET // LPT1 or PIC spurious IRQ
 #define IRQ_PS2_MOUSE		0x0c + ISA_IRQ_OFFSET
+#define IRQ_ATA2			0x0f + ISA_IRQ_OFFSET // Secondary ATA hard disk or spurious IRQ
 
 // Programmed IRQs (we can chose those)
 #define IRQ_APIC_TIMER		0x30

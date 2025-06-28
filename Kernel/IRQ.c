@@ -17,26 +17,6 @@ struct IRQInfo {
 static struct IRQChip* m_chip;
 static struct IRQInfo m_irqInfos[N_IRQ]; // note: the first 32 are reserved
 
-// Common IRQ prehandler
-void IRQ_prehandler(void* params){
-	// TODO handle spurious IRQ !
-	// IRQ 7 and 15 may be spurious, in which case we must NOT send an EOI
-	// if ((irq==7 || irq==15) && i8259_handleSpuriousIRQ(irq))
-	// 	return;
-	int irq = IRQChip_getIRQ(params);
-
-	if (m_irqInfos[irq].handler != NULL){
-		if (m_irqInfos[irq].enabled)
-			m_irqInfos[irq].handler(params);
-	}
-	else {
-		log(WARNING, MODULE, "Unhandled IRQ %d", irq);
-	}
-
-	// Finally, signal the chip that we handled the interrupt
-	m_chip->sendEOI(irq);
-}
-
 // TODO write a PIT driver instead
 // Simple blinking timer on the bottom right of the screen
 #include "Drivers/Graphics/Framebuffer.h"
@@ -83,4 +63,19 @@ void IRQ_removeHandler(int irq){
 	assert(isValidIRQ(irq));
 	m_irqInfos[irq].handler = NULL;
 	m_irqInfos[irq].enabled = false;
+}
+
+void IRQ_prehandler(void* params){
+	int irq = IRQChip_getIRQ(params);
+
+	if (m_irqInfos[irq].handler != NULL){
+		if (m_irqInfos[irq].enabled)
+			m_irqInfos[irq].handler(params);
+	}
+	else {
+		log(WARNING, MODULE, "Unhandled IRQ %d", irq);
+	}
+
+	// Finally, signal the chip that we handled the interrupt
+	m_chip->sendEOI(irq);
 }
