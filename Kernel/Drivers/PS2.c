@@ -1145,8 +1145,8 @@ void PS2_init(){
 	// By default, the PS/2 controller leaves the device's IRQs disabled
 
 	// Temporary handler for intialization
-	IRQ_registerHandler(IRQ_PS2_KEYBOARD, initIRQ);
-	IRQ_registerHandler(IRQ_PS2_MOUSE, initIRQ);
+	IRQ_installHandler(IRQ_PS2_KEYBOARD, initIRQ);
+	IRQ_installHandler(IRQ_PS2_MOUSE, initIRQ);
 
 	bool enabled, port1_enabled, port2_enabled;
 	PS2Controller_getStatus(&enabled, &port1_enabled, &port2_enabled, &m_PS2Keyboard.translated);
@@ -1169,15 +1169,15 @@ void PS2_init(){
 	// Same for scanning ; and we can now register the scancodes-capable IRQ handlers
 	if (m_PS2Keyboard.enabled) {
 		sendByteToDeviceHandleResend(1, PS2_CMD_ENABLE_SCANNING);
-		IRQ_registerHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
+		IRQ_installHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
 	} else {
-		IRQ_deregisterHandler(IRQ_PS2_KEYBOARD);
+		IRQ_removeHandler(IRQ_PS2_KEYBOARD);
 	}
 	if (m_PS2Mouse.enabled) {
 		sendByteToDeviceHandleResend(2, PS2_CMD_ENABLE_SCANNING);
-		IRQ_registerHandler(IRQ_PS2_MOUSE, mouseIRQ);
+		IRQ_installHandler(IRQ_PS2_MOUSE, mouseIRQ);
 	} else {
-		IRQ_deregisterHandler(IRQ_PS2_MOUSE);
+		IRQ_removeHandler(IRQ_PS2_MOUSE);
 	}
 
 	log(SUCCESS, MODULE, "Initialization success");

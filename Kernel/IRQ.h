@@ -17,9 +17,9 @@ void IRQ_enableSpecific(int irq);
 void IRQ_disableSpecific(int irq);
 
 /// @brief Register a new IRQ handler (if set, replace the current handler)
-void IRQ_registerHandler(int irq, IRQHandler handler);
+void IRQ_installHandler(int irq, IRQHandler handler);
 
 /// @brief Remove a set IRQ handler
-void IRQ_deregisterHandler(int irq);
+void IRQ_removeHandler(int irq);
 
 #endif

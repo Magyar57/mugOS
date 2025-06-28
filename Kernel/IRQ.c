@@ -60,7 +60,7 @@ void IRQ_init(){
 	m_chip->installPrehandler(IRQ_prehandler);
 
 	// Temporary, until we have a Timer subsystem or whatever
-	IRQ_registerHandler(IRQ_PIT, timer);
+	IRQ_installHandler(IRQ_PIT, timer);
 }
 
 void IRQ_enableSpecific(int irq){
@@ -73,13 +73,13 @@ void IRQ_disableSpecific(int irq){
 	m_irqInfos[irq].enabled = false;
 }
 
-void IRQ_registerHandler(int irq, IRQHandler handler){
+void IRQ_installHandler(int irq, IRQHandler handler){
 	assert(isValidIRQ(irq));
 	m_irqInfos[irq].handler = handler;
 	m_irqInfos[irq].enabled = true;
 }
 
-void IRQ_deregisterHandler(int irq){
+void IRQ_removeHandler(int irq){
 	assert(isValidIRQ(irq));
 	m_irqInfos[irq].handler = NULL;
 	m_irqInfos[irq].enabled = false;

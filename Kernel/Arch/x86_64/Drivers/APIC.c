@@ -239,7 +239,7 @@ void APIC_init(){
 	m_timerReg.bits.masked = false;
 	writeRegister32(APIC_REG_TIMER, m_timerReg.value);
 
-	IRQ_registerHandler(IRQ_APIC_TIMER, timerIRQ);
+	IRQ_installHandler(IRQ_APIC_TIMER, timerIRQ);
 	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
 	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 1000000000); // 1GHz bus speed => 1s
 }
