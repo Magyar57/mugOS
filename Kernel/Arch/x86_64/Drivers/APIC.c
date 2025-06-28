@@ -168,10 +168,31 @@ static void timerIRQ(void*){
 	clock = !clock;
 }
 
-static void handleSpuriousIRQ(struct ISR_Params*){
+static void handleSpuriousIRQ(struct ISR_Params* params){
+	uint64_t vector = params->vector;
+
 	static int n_spurious_irqs = 0;
 	n_spurious_irqs++;
-	log(WARNING, MODULE_APIC, "Got spurious IRQ (count is now %d)", n_spurious_irqs);
+
+	if (vector == IRQ_APIC_SPURIOUS){
+		log(ERROR, MODULE_APIC, "Spurious APIC interrupt, should not happen. Wtf ?");
+		return;
+	}
+
+	// Read only the part which contains the 'vector-th' bit
+	uint32_t isr = readRegister32(APIC_REG_ISR + ((vector & ~0x1f) >> 1));
+	bool bit_present = (isr & (1 << (vector & 0x1f)));
+
+	// Ack the interrupt only if it's actually pending
+	if (bit_present){
+		log(WARNING, MODULE_APIC, "Got spurious interrupt %d, acked (count is now %d)",
+			vector, n_spurious_irqs);
+		APIC_sendEIO(0);
+	}
+	else {
+		log(WARNING, MODULE_APIC, "Got spurious interrupt %d, not pending (count is now %d)",
+			vector, n_spurious_irqs);
+	}
 }
 
 void APIC_init(){
