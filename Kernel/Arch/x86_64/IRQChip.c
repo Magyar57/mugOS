@@ -1,13 +1,20 @@
+#include "assert.h"
 #include "Logging.h"
 #include "HAL/CPU.h"
 #include "Drivers/i8259.h"
 #include "Drivers/APIC.h"
 #include "HAL/IRQFlags.h"
+#include "ISR.h"
 
 #include "HAL/IRQChip.h"
 #define MODULE "IRQ Chip"
 
 static struct IRQChip m_chip;
+
+static void installPrehandler(IRQHandler prehandler){
+	for (int irq=32 ; irq<256 ; irq++)
+		ISR_installHandler(irq, (ISR) prehandler);
+}
 
 struct IRQChip* IRQChip_get(){
 	// Try to use the APIC if available
@@ -22,5 +29,11 @@ struct IRQChip* IRQChip_get(){
 		m_chip.sendEOI = i8259_sendEIO;
 	}
 
+	m_chip.installPrehandler = installPrehandler;
 	return &m_chip;
+}
+
+int IRQChip_getIRQ(void* params){
+	struct ISR_Params* isr_params = params;
+	return isr_params->vector;
 }

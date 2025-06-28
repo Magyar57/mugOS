@@ -18,11 +18,12 @@ static struct IRQChip* m_chip;
 static struct IRQInfo m_irqInfos[N_IRQ]; // note: the first 32 are reserved
 
 // Common IRQ prehandler
-void IRQ_prehandler(int irq, void* params){
+void IRQ_prehandler(void* params){
 	// TODO handle spurious IRQ !
 	// IRQ 7 and 15 may be spurious, in which case we must NOT send an EOI
 	// if ((irq==7 || irq==15) && i8259_handleSpuriousIRQ(irq))
 	// 	return;
+	int irq = IRQChip_getIRQ(params);
 
 	if (m_irqInfos[irq].handler != NULL){
 		if (m_irqInfos[irq].enabled)
@@ -56,6 +57,7 @@ void IRQ_init(){
 
 	m_chip = IRQChip_get();
 	m_chip->init();
+	m_chip->installPrehandler(IRQ_prehandler);
 
 	// Temporary, until we have a Timer subsystem or whatever
 	IRQ_registerHandler(IRQ_PIT, timer);
