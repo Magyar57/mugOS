@@ -6,6 +6,10 @@
 extern struct RSDP g_RSDP;
 extern struct XSDT g_XSDT;
 extern struct MADT g_MADT;
+extern struct FADT g_FADT;
+
+extern bool g_MADTPresent;
+extern bool g_FADTPresent;
 
 void ACPI_init();
 

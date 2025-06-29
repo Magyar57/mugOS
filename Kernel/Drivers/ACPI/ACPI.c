@@ -12,6 +12,10 @@
 struct RSDP g_RSDP;
 struct XSDT g_XSDT;
 struct MADT g_MADT;
+struct FADT g_FADT;
+
+bool g_MADTPresent = false;
+bool g_FADTPresent = false;
 
 static int m_nTables; // Number of tables in the XSDT
 
@@ -22,16 +26,13 @@ struct rawMADT {
 	uint32_t localApicFlags;
 } packed;
 
-static void verifyChecksum(uint8_t* table, uint32_t size, const char* name){
+static inline bool isChecksumValid(uint8_t* table, uint32_t size){
 	uint8_t sum = 0; // we voluntarily use overflow to only keep the last byte
 
 	for (uint32_t i=0 ; i<size ; i++)
 		sum += table[i];
 
-	if (sum != 0){
-		log(PANIC, MODULE, "%s table checksum is invalid, aborting", name);
-		panic();
-	}
+	return (sum == 0);
 }
 
 static void parseRSDP(void* rsdp_ptr){
@@ -42,8 +43,12 @@ static void parseRSDP(void* rsdp_ptr){
 		panic();
 	}
 
-	verifyChecksum((uint8_t*)rsdp, 20, "RSDP");
-	verifyChecksum(((uint8_t*)rsdp) + 20, rsdp->length-20, "RSDP");
+	bool firstPartInvalid = !isChecksumValid((uint8_t*)rsdp, 20);
+	bool secondPartInvalid = !isChecksumValid(((uint8_t*)rsdp) + 20, rsdp->length-20);
+	if (firstPartInvalid || secondPartInvalid){
+		log(PANIC, MODULE, "RSDP checksum is invalid, aborting");
+		panic();
+	}
 
 	memcpy(&g_RSDP, rsdp, rsdp->length);
 }
@@ -51,14 +56,37 @@ static void parseRSDP(void* rsdp_ptr){
 static void parseXSDT(void* xsdt_ptr){
 	struct XSDT* xsdt = xsdt_ptr;
 
-	verifyChecksum((uint8_t*)xsdt, xsdt->header.length, "XSDT");
+	if (!isChecksumValid((uint8_t*)xsdt, xsdt->header.length)){
+		log(PANIC, MODULE, "XSDT checksum is invalid, aborting");
+		panic();
+	}
 
 	m_nTables = (xsdt->header.length - sizeof(struct SDTHeader)) / 8;
 	memcpy(&g_XSDT, xsdt, xsdt->header.length);
 }
 
+static void parseFADT(void* fadt_ptr){
+	struct FADT* fadt = fadt_ptr;
+
+	if (!isChecksumValid((uint8_t*) fadt, fadt->header.length)){
+		log(WARNING, MODULE, "Invalid FADT checksum, table will be ignored");
+		g_FADTPresent = false;
+		return;
+	}
+
+	memset(&g_FADT, 0, sizeof(struct FADT));
+	memcpy(&g_FADT, fadt, fadt->header.length);
+	g_FADTPresent = true;
+}
+
 static void parseMADT(struct rawMADT* madt_ptr){
 	struct MADTEntryHeader* curHdr;
+
+	if (!isChecksumValid((uint8_t*) madt_ptr, madt_ptr->header.length)){
+		log(WARNING, MODULE, "Invalid MADT checksum, table will be ignored");
+		g_MADTPresent = false;
+		return;
+	}
 
 	uint32_t cur_offset = sizeof(struct rawMADT);
 	while(cur_offset < madt_ptr->header.length) {
@@ -185,8 +213,6 @@ void ACPI_init(){
 	parseXSDT((void*) tempXsdt);
 
 	// Parse available tables
-	bool fadtFound=false, madtFound=false;
-	int unsupported=0;
 	for (int i=0 ; i<m_nTables ; i++){
 		physical_address_t table_phys = g_XSDT.tables[i];
 		virtual_address_t table_virt = table_phys | VMM_KERNEL_MEMORY;
@@ -196,16 +222,11 @@ void ACPI_init(){
 
 		// FADT: Fixed ACPI Description Table
 		if (strncmp(hdr->signature, "FACP", 4) == 0){
-			// parsing unimplemented
-			fadtFound = true;
+			parseFADT(hdr);
 		}
 		// MADT: Multiple APIC Description Table
 		else if (strncmp(hdr->signature, "APIC", 4) == 0){
 			parseMADT((struct rawMADT*) hdr);
-			madtFound = true;
-		}
-		else {
-			unsupported++;
 		}
 
 		VMM_unmap(table_virt, 1);
@@ -214,13 +235,8 @@ void ACPI_init(){
 	VMM_unmap(tempRsdp, 1);
 	VMM_unmap(tempXsdt, 1);
 
-	if (!madtFound){
-		log(PANIC, MODULE, "MADT table not found but is required for the OS !!");
-		panic();
-	}
-
-	log(INFO, MODULE, "Parsed tables: RSDP XSDT%s%s, and %d unsupported tables are present",
-		fadtFound ? " FADT":"", madtFound ? " MADT":"", unsupported);
+	log(INFO, MODULE, "Parsed tables: RSDP XSDT%s%s",
+		g_FADTPresent ? " FADT":"", g_MADTPresent ? " MADT":"");
 	// Note: Add 2 for RSDP and XSDT
 	log(SUCCESS, MODULE, "Initialization success, found %d ACPI tables", m_nTables+2);
 }

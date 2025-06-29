@@ -35,6 +35,78 @@ struct XSDT {
 	uint64_t tables[]; // size is (h.Length - sizeof(h)) / 8
 } packed;
 
+struct GenericAddressStructure {
+	uint8_t addressSpace;
+	uint8_t bitWidth;
+	uint8_t bitOffset;
+	uint8_t accessSize;
+	uint64_t address;
+} packed;
+
+struct FADT {
+	struct SDTHeader header;
+	uint32_t firmwareControl;
+	uint32_t DSDT;
+
+	uint8_t reserved_0; // deprecated, used in ACPI 1.0
+	uint8_t preferredPowerManagementProfile;
+	uint16_t SCIInterrupt;
+	uint32_t SMICommandPort;
+	uint8_t ACPIEnable;
+	uint8_t ACPIDisable;
+	uint8_t S4BIOSReq;
+	uint8_t PSTATEControl;
+	uint32_t PM1aEventBlock;
+	uint32_t PM1bEventBlock;
+	uint32_t PM1aControlBlock;
+	uint32_t PM1bControlBlock;
+	uint32_t PM2ControlBlock;
+	uint32_t PMTimerBlock;
+	uint32_t GPE0Block;
+	uint32_t GPE1Block;
+	uint8_t PM1EventLength;
+	uint8_t PM1ControlLength;
+	uint8_t PM2ControlLength;
+	uint8_t PMTimerLength;
+	uint8_t GPE0Length;
+	uint8_t GPE1Length;
+	uint8_t GPE1Base;
+	uint8_t CStateControl;
+	uint16_t worstC2Latency;
+	uint16_t worstC3Latency;
+	uint16_t flushSize;
+	uint16_t flushStride;
+	uint8_t dutyOffset;
+	uint8_t dutyWidth;
+	uint8_t dayAlarm;
+	uint8_t monthAlarm;
+	uint8_t century;
+	uint16_t bootArchitectureFlags; // since ACPI 2.0+
+	uint8_t  reserved_1;
+	union {
+		uint32_t value;
+		struct {
+			uint32_t bit : 1;
+		} bits;
+	} flags;
+
+	struct GenericAddressStructure resetReg;
+
+	uint8_t  resetValue;
+	uint8_t  reserved_2[3];
+
+	uint64_t X_firmwareControl; // since ACPI 2.0+
+	uint64_t X_DSDT; // since ACPI 2.0+
+	struct GenericAddressStructure X_PM1aEventBlock;
+	struct GenericAddressStructure X_PM1bEventBlock;
+	struct GenericAddressStructure X_PM1aControlBlock;
+	struct GenericAddressStructure X_PM1bControlBlock;
+	struct GenericAddressStructure X_PM2ControlBlock;
+	struct GenericAddressStructure X_PMTimerBlock;
+	struct GenericAddressStructure X_GPE0Block;
+	struct GenericAddressStructure X_GPE1Block;
+} packed;
+
 // ================ MADT: Multiple APIC Description Table ================
 
 enum MADTEntryType {
