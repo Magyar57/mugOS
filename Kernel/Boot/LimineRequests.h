@@ -12,5 +12,6 @@ extern volatile struct limine_bootloader_info_request g_infoReq;
 extern volatile struct limine_memmap_request g_memmapReq;
 extern volatile struct limine_hhdm_request g_hhdmReq;
 extern volatile struct limine_framebuffer_request g_framebufferReq;
+extern volatile struct limine_rsdp_request g_rsdpReq;
 
 #endif

@@ -13,7 +13,6 @@
 - [X] Implement PS/2 drivers (controller and devices)
 - [X] Implement a keyboard driver subsystem
 - [X] Port my C Tetris to mugOS (run in ring 0)
-- [X] Double fault handler
 - [X] Text-mode VGA driver
 - [X] Logging subsystem
 - [X] Serial output driver
@@ -25,6 +24,8 @@
 - [X] Physical memory allocator (bitmap)
 - [X] Virtual memory management (paging: mapping/unmapping)
 - [X] Kernel heap (kmalloc, slab allocator)
+- [X] ACPI tables parsing
+- [ ] APIC (LAPIC and IOAPIC) drivers
 - [ ] Virtual filesystem
 - [ ] Kernel FAT driver
 - [ ] ELF binary loading

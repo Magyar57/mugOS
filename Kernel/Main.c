@@ -9,6 +9,7 @@
 #include "HAL/HAL.h"
 #include "HAL/CPU.h"
 #include "Drivers/Graphics/Graphics.h"
+#include "Drivers/ACPI/ACPI.h"
 #include "Drivers/Serial.h"
 #include "Drivers/PS2.h"
 #include "Drivers/Keyboard.h"
@@ -36,6 +37,8 @@ void kmain(){
 	PMM_init();
 	VMM_init();
 	SlabAllocator_init(); // Kernel heap (kmalloc, caches...)
+
+	ACPI_init();
 
 	// Initialize IRQs
 	IRQ_init();

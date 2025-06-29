@@ -36,4 +36,11 @@ volatile struct limine_framebuffer_request g_framebufferReq = {
 	.response = NULL
 };
 
+// Ask for the RSDP table
+volatile struct limine_rsdp_request g_rsdpReq = {
+	.id = LIMINE_RSDP_REQUEST,
+	.revision = 0,
+	.response = NULL
+};
+
 volatile LIMINE_REQUESTS_END_MARKER;
