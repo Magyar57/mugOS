@@ -608,7 +608,7 @@ void Cache_free(cache_t* cache, void* ptr){
 void* kmalloc(size_t size){
 	void* res;
 
-	if (size > KMALLOC_MAX_CACHE_SIZE)
+	if (size == 0 || size > KMALLOC_MAX_CACHE_SIZE)
 		return NULL;
 
 	// Get in which 'size' cache to allocate
