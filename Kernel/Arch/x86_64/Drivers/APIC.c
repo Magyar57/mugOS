@@ -5,6 +5,7 @@
 #include "Registers.h"
 #include "ISR.h"
 #include "Drivers/i8259.h"
+#include "Drivers/ACPI/ACPI.h"
 
 #include "APIC.h"
 #define MODULE_APIC "APIC"
@@ -13,8 +14,8 @@
 // ================ APIC ================
 
 // Memory-mapped APIC registers page address
-#define APIC_REGISTERS 0x00000000fee00000
-static const uint8_t* m_apicRegs =  (uint8_t*) (VMM_KERNEL_MEMORY | APIC_REGISTERS);
+#define APIC_REGISTERS_ADDR_DEFAULT 0x00000000fee00000
+volatile static uint8_t* m_apicRegs;
 
 // Memory-mapped APIC registers offsets in the page
 #define APIC_REG_ID						0x020
@@ -195,6 +196,30 @@ static void handleSpuriousIRQ(struct ISR_Params* params){
 	}
 }
 
+static physical_address_t getAPICAddress(){
+	if (!g_MADTPresent)
+		return APIC_REGISTERS_ADDR_DEFAULT;
+
+	physical_address_t addr = (physical_address_t) g_MADT.localApicAddress;
+
+	if (g_MADT.nLAPIC_ADDR_OVERRIDE == 0)
+		return addr;
+
+	if (g_MADT.nLAPIC_ADDR_OVERRIDE > 1)
+		log(WARNING, MODULE_APIC, "Found several APIC address overrides, should not happen !!");
+
+	log(INFO, MODULE_APIC, "Found APIC address override, using its address");
+	return (physical_address_t) g_MADT.LAPIC_ADDR_OVERRIDEs[0].address;
+}
+
+// ================ IO APIC ================
+
+static void IOAPIC_init(){
+	// debug("TODO");
+}
+
+// ================ Public interface ================
+
 void APIC_init(){
 	// Remap the PIC. We need to do it even if we don't use it, as it
 	// can still fire spurious IRQs
@@ -208,15 +233,13 @@ void APIC_init(){
 	apic_base.bits.x2APIC = false; // we operate in xAPIC mode
 	Registers_writeMSR(MSR_ADDR_IA32_APIC_BASE, apic_base.value);
 
-	// Memory-map the APIC registers
-	VMM_map(APIC_REGISTERS, (virtual_address_t) m_apicRegs, 1, PAGE_READ|PAGE_WRITE|PAGE_CACHE_DISABLED|PAGE_KERNEL);
+	// If ACPI MADT is present, use the address it provides
+	physical_address_t apic_regs_phys = getAPICAddress();
+	virtual_address_t apics_regs_virt = apic_regs_phys | VMM_KERNEL_MEMORY;
+	m_apicRegs = (uint8_t*) apics_regs_virt;
 
-	// DEBUG INFO
-	union VersionRegister version;
-	version.value = readRegister32(APIC_REG_VERSION);
-	debug("APIC id=%p version=%#hhx maxLVTEntry=%d EIOBroadcastSupressionSupport=%d",
-		readRegister32(APIC_REG_ID), version.bits.version, version.bits.maxLVTEntry,
-		version.bits.EIOBroadcastSupressionSupport);
+	// Memory-map the APIC registers
+	VMM_map(apic_regs_phys, apics_regs_virt, 1, PAGE_READ|PAGE_WRITE|PAGE_CACHE_DISABLED|PAGE_KERNEL);
 
 	// Setup LINT0 and LINT1
 	union LINTRegister lint0, lint1;
@@ -263,12 +286,12 @@ void APIC_init(){
 	IRQ_installHandler(IRQ_APIC_TIMER, timerIRQ);
 	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
 	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 1000000000); // 1GHz bus speed => 1s
+
+	log(SUCCESS, MODULE_APIC, "Initalized LAPIC (LAPIC ID: %d)", readRegister32(APIC_REG_ID));
+
+	IOAPIC_init();
 }
 
 void APIC_sendEIO(int){
 	writeRegister32(APIC_REG_EOI, 0);
 }
-
-// ================ IO APIC ================
-
-// Unimplemented yet
