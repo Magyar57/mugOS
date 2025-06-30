@@ -202,10 +202,12 @@ struct MADTEntry_LX2APIC {
 
 // ACPI table: Multiple APIC Description Table (parsed)
 struct MADT {
+	// Begins the same way as the raw ACPI MADT table
 	struct SDTHeader header;
 	uint32_t localApicAddress;
 	uint32_t localApicFlags;
 
+	// For the entries, they are parsed and organized in a nice way
 	int nLAPIC;
 	int nIOAPIC;
 	int nIOAPIC_ISO;

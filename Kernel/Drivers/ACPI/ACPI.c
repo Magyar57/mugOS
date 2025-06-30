@@ -9,8 +9,6 @@
 #include "ACPI.h"
 #define MODULE "ACPI"
 
-struct RSDP g_RSDP;
-struct XSDT g_XSDT;
 struct MADT g_MADT;
 struct FADT g_FADT;
 
@@ -35,36 +33,6 @@ static inline bool isChecksumValid(uint8_t* table, uint32_t size){
 	return (sum == 0);
 }
 
-static void parseRSDP(void* rsdp_ptr){
-	struct RSDP* rsdp = rsdp_ptr;
-
-	if (rsdp->revision < 2){
-		log(PANIC, MODULE, "System's ACPI version (revision 1) is legacy and unsupported");
-		panic();
-	}
-
-	bool firstPartInvalid = !isChecksumValid((uint8_t*)rsdp, 20);
-	bool secondPartInvalid = !isChecksumValid(((uint8_t*)rsdp) + 20, rsdp->length-20);
-	if (firstPartInvalid || secondPartInvalid){
-		log(PANIC, MODULE, "RSDP checksum is invalid, aborting");
-		panic();
-	}
-
-	memcpy(&g_RSDP, rsdp, rsdp->length);
-}
-
-static void parseXSDT(void* xsdt_ptr){
-	struct XSDT* xsdt = xsdt_ptr;
-
-	if (!isChecksumValid((uint8_t*)xsdt, xsdt->header.length)){
-		log(PANIC, MODULE, "XSDT checksum is invalid, aborting");
-		panic();
-	}
-
-	m_nTables = (xsdt->header.length - sizeof(struct SDTHeader)) / 8;
-	memcpy(&g_XSDT, xsdt, xsdt->header.length);
-}
-
 static void parseFADT(void* fadt_ptr){
 	struct FADT* fadt = fadt_ptr;
 
@@ -87,6 +55,15 @@ static void parseMADT(struct rawMADT* madt_ptr){
 		g_MADTPresent = false;
 		return;
 	}
+
+
+	// Copy the common header part
+	memcpy(&g_MADT, madt_ptr, sizeof(struct rawMADT));
+
+	// Next, parse the dynamic fields:
+	// - Count them
+	// - malloc arrays to store them
+	// - Parse and set our arrays
 
 	uint32_t cur_offset = sizeof(struct rawMADT);
 	while(cur_offset < madt_ptr->header.length) {
@@ -192,29 +169,21 @@ static void parseMADT(struct rawMADT* madt_ptr){
 
 		cur_offset += curHdr->entryLength;
 	}
+
+	g_MADTPresent = true;
 }
 
-void ACPI_init(){
-	physical_address_t rsdp_phys = (physical_address_t) g_rsdpReq.response->address;
-	virtual_address_t tempRsdp = rsdp_phys | VMM_KERNEL_MEMORY;
-	VMM_map(rsdp_phys, tempRsdp, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-
-	// Sets g_RSDP
-	parseRSDP((void*) tempRsdp);
-
-	char oem[sizeof(g_RSDP.OEMID)];
-	memcpy(&oem, &g_RSDP.OEMID, sizeof(g_RSDP.OEMID));
-	oem[sizeof(g_RSDP.OEMID)-1] = '\0';
-	log(INFO, MODULE, "Found RSDP revision %d from OEM '%s' ", g_RSDP.revision, oem);
-
-	virtual_address_t tempXsdt = g_RSDP.xsdtAddress | VMM_KERNEL_MEMORY;
-	VMM_map(g_RSDP.xsdtAddress, tempXsdt, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
-
-	parseXSDT((void*) tempXsdt);
+static void parseXSDT(struct XSDT* xsdt){
+	// Note: we don't keep this table's data, as it only contains reference to other tables
+	if (!isChecksumValid((uint8_t*)xsdt, xsdt->header.length)){
+		log(PANIC, MODULE, "XSDT checksum is invalid, aborting");
+		panic();
+	}
+	m_nTables = (xsdt->header.length - sizeof(struct SDTHeader)) / 8;
 
 	// Parse available tables
 	for (int i=0 ; i<m_nTables ; i++){
-		physical_address_t table_phys = g_XSDT.tables[i];
+		physical_address_t table_phys = xsdt->tables[i];
 		virtual_address_t table_virt = table_phys | VMM_KERNEL_MEMORY;
 		VMM_map(table_phys, table_virt, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 
@@ -232,11 +201,42 @@ void ACPI_init(){
 		VMM_unmap(table_virt, 1);
 	}
 
+	log(INFO, MODULE, "Parsed tables: RSDP XSDT%s%s",
+		g_FADTPresent ? " FADT":"",
+		g_MADTPresent ? " MADT":"");
+}
+
+void ACPI_init(){
+	physical_address_t rsdp_phys = (physical_address_t) g_rsdpReq.response->address;
+	virtual_address_t tempRsdp = rsdp_phys | VMM_KERNEL_MEMORY;
+	VMM_map(rsdp_phys, tempRsdp, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+
+	// Parse RSDP
+	struct RSDP* rsdp = (struct RSDP*) tempRsdp;
+	if (rsdp->revision < 2){
+		log(PANIC, MODULE, "System's ACPI version (revision 1) is legacy and unsupported");
+		panic();
+	}
+	// Checksum
+	bool firstPartInvalid = !isChecksumValid((uint8_t*)rsdp, 20);
+	bool secondPartInvalid = !isChecksumValid(((uint8_t*)rsdp) + 20, rsdp->length-20);
+	if (firstPartInvalid || secondPartInvalid){
+		log(PANIC, MODULE, "RSDP checksum is invalid, aborting");
+		panic();
+	}
+	// Print info
+	char oem[7];
+	memcpy(&oem, &rsdp->OEMID, 6);
+	oem[6] = '\0';
+	log(INFO, MODULE, "Found RSDP revision %d from OEM '%s' ", rsdp->revision, oem);
+
+	// Parse XSDT, and the tables it references
+	virtual_address_t tempXsdt = rsdp->xsdtAddress | VMM_KERNEL_MEMORY;
+	VMM_map(rsdp->xsdtAddress, tempXsdt, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+	parseXSDT((struct XSDT*) tempXsdt);
+
 	VMM_unmap(tempRsdp, 1);
 	VMM_unmap(tempXsdt, 1);
 
-	log(INFO, MODULE, "Parsed tables: RSDP XSDT%s%s",
-		g_FADTPresent ? " FADT":"", g_MADTPresent ? " MADT":"");
-	// Note: Add 2 for RSDP and XSDT
-	log(SUCCESS, MODULE, "Initialization success, found %d ACPI tables", m_nTables+2);
+	log(SUCCESS, MODULE, "Initialization success, found %d ACPI tables", m_nTables);
 }

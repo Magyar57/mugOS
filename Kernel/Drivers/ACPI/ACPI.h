@@ -3,8 +3,6 @@
 
 #include "Drivers/ACPI/Tables.h"
 
-extern struct RSDP g_RSDP;
-extern struct XSDT g_XSDT;
 extern struct MADT g_MADT;
 extern struct FADT g_FADT;
 
