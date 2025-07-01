@@ -6,10 +6,10 @@
 #include "ISR.h"
 #include "Drivers/i8259.h"
 #include "Drivers/ACPI/ACPI.h"
+#include "Drivers/IOAPIC.h"
 
 #include "APIC.h"
 #define MODULE_APIC "APIC"
-#define MODULE_IOAPIC "I/O APIC"
 
 // ================ APIC ================
 
@@ -212,12 +212,6 @@ static physical_address_t getAPICAddress(){
 	return (physical_address_t) g_MADT.LAPIC_ADDR_OVERRIDEs[0].address;
 }
 
-// ================ IO APIC ================
-
-static void IOAPIC_init(){
-	// debug("TODO");
-}
-
 // ================ Public interface ================
 
 void APIC_init(){
@@ -287,7 +281,7 @@ void APIC_init(){
 	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
 	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 1000000000); // 1GHz bus speed => 1s
 
-	log(SUCCESS, MODULE_APIC, "Initalized LAPIC (LAPIC ID: %d)", readRegister32(APIC_REG_ID));
+	log(SUCCESS, MODULE_APIC, "Initalized local APIC (ID=%d)", readRegister32(APIC_REG_ID));
 
 	IOAPIC_init();
 }
