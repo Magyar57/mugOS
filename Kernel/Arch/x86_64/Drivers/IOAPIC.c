@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "Panic.h"
 #include "Logging.h"
+#include "IRQ.h"
 #include "Memory/VMM.h"
 #include "Drivers/ACPI/ACPI.h"
 
@@ -29,12 +30,18 @@ union RedirectionReg {
 	uint64_t value;
 	struct {
 		uint64_t vector : 8;
+		// 0b000: Fixed
+		// 0b001: Lowest Priority
+		// 0b010: SMI
+		// 0b100: NMI
+		// 0b101: INIT
+		// 0b111: ExtINT
 		uint64_t deliveryMode : 3;
-		uint64_t destinationMode : 1;
-		uint64_t status : 1; // 1=send and pending, 0=clear
-		uint64_t pinPolarity : 1;
-		uint64_t remoteIRR : 1;
-		uint64_t triggerMode : 1; // 1=level 0=edge
+		uint64_t destinationMode : 1;	// 0=physical, 1=logical
+		uint64_t status : 1;			// 1=send and pending, 0=clear
+		uint64_t pinPolarity : 1;		// 0=active high, 1=active low
+		uint64_t remoteIRR : 1;			// Read-only
+		uint64_t triggerMode : 1;		// 1=level 0=edge
 		uint64_t masked : 1;
 		uint64_t reserved_0 : 39;
 		uint64_t destination : 8;
@@ -61,7 +68,7 @@ static inline void writeRegister32(struct IOAPIC* ioapic, uint8_t reg, uint32_t 
 	*ioapic->windowReg = val;
 }
 
-static inline uint64_t readRegister64(struct IOAPIC* ioapic, uint8_t reg){
+static unused inline uint64_t readRegister64(struct IOAPIC* ioapic, uint8_t reg){
 	return (uint64_t)readRegister32(ioapic, reg+1) << 32 | readRegister32(ioapic, reg);
 }
 
@@ -84,14 +91,40 @@ static void initIOAPIC(struct IOAPIC* ioapic, int n){
 	m_IOAPIC.id = g_MADT.IOAPICs[n].ID;
 	m_IOAPIC.version.value = readRegister32(ioapic, IOAPIC_REG_VERSION);
 
-	// TODO set redirections
 	union RedirectionReg redirection;
-	redirection.value = 0xffffffffffffffff;
-	writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(0), redirection.value);
-	redirection.value = readRegister64(&m_IOAPIC, IOAPIC_REG_REDIR_TABLE(0));
+	redirection.value = 0;
+
+	// First, initialize all ISA IRQ as default
+	int n_iso_apic = min(16, m_IOAPIC.version.bits.maxRedirectionEntry+1);
+	for (int i=0 ; i<n_iso_apic ; i++){
+		redirection.bits.vector = ISA_IRQ_OFFSET + i;
+		redirection.bits.deliveryMode = 0b000;
+		redirection.bits.destinationMode = 0; // physical
+		redirection.bits.pinPolarity = 0;
+		redirection.bits.triggerMode = 0;
+		redirection.bits.masked = false;
+		redirection.bits.destination = 0; // LAPIC 0
+		writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(i), redirection.value);
+	}
+
+	// Then parse the overrides and apply them
 	for (int i=0 ; i<g_MADT.nIOAPIC_ISO ; i++){
-		struct MADTEntry_IOAPIC_ISO* iso = g_MADT.IOAPIC_ISOs + i;
-		debug("%d", iso->IRQSource, iso->busSource);
+		struct MADTEntry_IOAPIC_ISO* override = g_MADT.IOAPIC_ISOs + i;
+
+		if (override->busSource != 0){
+			log(WARNING, MODULE, "Ignored non-ISA IRQ override (IRQ=%d GSI=%d)",
+				override->IRQSource, override->GSI);
+			continue;
+		}
+
+		redirection.bits.vector = ISA_IRQ_OFFSET + override->IRQSource;
+		redirection.bits.deliveryMode = 0b000;
+		redirection.bits.destinationMode = 0; // physical
+		redirection.bits.pinPolarity = override->flags.bits.activeWhenLow;
+		redirection.bits.triggerMode = override->flags.bits.levelTriggered;
+		redirection.bits.masked = false;
+		redirection.bits.destination = 0; // LAPIC 0
+		writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(override->GSI), redirection.value);
 	}
 
 	log(INFO, MODULE, "Initialized I/O APIC (ID=%d, version %d, #IRQ=%d)",
