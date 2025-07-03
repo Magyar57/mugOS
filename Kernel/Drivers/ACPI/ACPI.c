@@ -88,9 +88,15 @@ static void parseMADT(struct rawMADT* madt_ptr){
 		case MADT_ENTRYTYPE_LAPIC_ADDR_OVERRIDE:
 			g_MADT.nLAPIC_ADDR_OVERRIDE++;
 			break;
-		case MADT_ENTRYTYPE_LX2APIC:
-			g_MADT.nLX2APIC++;
+		case MADT_ENTRYTYPE_IOSAPIC:
+		case MADT_ENTRYTYPE_LSAPIC:
+		case MADT_ENTRYTYPE_PIS:
 			break;
+		case MADT_ENTRYTYPE_X2APIC:
+			g_MADT.nX2APIC++;
+			break;
+		case MADT_ENTRYTYPE_X2APIC_NMI:
+			g_MADT.nX2APIC_NMI++;
 		default:
 			log(ERROR, MODULE, "Unsupported MADT_raw type %d", curHdr->entryType);
 			break;
@@ -105,7 +111,8 @@ static void parseMADT(struct rawMADT* madt_ptr){
 	g_MADT.IOAPIC_NMI_SRCs = kmalloc(g_MADT.nIOAPIC_NMI_SRC * sizeof(struct MADTEntry_IOAPIC_NMI_SRC));
 	g_MADT.LAPIC_NMIs = kmalloc(g_MADT.nLAPIC_NMI * sizeof(struct MADTEntry_LAPIC_NMI));
 	g_MADT.LAPIC_ADDR_OVERRIDEs = kmalloc(g_MADT.nLAPIC_ADDR_OVERRIDE * sizeof(struct MADTEntry_LAPIC_ADDR_OVERRIDE));
-	g_MADT.LX2APICs = kmalloc(g_MADT.nLX2APIC * sizeof(struct MADTEntry_LX2APIC));
+	g_MADT.X2APICs = kmalloc(g_MADT.nX2APIC * sizeof(struct MADTEntry_LX2APIC));
+	g_MADT.X2APIC_NMIs = kmalloc(g_MADT.nX2APIC_NMI * sizeof(struct MADTEntry_LX2APIC_NMI));
 
 	// Now reloop and copy the structures
 	// We use g_MADT.n* as temporary indexes
@@ -115,7 +122,8 @@ static void parseMADT(struct rawMADT* madt_ptr){
 	g_MADT.nIOAPIC_NMI_SRC = 0;
 	g_MADT.nLAPIC_NMI = 0;
 	g_MADT.nLAPIC_ADDR_OVERRIDE = 0;
-	g_MADT.nLX2APIC = 0;
+	g_MADT.nX2APIC = 0;
+	g_MADT.nX2APIC_NMI = 0;
 
 	cur_offset = sizeof(struct rawMADT);
 	while(cur_offset < madt_ptr->header.length) {
@@ -157,12 +165,21 @@ static void parseMADT(struct rawMADT* madt_ptr){
 				sizeof(struct MADTEntry_LAPIC_ADDR_OVERRIDE));
 			g_MADT.nLAPIC_ADDR_OVERRIDE++;
 			break;
-		case MADT_ENTRYTYPE_LX2APIC:
-			assert(curHdr->entryLength == sizeof(struct MADTEntry_LX2APIC));
-			memcpy(g_MADT.LX2APICs + g_MADT.nLX2APIC, curHdr,
-				sizeof(struct MADTEntry_LX2APIC));
-			g_MADT.nLX2APIC++;
+		case MADT_ENTRYTYPE_IOSAPIC:
+		case MADT_ENTRYTYPE_LSAPIC:
+		case MADT_ENTRYTYPE_PIS:
 			break;
+		case MADT_ENTRYTYPE_X2APIC:
+			assert(curHdr->entryLength == sizeof(struct MADTEntry_LX2APIC));
+			memcpy(g_MADT.X2APICs + g_MADT.nX2APIC, curHdr,
+				sizeof(struct MADTEntry_LX2APIC));
+			g_MADT.nX2APIC++;
+			break;
+		case MADT_ENTRYTYPE_X2APIC_NMI:
+			assert(curHdr->entryLength == sizeof(struct MADTEntry_LX2APIC_NMI));
+			memcpy(g_MADT.X2APIC_NMIs + g_MADT.nX2APIC_NMI, curHdr,
+				sizeof(struct MADTEntry_LX2APIC_NMI));
+			g_MADT.nX2APIC_NMI++;
 		default:
 			break;
 		}

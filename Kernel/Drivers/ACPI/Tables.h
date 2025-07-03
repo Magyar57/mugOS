@@ -110,13 +110,18 @@ struct FADT {
 // ================ MADT: Multiple APIC Description Table ================
 
 enum MADTEntryType {
-	MADT_ENTRYTYPE_LAPIC = 0,					// Processor Local APIC
-	MADT_ENTRYTYPE_IOAPIC = 1,					// I/O APIC
-	MADT_ENTRYTYPE_IOAPIC_ISO = 2,				// I/O APIC Interrupt Sources Override
-	MADT_ENTRYTYPE_IOAPIC_NMI_SRC = 3,			// I/O APIC Non-Maskable Interrupt Sources
-	MADT_ENTRYTYPE_LAPIC_NMI = 4,				// Local APIC Non-Maskable Interrupt
-	MADT_ENTRYTYPE_LAPIC_ADDR_OVERRIDE = 5,		// Local APIC Address Override (unique ; use if present)
-	MADT_ENTRYTYPE_LX2APIC = 9,					// Processor Local x2APIC
+	MADT_ENTRYTYPE_LAPIC =					0x00, // Processor Local APIC
+	MADT_ENTRYTYPE_IOAPIC =					0x01, // I/O APIC
+	MADT_ENTRYTYPE_IOAPIC_ISO =				0x02, // I/O APIC Interrupt Source Override
+	MADT_ENTRYTYPE_IOAPIC_NMI_SRC =			0x03, // I/O APIC Non-Maskable Interrupt Sources
+	MADT_ENTRYTYPE_LAPIC_NMI =				0x04, // Local APIC Non-Maskable Interrupt
+	MADT_ENTRYTYPE_LAPIC_ADDR_OVERRIDE =	0x05, // Local APIC Address Override
+	MADT_ENTRYTYPE_IOSAPIC =				0x06, // I/O SAPIC (Itanium, don't care)
+	MADT_ENTRYTYPE_LSAPIC =					0x07, // Local SAPIC (Itanium)
+	MADT_ENTRYTYPE_PIS =					0x08, // Plateform Interrupt Sources (Itanium)
+	MADT_ENTRYTYPE_X2APIC =					0x09, // Processor Local x2APIC
+	MADT_ENTRYTYPE_X2APIC_NMI =				0x0a, // Local x2APIC NMI
+	// More stuff, unused in the OS
 };
 
 struct MADTEntryHeader {
@@ -128,13 +133,13 @@ union CommonAPICFlags {
 	uint16_t value;
 	struct {
 		uint16_t reserved_0 : 1;
-		uint16_t activeWhenLow : 1;
+		uint16_t pinPolarity : 1; // Pin polarity (0=high 1=low)
 		uint16_t reserved_1 : 1;
-		uint16_t levelTriggered : 1;
+		uint16_t triggerMode : 1; // Trigger mode (0=edge 1=level)
 	} bits;
 } packed;
 
-// 0 MADT_ENTRYTYPE_LAPIC
+// 0x00 MADT_ENTRYTYPE_LAPIC
 struct MADTEntry_LAPIC {
 	struct MADTEntryHeader header;
 	uint8_t processorID;
@@ -148,7 +153,7 @@ struct MADTEntry_LAPIC {
 	} flags;
 } packed;
 
-// 1 MADT_ENTRYTYPE_IOAPIC
+// 0x01 MADT_ENTRYTYPE_IOAPIC
 struct MADTEntry_IOAPIC {
 	struct MADTEntryHeader header;
 	uint8_t ID;
@@ -157,7 +162,7 @@ struct MADTEntry_IOAPIC {
 	uint32_t GSIBase;
 } packed;
 
-// 2 MADT_ENTRYTYPE_IOAPIC_ISO
+// 0x02 MADT_ENTRYTYPE_IOAPIC_ISO
 struct MADTEntry_IOAPIC_ISO {
 	struct MADTEntryHeader header;
 	uint8_t busSource;
@@ -166,7 +171,7 @@ struct MADTEntry_IOAPIC_ISO {
 	union CommonAPICFlags flags;
 } packed;
 
-// 3 MADT_ENTRYTYPE_IOAPIC_NMI_SRC
+// 0x03 MADT_ENTRYTYPE_IOAPIC_NMI_SRC
 struct MADTEntry_IOAPIC_NMI_SRC {
 	struct MADTEntryHeader header;
 	uint8_t source;
@@ -175,7 +180,7 @@ struct MADTEntry_IOAPIC_NMI_SRC {
 	uint32_t GSI;
 } packed;
 
-// 4 MADT_ENTRYTYPE_LAPIC_NMI
+// 0x04 MADT_ENTRYTYPE_LAPIC_NMI
 struct MADTEntry_LAPIC_NMI {
 	struct MADTEntryHeader header;
 	uint8_t ACPIProcessorID; // 0xff = all processors
@@ -183,14 +188,14 @@ struct MADTEntry_LAPIC_NMI {
 	uint8_t LINTi; // 0 or 1
 } packed;
 
-// 5 MADT_ENTRYTYPE_LAPIC_ADDR_OVERRIDE
+// 0x05 MADT_ENTRYTYPE_LAPIC_ADDR_OVERRIDE
 struct MADTEntry_LAPIC_ADDR_OVERRIDE {
 	struct MADTEntryHeader header;
 	uint16_t reserved;
 	uint64_t address;
 } packed;
 
-// 9 MADT_ENTRYTYPE_LX2APIC
+// 0x09 MADT_ENTRYTYPE_X2APIC
 struct MADTEntry_LX2APIC {
 	struct MADTEntryHeader header;
 	uint16_t reserved;
@@ -199,6 +204,15 @@ struct MADTEntry_LX2APIC {
 	union CommonAPICFlags flags;
 	uint32_t ACPI_ID;
 } packed;
+
+// 0x0a MADT_ENTRYTYPE_X2APIC_NMI
+struct MADTEntry_LX2APIC_NMI {
+	struct MADTEntryHeader header;
+	union CommonAPICFlags flags;
+	uint32_t processorID;
+	uint8_t LINTi;
+	uint8_t reserved[3];
+};
 
 // ACPI table: Multiple APIC Description Table (parsed)
 struct MADT {
@@ -214,14 +228,16 @@ struct MADT {
 	int nIOAPIC_NMI_SRC;
 	int nLAPIC_NMI;
 	int nLAPIC_ADDR_OVERRIDE;
-	int nLX2APIC;
+	int nX2APIC;
+	int nX2APIC_NMI;
 	struct MADTEntry_LAPIC* LAPICs;
 	struct MADTEntry_IOAPIC* IOAPICs;
 	struct MADTEntry_IOAPIC_ISO* IOAPIC_ISOs;
 	struct MADTEntry_IOAPIC_NMI_SRC* IOAPIC_NMI_SRCs;
 	struct MADTEntry_LAPIC_NMI* LAPIC_NMIs;
 	struct MADTEntry_LAPIC_ADDR_OVERRIDE* LAPIC_ADDR_OVERRIDEs;
-	struct MADTEntry_LX2APIC* LX2APICs;
+	struct MADTEntry_LX2APIC* X2APICs;
+	struct MADTEntry_LX2APIC_NMI* X2APIC_NMIs;
 };
 
 #endif
