@@ -94,20 +94,7 @@ static void initIOAPIC(struct IOAPIC* ioapic, int n){
 	union RedirectionReg redirection;
 	redirection.value = 0;
 
-	// First, initialize all ISA IRQ as default
-	int n_iso_apic = min(16, m_IOAPIC.version.bits.maxRedirectionEntry+1);
-	for (int i=0 ; i<n_iso_apic ; i++){
-		redirection.bits.vector = ISA_IRQ_OFFSET + i;
-		redirection.bits.deliveryMode = 0b000;
-		redirection.bits.destinationMode = 0; // physical
-		redirection.bits.pinPolarity = 0;
-		redirection.bits.triggerMode = 0;
-		redirection.bits.masked = false;
-		redirection.bits.destination = 0; // LAPIC 0
-		writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(i), redirection.value);
-	}
-
-	// Then parse the overrides and apply them
+	// First, apply ISA IRQ overrides
 	for (int i=0 ; i<g_MADT.nIOAPIC_ISO ; i++){
 		struct MADTEntry_IOAPIC_ISO* override = g_MADT.IOAPIC_ISOs + i;
 
@@ -120,11 +107,29 @@ static void initIOAPIC(struct IOAPIC* ioapic, int n){
 		redirection.bits.vector = ISA_IRQ_OFFSET + override->IRQSource;
 		redirection.bits.deliveryMode = 0b000;
 		redirection.bits.destinationMode = 0; // physical
-		redirection.bits.pinPolarity = override->flags.bits.activeWhenLow;
-		redirection.bits.triggerMode = override->flags.bits.levelTriggered;
+		redirection.bits.pinPolarity = override->flags.bits.pinPolarity;
+		redirection.bits.triggerMode = override->flags.bits.triggerMode;
 		redirection.bits.masked = false;
 		redirection.bits.destination = 0; // LAPIC 0
 		writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(override->GSI), redirection.value);
+	}
+
+	// Then, initialize all un-mentionned ISA IRQ to default
+	int n_iso_apic = min(16, m_IOAPIC.version.bits.maxRedirectionEntry+1);
+	for (int i=0 ; i<n_iso_apic ; i++){
+		redirection.value = readRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(i));
+		// Only setup the interrupts that were not in the overrides
+		if (!redirection.bits.masked)
+			continue;
+
+		redirection.bits.vector = ISA_IRQ_OFFSET + i;
+		redirection.bits.deliveryMode = 0b000;
+		redirection.bits.destinationMode = 0; // physical
+		redirection.bits.pinPolarity = 0;
+		redirection.bits.triggerMode = 0;
+		redirection.bits.masked = false;
+		redirection.bits.destination = 0; // LAPIC 0
+		writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(i), redirection.value);
 	}
 
 	log(INFO, MODULE, "Initialized I/O APIC (ID=%d, version %d, #IRQ=%d)",
