@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "assert.h"
 #include "Logging.h"
 #include "Memory/VMM.h"
 #include "IRQ.h"
@@ -212,6 +213,30 @@ static physical_address_t getAPICAddress(){
 	return (physical_address_t) g_MADT.LAPIC_ADDR_OVERRIDEs[0].address;
 }
 
+/// @brief Apply the NMI configurations (given by ACPI) to the LINT pins
+static void configurePins(int cpu_id){
+	struct MADTEntry_LAPIC_NMI* entry;
+	union LINTRegister lint;
+	lint.value = 0;
+
+	for (int i=0 ; i<g_MADT.nLAPIC_NMI ; i++){
+		const int cur_id = g_MADT.LAPIC_NMIs[i].ACPIProcessorID;
+		if (cur_id != cpu_id && cur_id != 0xff)
+			continue;
+
+		assert((entry->LINTi & ~1) == 0); // LINTi should only be 0 or 1
+
+		// Apply the NMI configuration specified by the entry
+		entry = g_MADT.LAPIC_NMIs + i;
+		lint.bits.vector = 0; // does not matter, ignored by hardware
+		lint.bits.deliveryMode = APIC_DELIVERY_NMI;
+		lint.bits.pinPolarity = entry->flags.bits.pinPolarity;
+		lint.bits.triggerMode = 0; // edge-triggered, Intel SDM states that we shall ignore the ACPI value
+		lint.bits.masked = false;
+		writeRegister32((entry->LINTi == 0) ? APIC_REG_LINT0 : APIC_REG_LINT1, lint.value);
+	}
+}
+
 // ================ Public interface ================
 
 void APIC_init(){
@@ -235,18 +260,7 @@ void APIC_init(){
 	// Memory-map the APIC registers
 	VMM_map(apic_regs_phys, apics_regs_virt, 1, PAGE_READ|PAGE_WRITE|PAGE_CACHE_DISABLED|PAGE_KERNEL);
 
-	// Setup LINT0 and LINT1
-	union LINTRegister lint0, lint1;
-	lint0.value = 0;
-	lint0.bits.vector = 32 + 1;
-	lint0.bits.deliveryMode = APIC_DELIVERY_EXTINT;
-	lint0.bits.masked = false;
-	lint1.value = 0;
-	lint1.bits.vector = 32 + 2;
-	lint1.bits.deliveryMode = APIC_DELIVERY_SMI;
-	lint1.bits.masked = false;
-	writeRegister32(APIC_REG_LINT0, lint0.value);
-	writeRegister32(APIC_REG_LINT1, lint1.value);
+	configurePins(0); // TODO replace 0 with SMP_getID or smtg
 
 	// Setup the TPR (Task Priority Register)
 	union TaskPriorityRegister tpr;
