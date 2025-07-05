@@ -60,25 +60,25 @@ static void setCursorPosition(int x, int y){
 static inline void putchar_xy(int x, int y, char c){
 	assert(x<SCREEN_WIDTH && y<SCREEN_HEIGHT);
 
-	m_videoMemory[2*(y*SCREEN_WIDTH + x)] = c;
+	write8(m_videoMemory + 2*(y*SCREEN_WIDTH + x), c);
 }
 
 static inline void putColor_xy(int x, int y, uint8_t color){
 	assert(x<SCREEN_WIDTH && y<SCREEN_HEIGHT);
 
-	m_videoMemory[2*(y*SCREEN_WIDTH + x) + 1] = color;
+	write8(m_videoMemory + 2*(y*SCREEN_WIDTH + x) + 1, color);
 }
 
 static inline char getc_xy(int x, int y){
 	assert(x<SCREEN_WIDTH && y<SCREEN_HEIGHT);
 
-	return m_videoMemory[2*(y*SCREEN_WIDTH + x)];
+	return read8(m_videoMemory + 2*(y*SCREEN_WIDTH + x));
 }
 
 static inline char getColor_xy(int x, int y){
 	assert(x<SCREEN_WIDTH && y<SCREEN_HEIGHT);
 
-	return m_videoMemory[2*(y*SCREEN_WIDTH + x) + 1];
+	return read8(m_videoMemory + 2*(y*SCREEN_WIDTH + x) + 1);
 }
 
 static void scrollDown(int n){
