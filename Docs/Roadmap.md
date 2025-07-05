@@ -25,7 +25,7 @@
 - [X] Virtual memory management (paging: mapping/unmapping)
 - [X] Kernel heap (kmalloc, slab allocator)
 - [X] ACPI tables parsing
-- [ ] APIC (LAPIC and IOAPIC) drivers
+- [X] APIC (LAPIC and IOAPIC) drivers
 - [ ] Virtual filesystem
 - [ ] Kernel FAT driver
 - [ ] ELF binary loading
@@ -39,6 +39,7 @@
 
 - [X] *(Refactor)* Remove HHDM, in favour of dynamic memory mapping
 - [ ] *(Refactor)* Abstract the Serial ports from the Serial driver
+- [X] *(Fix)* Replace direct memory-mapped I/O (MMIO) access with safe, ordered and fenced calls
 - [ ] *(Requires a timer subsystem)* Set a minimum delay between set LEDs for the PS/2 keyboard, to prevent bricking the device
 - [ ] *(Requires USB implemented)* Intialize and disable USB legacy support BEFORE initializing the PS/2 controller
 - [ ] *(Requires ACPI implemented)* Finish step 2 of the 8042 PS/2 controller initalization
