@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "IO.h"
 #include "Panic.h"
 #include "Logging.h"
 #include "IRQ.h"
@@ -59,13 +60,13 @@ struct IOAPIC {
 static struct IOAPIC m_IOAPIC; // only using one I/O APIC is supported
 
 static inline uint32_t readRegister32(struct IOAPIC* ioapic, uint8_t reg){
-	*ioapic->selectReg = reg;
-	return *ioapic->windowReg;
+	write32(ioapic->selectReg, reg);
+	return read32(ioapic->windowReg);
 }
 
 static inline void writeRegister32(struct IOAPIC* ioapic, uint8_t reg, uint32_t val){
-	*ioapic->selectReg = reg;
-	*ioapic->windowReg = val;
+	write32(ioapic->selectReg, reg);
+	write32(ioapic->windowReg, val);
 }
 
 static unused inline uint64_t readRegister64(struct IOAPIC* ioapic, uint8_t reg){

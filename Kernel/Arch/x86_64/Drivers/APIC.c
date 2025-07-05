@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "assert.h"
+#include "IO.h"
 #include "Logging.h"
 #include "Memory/VMM.h"
 #include "IRQ.h"
@@ -16,7 +17,7 @@
 
 // Memory-mapped APIC registers page address
 #define APIC_REGISTERS_ADDR_DEFAULT 0x00000000fee00000
-volatile static uint8_t* m_apicRegs;
+volatile static void* m_apicRegs;
 
 // Memory-mapped APIC registers offsets in the page
 #define APIC_REG_ID						0x020
@@ -141,11 +142,11 @@ struct Register256 {
 static union TimerRegister m_timerReg;
 
 static inline uint32_t readRegister32(int offset){
-	return *((uint32_t*)(m_apicRegs + offset));
+	return read32(m_apicRegs+offset);
 }
 
 static inline void writeRegister32(int offset, uint32_t val){
-	*((uint32_t*)(m_apicRegs + offset)) = val;
+	write32(m_apicRegs+offset, val);
 }
 
 static unused inline void readRegister256(const int offset, struct Register256* reg_out){
