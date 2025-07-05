@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "io.h"
+#include "IO.h"
 #include "assert.h"
 
 #include "VGA.h"

@@ -22,7 +22,7 @@ inb:
 	ret
 ; END inb
 
-; void io_wait();
+; void io_wait(); (unused function)
 global io_wait
 io_wait:
 	xor rax, rax

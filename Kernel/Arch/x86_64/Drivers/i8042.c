@@ -1,6 +1,6 @@
 #include "Logging.h"
 #include "assert.h"
-#include "io.h"
+#include "IO.h"
 #include "IRQ.h"
 
 #include "i8042.h"
