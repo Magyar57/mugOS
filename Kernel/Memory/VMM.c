@@ -1,8 +1,8 @@
 #include "assert.h"
+#include "Preprocessor.h"
 #include "Panic.h"
 #include "Logging.h"
-#include "HAL/Paging.h"
-#include "Preprocessor.h"
+#include "HAL/Memory/Paging.h"
 
 #include "Memory/VMM.h"
 #define MODULE "Virtual memory manager"

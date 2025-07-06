@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include "assert.h"
 #include "Logging.h"
-#include "HAL/IRQChip.h"
+#include "HAL/Drivers/IRQChip.h"
 
 #include "IRQ.h"
 #define MODULE "IRQ"

@@ -4,7 +4,7 @@
 #include "assert.h"
 #include "IRQ.h"
 #include "Logging.h"
-#include "HAL/PS2Controller.h"
+#include "HAL/Drivers/PS2Controller.h"
 #include "Drivers/Keycodes.h"
 #include "Drivers/Keyboard.h"
 

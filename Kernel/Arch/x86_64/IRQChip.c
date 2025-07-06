@@ -6,7 +6,7 @@
 #include "HAL/IRQFlags.h"
 #include "ISR.h"
 
-#include "HAL/IRQChip.h"
+#include "HAL/Drivers/IRQChip.h"
 #define MODULE "IRQ Chip"
 
 static struct IRQChip m_chip;

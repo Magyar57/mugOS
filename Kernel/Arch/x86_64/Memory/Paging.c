@@ -10,7 +10,7 @@
 #include "HAL/CPU.h"
 #include "Registers.h"
 
-#include "HAL/Paging.h"
+#include "HAL/Memory/Paging.h"
 #define MODULE "Paging"
 
 #define TABLE_SIZE		512	// Number of entries in the tables

@@ -2,7 +2,7 @@
 #define __VMM_H__
 
 #include "Memory/Memory.h"
-#include "HAL/Paging.h"
+#include "HAL/Memory/Paging.h"
 
 // VMM.h: Virtual Memory Manager
 
