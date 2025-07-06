@@ -46,10 +46,14 @@ tools:
 	@$(MAKE) -C Tools/FAT $(MAKE_FLAGS)
 
 #
-# Run (if needed, add arguments using `make run -E QEMU_ARGS="arg1 arg2"`)
+# Run (if needed, add arguments using `make run -e QEMU_ARGS="arg1 arg2"`)
 #
 run:
 	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
+		-accel tcg \
+		-machine q35 \
+		-cpu qemu64 \
+		-smp cpus=1,sockets=1,cores=1,threads=1 \
 		-m 128M \
 		-drive if=pflash,file=$(UEFI_FIRMWARE),format=raw,readonly=on \
 		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
