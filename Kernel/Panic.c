@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include "Logging.h"
-#include "HAL/CPU.h"
+#include "HAL/Halt.h"
 
 #include "Panic.h"
 

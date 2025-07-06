@@ -283,12 +283,6 @@ struct CPU {
 
 extern struct CPU g_CPU;
 
-/// @brief Halt (stops until next interrupt) the processor
-#define halt() __asm__ volatile("hlt")
-
-/// @brief Stops DEFINITELY the processor (interrupts are masked)
-#define haltAndCatchFire() __asm__ volatile("cli; 1: hlt; jmp 1b")
-
 /// @returns Whether the cpu supports the cpuid instruction
 bool CPU_supportsCpuid();
 

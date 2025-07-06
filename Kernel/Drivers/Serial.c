@@ -1,10 +1,9 @@
 #include "string.h"
+#include "mugOS/Ringbuffer.h"
 #include "IO.h"
 #include "assert.h"
-#include "HAL/CPU.h"
-#include "IRQ.h"
 #include "Logging.h"
-#include "mugOS/Ringbuffer.h"
+#include "IRQ.h"
 
 #include "Serial.h"
 #define MODULE "Serial Port"

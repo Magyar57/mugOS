@@ -7,7 +7,7 @@
 #include "Memory/VMM.h"
 #include "IRQ.h"
 #include "HAL/HAL.h"
-#include "HAL/CPU.h"
+#include "HAL/Halt.h"
 #include "Drivers/Graphics/Graphics.h"
 #include "Drivers/ACPI/ACPI.h"
 #include "Drivers/Serial.h"
