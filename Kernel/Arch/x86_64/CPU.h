@@ -283,9 +283,6 @@ struct CPU {
 
 extern struct CPU g_CPU;
 
-/// @returns Whether the cpu supports the cpuid instruction
-bool CPU_supportsCpuid();
-
 /// @brief Fill the CPU struct with CPU identification informations
 /// @note Acts as an assertion to some arch-specific mugOS-required features
 void CPU_init(struct CPU* cpu);

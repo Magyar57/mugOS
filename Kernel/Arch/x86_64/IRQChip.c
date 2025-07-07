@@ -1,6 +1,6 @@
 #include "assert.h"
 #include "Logging.h"
-#include "HAL/CPU.h"
+#include "CPU.h"
 #include "Drivers/i8259.h"
 #include "Drivers/APIC.h"
 #include "HAL/IRQFlags.h"

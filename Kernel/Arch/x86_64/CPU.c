@@ -4,12 +4,12 @@
 #include "Panic.h"
 #include "Registers.h"
 
-#include "HAL/CPU.h"
+#include "CPU.h"
 #define MODULE "CPU"
 
 struct CPU g_CPU;
 
-uint64_t readMSR(int msr);
+bool supportsCpuid();
 void cpuidWrapper(int leaf, uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
 void cpuidWrapperWithSubleaf(int leaf, int subleaf,
 							 uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
@@ -136,7 +136,7 @@ static void parseCpuid_extended_8(struct CPU* cpu){
 }
 
 void CPU_init(struct CPU* cpu){
-	if (!CPU_supportsCpuid())
+	if (!supportsCpuid())
 		panicForMissingFeature("CPUID instruction");
 
 	// Setup CR0 features

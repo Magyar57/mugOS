@@ -6,8 +6,8 @@
 #include "Memory/MemoryMap.h"
 #include "Memory/PMM.h"
 #include "Memory/VMM.h"
+#include "CPU.h"
 #include "GDT.h"
-#include "HAL/CPU.h"
 #include "Registers.h"
 
 #include "HAL/Memory/Paging.h"

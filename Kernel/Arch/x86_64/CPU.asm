@@ -1,11 +1,11 @@
 section .text
 
-global CPU_supportsCpuid
+global supportsCpuid
 global cpuidWrapper
 global cpuidWrapperWithSubleaf
 
 ; bool CPU_supportsCpuid();
-CPU_supportsCpuid:
+supportsCpuid:
 	push rbp
 	mov rbp, rsp
 
