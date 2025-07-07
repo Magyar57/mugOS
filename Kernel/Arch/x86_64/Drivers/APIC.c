@@ -3,6 +3,7 @@
 #include "IO.h"
 #include "Logging.h"
 #include "Memory/VMM.h"
+#include "SMP/SMP.h"
 #include "IRQ.h"
 #include "Registers.h"
 #include "ISR.h"
@@ -261,7 +262,7 @@ void APIC_init(){
 	// Memory-map the APIC registers
 	VMM_map(apic_regs_phys, apics_regs_virt, 1, PAGE_READ|PAGE_WRITE|PAGE_CACHE_DISABLED|PAGE_KERNEL);
 
-	configurePins(0); // TODO replace 0 with SMP_getID or smtg
+	configurePins(SMP_getCpuId());
 
 	// Setup the TPR (Task Priority Register)
 	union TaskPriorityRegister tpr;

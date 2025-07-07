@@ -5,6 +5,7 @@
 #include "Memory/MemoryMap.h"
 #include "Memory/PMM.h"
 #include "Memory/VMM.h"
+#include "SMP/SMP.h"
 #include "IRQ.h"
 #include "HAL/HAL.h"
 #include "HAL/Halt.h"
@@ -40,11 +41,12 @@ void kmain(){
 
 	ACPI_init();
 
-	// Initialize IRQs
+	// CPUs intializations
+	SMP_init();
 	IRQ_init();
 	IRQ_enable();
 
-	// Drivers initialization
+	// Drivers initializations
 	Serial_init();
 	PS2_init();
 	Keyboard_init();
