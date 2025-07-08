@@ -23,8 +23,8 @@ void ArchSMP_init(){
 	}
 
 	for (int i=0 ; i<g_nCPUs ; i++){
-		g_CPUInfos->ID = i;
-		g_CPUInfos->apicID = g_MADT.LAPICs[i].lapicID;
+		g_CPUInfos[i].ID = i;
+		g_CPUInfos[i].apicID = g_MADT.LAPICs[i].lapicID;
 	}
 
 	// Set the BootStrap Processor (BSP)'s per-CPU informations
