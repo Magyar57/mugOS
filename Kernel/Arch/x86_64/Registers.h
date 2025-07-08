@@ -31,6 +31,8 @@
 #define MSR_ADDR_IA32_MISC_ENABLE	0x000001a0
 #define MSR_ADDR_IA32_APIC_BASE		0x0000001b
 #define MSR_ADDR_IA32_EFER			0xc0000080
+#define MSR_ADDR_IA32_FS_BASE		0xc0000100
+#define MSR_ADDR_IA32_GS_BASE		0xc0000101
 
 /// @brief Reads and returns the value of the `msr` Model-Specific Register
 /// @warning Does NOT check whether the MSR and the `rdmsr` instruction are supported
