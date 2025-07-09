@@ -116,7 +116,7 @@ union InterruptCommandRegister {
 		uint64_t level : 1; // 0=de-assert 1=assert
 		uint64_t triggerMode : 1; // 0=edge 1=level
 		uint64_t reserved_1 : 2;
-		uint64_t destination : 2; // 0b00=no shorthand 0b01=self 0b10=all 0b11 all but self
+		uint64_t destinationShorthand : 2; // 0b00=no shorthand 0b01=self 0b10=all 0b11 all but self
 		uint64_t reserved_2 : 12 + 24;
 		uint64_t destination : 8;
 	} bits;
