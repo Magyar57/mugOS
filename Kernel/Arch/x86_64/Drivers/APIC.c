@@ -30,6 +30,7 @@ volatile static void* m_apicRegs;
 #define APIC_REG_ISR					0x100 // In-Service Register (256 bits)
 #define APIC_REG_TMR					0x180 // Trigger Mode Register (256 bits)
 #define APIC_REG_IRR					0x200 // Interrupt Request Register (256 bits)
+#define APIC_REG_ICR					0x300 // Interrupt Command Register (64 bits)
 #define APIC_REG_TIMER					0x320
 #define APIC_REG_LINT0					0x350
 #define APIC_REG_LINT1					0x360
@@ -54,11 +55,14 @@ volatile static void* m_apicRegs;
 #define APIC_TIMER_DIVISOR_128			0b1010
 
 // Interrupt delivery mode
+// Note: some are invalid, depending on the register used
 #define APIC_DELIVERY_FIXED				0b000
+#define APIC_DELIVERY_LOWEST_PRIORITY	0b001
 #define APIC_DELIVERY_SMI				0b010
 #define APIC_DELIVERY_NMI				0b100
-#define APIC_DELIVERY_EXTINT			0b111
 #define APIC_DELIVERY_INIT				0b101
+#define APIC_DELIVERY_STARTUP			0b110
+#define APIC_DELIVERY_EXTINT			0b111
 
 #define APIC_DFR_MODEL_FLAT				0b1111
 #define APIC_DFR_MODEL_CLUSTER			0b0000
@@ -71,6 +75,63 @@ union VersionRegister {
 		uint32_t maxLVTEntry : 8;
 		uint32_t EIOBroadcastSupressionSupport : 1;
 		uint32_t reserved_1 : 7;
+	} bits;
+};
+
+union TaskPriorityRegister {
+	uint32_t value;
+	struct {
+		uint32_t subclass : 4;
+		uint32_t class : 4;
+	} bits;
+};
+
+union DestinationFormatRegister {
+	uint32_t value;
+	struct {
+		uint32_t reserved_all_ones : 28;
+		uint32_t model : 4;
+	} bits;
+};
+
+union SpuriousInterruptRegister {
+	uint32_t value;
+	struct {
+		uint32_t vector : 8;
+		uint32_t APICEnabled : 1;
+		uint32_t focusProcessorChecking : 1;
+		uint32_t reserved_0 : 2;
+		uint32_t EIOBroadcastSupression : 1;
+	} bits;
+};
+
+union InterruptCommandRegister {
+	uint64_t value;
+	struct {
+		uint64_t vector : 8;
+		uint64_t deliveryMode : 3; // see APIC_DELIVERY_*
+		uint64_t destinationMode : 1;
+		uint64_t pending : 1;
+		uint64_t reserved_0 : 1;
+		uint64_t level : 1; // 0=de-assert 1=assert
+		uint64_t triggerMode : 1; // 0=edge 1=level
+		uint64_t reserved_1 : 2;
+		uint64_t destination : 2; // 0b00=no shorthand 0b01=self 0b10=all 0b11 all but self
+		uint64_t reserved_2 : 12 + 24;
+		uint64_t destination : 8;
+	} bits;
+};
+
+union TimerRegister {
+	uint32_t value;
+	struct {
+		uint32_t vector : 8;
+		uint32_t reserved_0 : 4;
+		uint32_t pending : 1;
+		uint32_t reserved_1 : 3;
+		uint32_t masked : 1;
+		uint32_t timerMode : 2;
+		uint32_t reserved_2 : 13;
 	} bits;
 };
 
@@ -88,57 +149,6 @@ union LINTRegister {
 	} bits;
 };
 
-union TimerRegister {
-	uint32_t value;
-	struct {
-		uint32_t vector : 8;
-		uint32_t reserved_0 : 4;
-		uint32_t pending : 1;
-		uint32_t reserved_1 : 3;
-		uint32_t masked : 1;
-		uint32_t timerMode : 2;
-		uint32_t reserved_2 : 13;
-	} bits;
-};
-
-union DestinationFormatRegister {
-	uint32_t value;
-	struct {
-		uint32_t reserved_all_ones : 28;
-		uint32_t model : 4;
-	} bits;
-};
-
-union TaskPriorityRegister {
-	uint32_t value;
-	struct {
-		uint32_t subclass : 4;
-		uint32_t class : 4;
-	} bits;
-};
-
-union SpuriousInterruptRegister {
-	uint32_t value;
-	struct {
-		uint32_t vector : 8;
-		uint32_t APICEnabled : 1;
-		uint32_t focusProcessorChecking : 1;
-		uint32_t reserved_0 : 2;
-		uint32_t EIOBroadcastSupression : 1;
-	} bits;
-};
-
-struct Register256 {
-	uint32_t value0;
-	uint32_t value1;
-	uint32_t value2;
-	uint32_t value3;
-	uint32_t value4;
-	uint32_t value5;
-	uint32_t value6;
-	uint32_t value7;
-};
-
 // We cache some registers
 static union TimerRegister m_timerReg;
 
@@ -148,17 +158,6 @@ static inline uint32_t readRegister32(int offset){
 
 static inline void writeRegister32(int offset, uint32_t val){
 	write32(m_apicRegs+offset, val);
-}
-
-static unused inline void readRegister256(const int offset, struct Register256* reg_out){
-	reg_out->value0 = readRegister32(offset);
-	reg_out->value1 = readRegister32(offset + 0x10);
-	reg_out->value2 = readRegister32(offset + 0x20);
-	reg_out->value3 = readRegister32(offset + 0x30);
-	reg_out->value4 = readRegister32(offset + 0x40);
-	reg_out->value5 = readRegister32(offset + 0x50);
-	reg_out->value6 = readRegister32(offset + 0x60);
-	reg_out->value7 = readRegister32(offset + 0x70);
 }
 
 // Temporary: blinking rectangle on the bottom right of the screen
