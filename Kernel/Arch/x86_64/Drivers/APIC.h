@@ -1,6 +1,8 @@
 #ifndef __APIC_H__
 #define __APIC_H__
 
+#include "Memory/Memory.h"
+
 // APIC.h: Advanced Programmable Interrupt Controller driver
 // Includes CPU-local APIC as well as global(s) I/O APIC
 
