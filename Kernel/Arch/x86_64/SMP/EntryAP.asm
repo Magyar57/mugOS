@@ -1,4 +1,4 @@
-; Entry.asm: Entry point for the non-BSP processors
+; EntryAP.asm: Entry point for the APs (Auxiliary Processors, aka non-BSP processors)
 
 ; The CPUs start in 16 bits real mode
 bits 16
