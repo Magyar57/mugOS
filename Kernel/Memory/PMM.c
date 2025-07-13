@@ -306,16 +306,74 @@ void PMM_printPagesUsage(){
 
 // ================ Initialization ================
 
-// One time memory allocation, using first fit algorithm. Guaranteed to return a value
+/// @brief Get the bitmap start address.
+/// In the case where it would be 0, returns the next free page
+static physical_address_t getBitmapStart(){
+	for (int i=0 ; i<g_memoryMap.size ; i++){
+		struct MemoryMapEntry* cur = g_memoryMap.entries + i;
+
+		if (cur->type != MEMORY_USABLE)
+			continue;
+
+		if (cur->address != 0)
+			return cur->address;
+
+		// If the region is 2 pages or more, return it
+		if (cur->length > PAGE_SIZE)
+			return cur->address + PAGE_SIZE;
+
+		// Region is at address 0, with a length of one free page
+		// Continue and return the next free region
+	}
+
+	log(PANIC, MODULE, "No free allocatable memory to manage !!");
+	panic();
+	unreachable();
+}
+
+static uint64_t getAllocatableBlocks(){
+	uint64_t allocatable_bytes = 0;
+
+	for (int i=0 ; i<g_memoryMap.size ; i++){
+		switch (g_memoryMap.entries[i].type){
+		case MEMORY_USABLE:
+		case MEMORY_ACPI_RECLAIMABLE:
+		case MEMORY_BOOTLOADER_RECLAIMABLE:
+			allocatable_bytes += g_memoryMap.entries[i].length;
+			if (g_memoryMap.entries[i].address == 0)
+				allocatable_bytes -= PAGE_SIZE; // first page always removed
+			break;
+		default:
+			break;
+		}
+	}
+
+	return allocatable_bytes / PAGE_SIZE;
+}
+
+// One-time-use memory allocation, using first fit algorithm. Guaranteed to return a value
 static physical_address_t earlyAllocate(struct limine_memmap_response* memmap, uint64_t n_pages){
 	uint64_t needed = n_pages * PAGE_SIZE;
+
+	// Ensure one-time-use
+	static bool allocated_already = false;
+	assert(!allocated_already);
+	allocated_already = true;
 
 	// Search the mem map
 	for (uint64_t i=0 ; i<memmap->entry_count ; i++){
 		struct limine_memmap_entry* cur = memmap->entries[i];
 
-		if (cur->type == LIMINE_MEMMAP_USABLE && cur->length >= needed)
+		if (cur->type == LIMINE_MEMMAP_USABLE && cur->length >= needed){
+			// Do not allocate address 0
+			if (cur->base == 0){
+				if (cur->length <= needed)
+					continue;
+
+				return cur->base + PAGE_SIZE;
+			}
 			return cur->base;
+		}
 	}
 
 	log(PANIC, MODULE, "earlyAllocate out of memory !!");
@@ -325,7 +383,7 @@ static physical_address_t earlyAllocate(struct limine_memmap_response* memmap, u
 
 static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memmap,
 					   physical_address_t bitmap_addr_phys, uint64_t nPages){
-	// Note: Before calling initBitmap, nBlocks and allocatableBlocks needs to be set
+	// Note: Before calling initBitmap, start, nBlocks and allocatableBlocks needs to be set
 
 	allocator->bitmapLength = (allocator->nBlocks + 63) / 64;
 
@@ -368,9 +426,9 @@ void PMM_init(){
 
 	// Compute allocator sizes
 	// Note: we add 1 because from @start to the n-th page, there is n-1 pages
-	m_bitmapAllocator.start = g_memoryMap.firstUsablePage;
+	m_bitmapAllocator.start = getBitmapStart();
+	m_bitmapAllocator.allocatableBlocks = getAllocatableBlocks();
 	m_bitmapAllocator.nBlocks = ((g_memoryMap.lastUsablePage - m_bitmapAllocator.start) / PAGE_SIZE) + 1;
-	m_bitmapAllocator.allocatableBlocks = g_memoryMap.totalUsableMemory / PAGE_SIZE;
 
 	// Allocate memory for the bitmap
 	size_t bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
