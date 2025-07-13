@@ -160,6 +160,18 @@ static inline void writeRegister32(int offset, uint32_t val){
 	write32(m_apicRegs+offset, val);
 }
 
+static unused inline uint64_t readRegister64(int offset){
+	uint64_t res;
+	res = (uint64_t) read32(m_apicRegs+offset + 0x10) << 32;
+	res = (uint64_t) read32(m_apicRegs+offset);
+	return res;
+}
+
+static inline void writeRegister64(int offset, uint64_t val){
+	write32(m_apicRegs+offset+0x10,	val >> 32);
+	write32(m_apicRegs+offset, val);
+}
+
 // Temporary: blinking rectangle on the bottom right of the screen
 #include "Drivers/Graphics/Framebuffer.h"
 static void timerIRQ(void*){
@@ -303,4 +315,35 @@ void APIC_init(){
 
 void APIC_sendEIO(int){
 	writeRegister32(APIC_REG_EOI, 0);
+}
+
+void APIC_wakeCPU(int lapicID, physical_address_t entry){
+	// Send an INIT IPI
+	union InterruptCommandRegister icr;
+	icr.value = 0;
+	icr.bits.vector = 0; // ignored
+	icr.bits.deliveryMode = APIC_DELIVERY_INIT;
+	icr.bits.destinationMode = 0; // physical
+	icr.bits.level = 0; // must be 0 for INIT, 1 otherwise
+	icr.bits.triggerMode = 0; // edge
+	// No shorthand: send the IPI to the CPU specified in the destination field
+	icr.bits.destinationShorthand = 0b00;
+	icr.bits.destination = lapicID; // INIT CPU#cpu
+	writeRegister64(APIC_REG_ICR, icr.value);
+
+	for (int i=0 ; i<0x10000 ; i++)
+		__asm__ volatile("nop"); // wait a little
+
+	// Then, send SIPI
+	// Destination and triggerMode don't differ from previous call
+	icr.bits.vector = (uintptr_t) entry >> PAGE_SHIFT;
+	icr.bits.deliveryMode = APIC_DELIVERY_STARTUP;
+	icr.bits.level = 1;
+	writeRegister64(APIC_REG_ICR, icr.value);
+
+	for (int i=0 ; i<0x10000 ; i++)
+		__asm__ volatile("nop"); // wait a little more
+
+	// Second SIPI, same parameters
+	writeRegister64(APIC_REG_ICR, icr.value);
 }

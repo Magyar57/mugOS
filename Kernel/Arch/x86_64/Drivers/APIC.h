@@ -10,4 +10,6 @@ void APIC_init();
 /// @brief Send EOI (end of interrupt) to the local APIC
 void APIC_sendEIO(int irq);
 
+void APIC_wakeCPU(int lapicID, physical_address_t entry);
+
 #endif

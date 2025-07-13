@@ -44,6 +44,7 @@ void kmain(){
 	// CPUs intializations
 	SMP_init();
 	IRQ_init();
+	SMP_startCPUs();
 	IRQ_enable();
 
 	// Drivers initializations

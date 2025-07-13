@@ -28,4 +28,6 @@ extern struct CPUInfo* g_CPUInfos;
 
 void ArchSMP_init();
 
+void ArchSMP_startCPUs();
+
 #endif

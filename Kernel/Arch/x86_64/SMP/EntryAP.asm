@@ -7,8 +7,14 @@ bits 16
 ; The 'exec' is a flag for the linker, to get proper debugging
 section .ap_entry exec
 
-global entryAP
+global entryAP:function
+global endEntryAP
+
 entryAP:
 	cli
 	hlt
 	jmp entryAP
+
+	endEntryAP:
+	; this label is used for computing the size of the function
+;
