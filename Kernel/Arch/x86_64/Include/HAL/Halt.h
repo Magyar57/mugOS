@@ -1,6 +1,9 @@
 #ifndef __ARCH_FLOW_H__
 #define __ARCH_FLOW_H__
 
+/// @brief No operation instruction
+#define nop() __asm__ volatile("nop");
+
 /// @brief Halt (stops until next interrupt) the processor
 #define halt() __asm__ volatile("hlt")
 
