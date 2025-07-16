@@ -1,6 +1,8 @@
 #ifndef __LOGGING_H__
 #define __LOGGING_H__
 
+#include <stddef.h>
+
 #define DEBUG 0
 #define SUCCESS 1
 #define INFO 2
