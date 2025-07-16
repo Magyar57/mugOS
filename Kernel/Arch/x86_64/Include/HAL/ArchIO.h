@@ -42,6 +42,10 @@ MMIO_defineWrite(writeRelaxed64, "q", unsigned long,  "r", )
 #define readMemoryBarrier()		__asm__ volatile("lfence":::"memory")
 #define writeMemoryBarrier()	__asm__ volatile("sfence" ::: "memory")
 
-// inb and outb are in IO.asm
+// Those are x86 specific functions to address I/O ports
+// Implemented in IO.asm
+
+void outb(uint16_t port, uint8_t value);
+uint8_t inb(uint16_t port);
 
 #endif

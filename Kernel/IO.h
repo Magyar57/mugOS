@@ -6,7 +6,4 @@
 
 // Note: the functions are meant to be implemented by the specific architecture
 
-void outb(uint16_t port, uint8_t value);
-uint8_t inb(uint16_t port);
-
 #endif
