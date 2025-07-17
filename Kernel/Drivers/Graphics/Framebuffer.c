@@ -45,6 +45,11 @@ void Framebuffer_setClearColor(Framebuffer* this, color_t clearColor){
 	this->clearColor = clearColor;
 }
 
+void Framebuffer_setFontColor(Framebuffer* this, color_t fontColor){
+	assert(this);
+	this->fontColor = fontColor;
+}
+
 void Framebuffer_clearScreen(Framebuffer* this){
 	assert(this);
 	const int one_line_offset = getLineOffset();
@@ -130,7 +135,9 @@ static inline void drawScreen(Framebuffer* this){
 				assert(false);
 				break;
 			default:
-				Framebuffer_drawLetter(this, c, WHITE, this->cursorX*this->charWidth + this->drawOffsetX, this->cursorY*this->charHeight + this->drawOffsetY);
+				const unsigned int x = this->cursorX*this->charWidth + this->drawOffsetX;
+				const unsigned int y = this->cursorY*this->charHeight + this->drawOffsetY;
+				Framebuffer_drawLetter(this, c, this->fontColor, x, y);
 				this->cursorX = (this->cursorX+1) % this->textWidth;
 				if (this->cursorX == 0) this->cursorY++;
 				break;
@@ -157,8 +164,6 @@ void Framebuffer_scrollDown(Framebuffer* this){
 
 void Framebuffer_putchar(Framebuffer* this, const char c){
 	assert(this);
-	unsigned int draw_pos_x;
-	unsigned int draw_pos_y;
 	static uint32_t endline_pos = 0; // track where the last character in the line is (for proper '\r' support)
 
 	if (c == '\0')
@@ -187,9 +192,9 @@ void Framebuffer_putchar(Framebuffer* this, const char c){
 
 	default:
 		this->text[this->cursorY*MAX_TERMINAL_WIDTH + this->cursorX] = c;
-		draw_pos_x = this->cursorX*this->charWidth + this->drawOffsetX;
-		draw_pos_y =this->cursorY*this->charHeight + this->drawOffsetY;
-		Framebuffer_drawLetter(this, c, WHITE, draw_pos_x, draw_pos_y);
+		unsigned int x = this->cursorX*this->charWidth + this->drawOffsetX;
+		unsigned int y =this->cursorY*this->charHeight + this->drawOffsetY;
+		Framebuffer_drawLetter(this, c, this->fontColor, x, y);
 
 		this->cursorX = (this->cursorX+1) % this->textWidth;
 		if (this->cursorX == 0) {
@@ -295,7 +300,8 @@ bool Framebuffer_init(Framebuffer* this){
 
 	this->drawOffsetX = 4;
 	this->drawOffsetY = 4;
-	Framebuffer_setClearColor(this, LIGHT_GREY);
+	Framebuffer_setClearColor(this, COLOR_32BPP(31, 31, 31));
+	Framebuffer_setFontColor(this, COLOR_WHITE);
 	Framebuffer_setZoom(this, 1); // setZoom recomputes some internal variables, so we don't need to set those
 
 	Framebuffer_clearTerminal(this);

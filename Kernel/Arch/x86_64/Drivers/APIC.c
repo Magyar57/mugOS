@@ -178,7 +178,7 @@ static void timerIRQ(void*){
 	extern Framebuffer m_framebuffer;
 	static bool clock = false;
 	const int rect_size = 4;
-	color_t color = (clock) ? COLOR_32BPP(0,128,0) : LIGHT_GREY;
+	color_t color = (clock) ? COLOR_32BPP(0,128,0) : COLOR_LIGHT_GREY;
 	Framebuffer_fillRectangle(&m_framebuffer, m_framebuffer.width-2*rect_size-2, m_framebuffer.height-rect_size-1, rect_size, rect_size, color);
 	clock = !clock;
 }
