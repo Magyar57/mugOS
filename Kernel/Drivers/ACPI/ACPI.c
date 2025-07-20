@@ -56,7 +56,6 @@ static void parseMADT(struct rawMADT* madt_ptr){
 		return;
 	}
 
-
 	// Copy the common header part
 	memcpy(&g_MADT, madt_ptr, sizeof(struct rawMADT));
 
@@ -149,6 +148,7 @@ static void parseMADT(struct rawMADT* madt_ptr){
 			g_MADT.nIOAPIC_ISO++;
 			break;
 		case MADT_ENTRYTYPE_IOAPIC_NMI_SRC:
+			assert(curHdr->entryLength == sizeof(struct MADTEntry_IOAPIC_NMI_SRC));
 			memcpy(g_MADT.IOAPIC_NMI_SRCs + g_MADT.nIOAPIC_NMI_SRC, curHdr,
 				sizeof(struct MADTEntry_IOAPIC_NMI_SRC));
 			g_MADT.nIOAPIC_NMI_SRC++;
