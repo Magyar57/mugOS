@@ -237,10 +237,10 @@ static void configurePins(int cpu_id){
 		if (cur_id != cpu_id && cur_id != 0xff)
 			continue;
 
+		entry = g_MADT.LAPIC_NMIs + i;
 		assert((entry->LINTi & ~1) == 0); // LINTi should only be 0 or 1
 
 		// Apply the NMI configuration specified by the entry
-		entry = g_MADT.LAPIC_NMIs + i;
 		lint.bits.vector = 0; // does not matter, ignored by hardware
 		lint.bits.deliveryMode = APIC_DELIVERY_NMI;
 		lint.bits.pinPolarity = entry->flags.bits.pinPolarity;
