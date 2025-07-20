@@ -23,17 +23,35 @@ static inline void setCPUInfo(struct CPUInfo* info){
 	Registers_writeMSR(MSR_ADDR_IA32_GS_BASE, (uintptr_t) info);
 }
 
+static int parseNumberOfValidCPUs(){
+	int n_cpus = 0;
+
+	// Count number of valid (enabled or online-capable) CPUs
+	for (int i=0 ; i<g_MADT.nLAPIC ; i++){
+		if (!g_MADT.LAPICs[i].flags.bits.onlineCapable && !g_MADT.LAPICs[i].flags.bits.enabled)
+			continue;
+
+		n_cpus++;
+	}
+
+	return n_cpus;
+}
+
 void ArchSMP_init(){
-	g_nCPUs = g_MADT.nLAPIC;
+	g_nCPUs = parseNumberOfValidCPUs();
+
 	g_CPUInfos = kmalloc(g_nCPUs * sizeof(struct CPUInfo));
 	if (g_CPUInfos == NULL){
 		log(PANIC, MODULE, "Couldn't allocate enough memory for per-CPU informations structures !!");
 		panic();
 	}
 
+	// Initialize each CPU's ID and local APIC ID
+	int id = 0;
 	for (int i=0 ; i<g_nCPUs ; i++){
-		g_CPUInfos[i].ID = i;
-		g_CPUInfos[i].apicID = g_MADT.LAPICs[i].lapicID;
+		g_CPUInfos[id].ID = id;
+		g_CPUInfos[id].apicID = g_MADT.LAPICs[i].lapicID;
+		id++;
 	}
 
 	// Set the BootStrap Processor (BSP)'s per-CPU informations
