@@ -197,7 +197,7 @@ static bool isFullyAllocated(struct BitmapAllocator* allocator, uint64_t start_b
 	return true;
 }
 
-static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* allocator, uint64_t n_pages){
+static inline physical_address_t allocate_firstFit(struct BitmapAllocator* allocator, uint64_t n_pages){
 	// Search for n_blocks consecutive free bits in the bitmap
 	uint64_t n_bits = 0; // consecutive free bits in the current sequence
 	uint64_t cur;
@@ -249,12 +249,7 @@ static inline physical_address_t allocate_FirstFit(struct BitmapAllocator* alloc
 }
 
 physical_address_t PMM_allocatePages(uint64_t n_pages){
-	physical_address_t addr = allocate_FirstFit(&m_bitmapAllocator, n_pages);
-	if (addr == 0)
-		return (physical_address_t) NULL;
-
-	addr += m_bitmapAllocator.start;
-	return addr;
+	return allocate_firstFit(&m_bitmapAllocator, n_pages);
 }
 
 void PMM_freePages(physical_address_t addr, uint64_t n_pages){
