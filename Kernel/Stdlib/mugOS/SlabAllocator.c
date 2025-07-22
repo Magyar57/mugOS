@@ -18,8 +18,9 @@
 #include "SlabAllocator.h"
 #define MODULE "Slab allocator"
 
-#define OBJ_ROUND						8 // in bytes
-#define roundMultiple(val, power_of_2)	((val + power_of_2-1) & ~(power_of_2-1))
+#define OBJ_ROUND						8 // in bytes (must be a power of 2)
+#define roundMultiple(val, power_of_2)	(((val) + ((power_of_2)-1)) & ~((power_of_2)-1))
+#define align(ptr)						((void*) roundMultiple((uintptr_t)(ptr), OBJ_ROUND))
 
 #define KMALLOC_N_CACHES				8 // log2(KMALLOC_MAX_CACHE_SIZE) - log2(KMALLOC_MIN_CACHE_SIZE) + 1
 #define KMALLOC_CACHES_OFFSET			5 // = log2(KMALLOC_MIN_CACHE_SIZE)
@@ -46,7 +47,7 @@ struct Slab {
 	uint32_t* freeObjects;
 };
 
-// Object cache, with optional constructors and destructors
+// Object cache, with an optional constructor
 typedef struct Cache {
 	char name[24];
 	bool offslab;		// whether the slabs structures are kept on or off-slab
@@ -89,7 +90,6 @@ static struct Cache m_cacheCache = {
 	.partial_slabs = LIST_STATIC_INIT(m_cacheCache.partial_slabs),
 	.empty_slabs = LIST_STATIC_INIT(m_cacheCache.empty_slabs),
 };
-compile_assert(sizeof(cache_t) % OBJ_ROUND == 0);
 
 static struct Cache m_kmallocCaches[KMALLOC_N_CACHES] = {
 	{ .objSize =   32 },
@@ -270,6 +270,7 @@ static struct Slab* allocateSlab(long n_pages, int n_objects, bool offslab){
 	if (offslab){
 		slab = kmalloc(sizeof(struct Slab) + free_list_size);
 		if (slab == NULL) return NULL;
+		// Note: no need to align payload here, it is already aligned to PAGE_SIZE
 		slab->payload = allocatePages(n_pages, false);
 		if (slab->payload == NULL){
 			kfree(slab);
@@ -280,6 +281,8 @@ static struct Slab* allocateSlab(long n_pages, int n_objects, bool offslab){
 		slab = allocatePages(n_pages, false);
 		if (slab == NULL) return NULL;
 		slab->payload = (void*)(slab+1) + free_list_size;
+		// Align the payload to the requirement
+		slab->payload = align(slab->payload);
 	}
 
 	slab->owner = NULL; // set by caller
