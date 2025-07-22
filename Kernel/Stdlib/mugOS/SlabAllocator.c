@@ -22,7 +22,9 @@
 #define roundMultiple(val, power_of_2)	(((val) + ((power_of_2)-1)) & ~((power_of_2)-1))
 #define align(ptr)						((void*) roundMultiple((uintptr_t)(ptr), OBJ_ROUND))
 
-#define KMALLOC_N_CACHES				8 // log2(KMALLOC_MAX_CACHE_SIZE) - log2(KMALLOC_MIN_CACHE_SIZE) + 1
+#define KMALLOC_MIN_CACHE_SIZE			32
+#define KMALLOC_MAX_CACHE_SIZE			65536
+#define KMALLOC_N_CACHES				16 // log2(KMALLOC_MAX_CACHE_SIZE) - log2(KMALLOC_MIN_CACHE_SIZE) + 1
 #define KMALLOC_CACHES_OFFSET			5 // = log2(KMALLOC_MIN_CACHE_SIZE)
 
 #define SLAB_OFFSLAB_THRESHOLD			512 // Above, struct Slab is allocated in kmalloc caches
@@ -92,14 +94,18 @@ static struct Cache m_cacheCache = {
 };
 
 static struct Cache m_kmallocCaches[KMALLOC_N_CACHES] = {
-	{ .objSize =   32 },
-	{ .objSize =   64 },
-	{ .objSize =  128 },
-	{ .objSize =  256 },
-	{ .objSize =  512 },
-	{ .objSize = 1024 },
-	{ .objSize = 2048 },
-	{ .objSize = 4096 },
+	{ .objSize =    32 },
+	{ .objSize =    64 },
+	{ .objSize =   128 },
+	{ .objSize =   256 },
+	{ .objSize =   512 },
+	{ .objSize =  1024 },
+	{ .objSize =  2048 },
+	{ .objSize =  4096 },
+	{ .objSize =  8192 },
+	{ .objSize = 16384 },
+	{ .objSize = 32768 },
+	{ .objSize = 65536 },
 };
 
 static hashmap_t m_hashmap;
