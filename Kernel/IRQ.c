@@ -24,7 +24,7 @@ void timer(void*){
 	extern Framebuffer m_framebuffer;
 	static bool clock = false;
 	const int rect_size = 4;
-	color_t color = (clock) ? COLOR_GREEN : COLOR_LIGHT_GREY;
+	color_t color = (clock) ? COLOR_GREEN : COLOR_32BPP(31,31,31);
 	Framebuffer_fillRectangle(&m_framebuffer, m_framebuffer.width-rect_size-1, m_framebuffer.height-rect_size-1, rect_size, rect_size, color);
 	clock = !clock;
 }
