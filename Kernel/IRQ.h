@@ -23,7 +23,7 @@ void IRQ_installHandler(int irq, IRQHandler handler);
 void IRQ_removeHandler(int irq);
 
 /// @brief Common IRQ prehandler
-/// It can be ran manually by IRQ chips when handling spurious interrupts
+/// It can be run manually by IRQ chips when handling spurious interrupts
 void IRQ_prehandler(void* params);
 
 #endif

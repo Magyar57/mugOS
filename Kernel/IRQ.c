@@ -7,8 +7,8 @@
 #define MODULE "IRQ"
 
 struct IRQInfo {
-	bool enabled;
-	IRQHandler handler;
+	bool enabled;			// Note: `true` doesn't mean that handler is not NULL !!
+	IRQHandler handler;		// Installed IRQ handler (nullable)
 };
 
 #define N_IRQ 256
@@ -31,8 +31,8 @@ void timer(void*){
 
 void IRQ_init(){
 	for (int i=0 ; i<N_IRQ ; i++){
-		m_irqInfos->enabled = false;
-		m_irqInfos->handler = NULL;
+		m_irqInfos[i].enabled = true; // we want 'unhandled IRQ' messages by default
+		m_irqInfos[i].handler = NULL;
 	}
 
 	m_chip = IRQChip_get();
@@ -68,12 +68,13 @@ void IRQ_removeHandler(int irq){
 void IRQ_prehandler(void* params){
 	int irq = IRQChip_getIRQ(params);
 
-	if (m_irqInfos[irq].handler != NULL){
-		if (m_irqInfos[irq].enabled)
+	if (m_irqInfos[irq].enabled){
+		if (m_irqInfos[irq].handler != NULL){
 			m_irqInfos[irq].handler(params);
-	}
-	else {
-		log(WARNING, MODULE, "Unhandled IRQ %d", irq);
+		}
+		else {
+			log(WARNING, MODULE, "Unhandled IRQ %d", irq);
+		}
 	}
 
 	// Finally, signal the chip that we handled the interrupt
