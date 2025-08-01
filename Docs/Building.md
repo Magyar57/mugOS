@@ -1,12 +1,23 @@
 # Building mugOS
 
+## Architecture
+
+By default, it will build for the x86_64 architecture.
+If you wish to build for another architecture, (e.g. arm64) compile
+with the `make -e ARCH=arm64` option.
+
 ## Native build
 
-If you wish to use a specific compiler or linker, see [Compilers and Linkers](./CompilersAndLinkers.md).
+There are different dependencies depending on what you want to do:
 
-There are different dependencies depending on what you want to do: *Running*, *Building* with clang, or building with gcc (cross compiles gcc: *Toolchain*).
+- *Running* are running dependencies (ikr)
+- *Building* are building dependencies for clang. It is the default, recommended way
+- *Toolchain* are building dependencies for cross-compiling binutils and gcc, if you wish to build with gcc.
+  See [Compilers and Linkers](./CompilersAndLinkers.md) for more informations.
 
-Build dependencies for each tested operating system:
+Note that you will always need `make`, as it is the base entry point for all commands.
+
+Build dependencies, for each tested operating system:
 
 - Arch Linux (`pacman -S PACKAGES`):
   - Running: `qemu-full edk2-ovmf`
@@ -23,16 +34,13 @@ Build dependencies for each tested operating system:
 - Windows: Unsupported.
 
 To build the operating system image, run `make` in the root folder.
-By default, it will build for the x86_64 architecture. If you wish to build for another architecture,
-(e.g. arm64) add the `make -E ARCH=arm64` option.
-
-If you wish to build with gcc, see [Compilers and Linkers](./CompilersAndLinkers.md).
 
 ## Docker build
 
-The [Dockerfile](../Environment/Dockerfile) will build an image containing all the dependencies as well,
-and can be used to build the image without downloading the dependencies on your system. To do so, run the following commands:
+The [Dockerfile](../Dockerfile) will build an image containing all the dependencies,
+and can be used to build the image without downloading the dependencies on your system.
+To do so, run the following commands:
 
-- Change current directory to mugOS folder `cd path/to/mugOS`
+- Change current directory to mugOS folder: `cd path/to/mugOS`
 - Build the compiler-hosting image: `docker build -t mug-os:2.1 .`
 - Compile the OS: `docker run --rm -v .:/srv/mugOS mug-os:2.1 make && sudo chown -R $(whoami):$(whoami) build`

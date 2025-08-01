@@ -25,3 +25,10 @@ Note: Only calling the linker directly is supported.
 
 - x86_64 LD: `x86_64-elf-ld`
 - x86_64 LLD: `ld.lld`
+
+## Building your toolchain
+
+If you're NOT using LLVM (clang/lld), you'll need to build what you wish to use:
+
+- ld: `make toolchain_binutils`
+- gcc: `make toolchain_binutils toolchain_gcc`

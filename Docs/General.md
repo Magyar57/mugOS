@@ -14,16 +14,25 @@ Once past the booting part, the code is only redundant between the bootloader an
 was taken to switch to the Limine bootloader, to be able to focus on the unique kernel functionnalities.
 
 To this day, the kernel supports the following features:
-- The Limine protocol
-- Interrupt and IRQ support (see the [Interrupts documentation](./Interrupts.md))
-- Filesystem support: none for now
-- IO support: PS/2 mouse and keyboard, Serial support
-- Graphical support: VGA, Framebuffer
-  ([GOP](https://uefi.org/specs/UEFI/2.10/12_Protocols_Console_Support.html#graphics-output-protocol) and 
+- The Limine boot protocol
+- CPU features detection
+- Interrupts: exceptions, IRQs
+- Memory management: memory map, physical and virtual memory managers, paging
+- Kernel heap, implemented through a Slab allocator algorithm
+- Symetric MultiProcessing (SMP) stub
+- ACPI
+- I/O devices: PS/2 mouse and keyboard, serial ports
+- Graphics: VGA, Framebuffer
+  ([GOP](https://uefi.org/specs/UEFI/2.10/12_Protocols_Console_Support.html#graphics-output-protocol) and
   [VBE](https://wiki.osdev.org/VESA_Video_Modes))
-- Subsystems for: Graphics, mouse & keyboard support, logging.
+- Filesystem support: none for now
 
-Note: subsystems are a way to abstract hardware and expose functionnality of the underlying drivers to the
-rest of the kernel, and eventually to userspace.
+The standard library supports:
+- String operations functions
+- I/O, with full printf support on integers
+- Default streams
+- Heap (malloc, implementation inspired by OpenBSD's `sbrk`-free implementation)
+- mugOS-specific features: struct-embedded lists, ringbuffer,
+  allocatable caches of objects (the slab allocator used in the kernel)
 
 To see planned features, see the [Roadmap](./Roadmap.md).
