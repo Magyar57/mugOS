@@ -16,12 +16,11 @@ Build dependencies for each tested operating system:
   - Running: `qemu edk2-ovmf`
   - Building: `make nasm gcc clang lld git mtools dosfstools gdisk`
   - Toolchain: `wget base-devel gmp-devel libmpc-devel mpfr-devel`
-- NixOS: use the provided environment: `nix-shell Environment/Shell.nix`
 - macOS (`brew install FORMULAE`):
   - Running: `qemu`
   - Building: `nasm lld git mtools gptfdisk`
   - Toolchain: `wget bison flex gmp libmpc mpfr texinfo`
-- Windows: Not supported. Please use WSL2.
+- Windows: Unsupported.
 
 To build the operating system image, run `make` in the root folder.
 By default, it will build for the x86_64 architecture. If you wish to build for another architecture,
@@ -35,5 +34,5 @@ The [Dockerfile](../Environment/Dockerfile) will build an image containing all t
 and can be used to build the image without downloading the dependencies on your system. To do so, run the following commands:
 
 - Change current directory to mugOS folder `cd path/to/mugOS`
-- Build the compiler-hosting image: `ln -sf Environment/Dockerfile && docker build -t mug-os:2.0 . ; rm Dockerfile`
+- Build the compiler-hosting image: `docker build -t mug-os:2.0 .`
 - Compile the OS: `docker run --rm -v .:/srv/mugOS mug-os:2.0 make && sudo chown -R $(whoami):$(whoami) build`
