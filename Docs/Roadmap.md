@@ -1,6 +1,6 @@
-# mugOS Roadmap and TODOs
+# mugOS roadmap
 
-## Roadmap
+## Milestones
 
 - [X] Hello world bootloader
 - [X] Two-stage bootloader
@@ -35,7 +35,7 @@
 - [ ] System calls
 - [ ] mush (the **mu**gOS **sh**ell)
 
-## Eventual modifications and ideas
+## Possible evolutions
 
 - [X] *(Refactor)* Remove HHDM, in favour of dynamic memory mapping
 - [ ] *(Refactor)* Abstract the Serial ports from the Serial driver
