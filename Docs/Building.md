@@ -21,16 +21,16 @@ Build dependencies, for each tested operating system:
 
 - Arch Linux (`pacman -S PACKAGES`):
   - Running: `qemu-full edk2-ovmf`
-  - Building: `make clang nasm lld gptfdisk mtools dosfstools`
-  - Toolchain: `wget git gcc g++ texinfo`
+  - Building: `make wget git gcc clang nasm lld gptfdisk mtools dosfstools`
+  - Toolchain: `diffutils libmpc mpfr gmp texinfo`
 - Fedora (`dnf install PACKAGES`):
   - Running: `qemu edk2-ovmf`
-  - Building: `make clang nasm lld gdisk mtools dosfstools`
-  - Toolchain: `wget git gmp-devel libmpc-devel mpfr-devel`
+  - Building: `make wget git gcc clang nasm lld gdisk mtools dosfstools`
+  - Toolchain: `libmpc-devel mpfr-devel gmp-devel`
 - macOS (`brew install FORMULAE`):
   - Running: `qemu`
-  - Building: `nasm lld mtools gptfdisk`
-  - Toolchain: `wget git bison flex gmp libmpc mpfr texinfo`
+  - Building: `make wget git gcc nasm lld mtools gptfdisk`
+  - Toolchain: `bison flex libmpc mpfr gmp texinfo`
 - Windows: Unsupported.
 
 To build the operating system image, run `make` in the root folder.
