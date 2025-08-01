@@ -1,6 +1,6 @@
-FROM fedora:39
+FROM fedora:42
 
-ENV DEPENDENCIES="make nasm gcc gcc-c++ dosfstools mtools bison flex gmp-devel libmpc-devel mpfr-devel texinfo wget guestfs-tools git"
+ENV DEPENDENCIES="make wget git clang nasm lld gdisk mtools dosfstools"
 
 # Install dependencies
 RUN dnf update -y

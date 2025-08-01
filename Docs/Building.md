@@ -10,16 +10,16 @@ Build dependencies for each tested operating system:
 
 - Arch Linux (`pacman -S PACKAGES`):
   - Running: `qemu-full edk2-ovmf`
-  - Building: `make nasm gcc clang lld git gptfdisk mtools dosfstools`
-  - Toolchain: `wget gcc g++ texinfo`
+  - Building: `make clang nasm lld gptfdisk mtools dosfstools`
+  - Toolchain: `wget git gcc g++ texinfo`
 - Fedora (`dnf install PACKAGES`):
   - Running: `qemu edk2-ovmf`
-  - Building: `make nasm gcc clang lld git mtools dosfstools gdisk`
-  - Toolchain: `wget base-devel gmp-devel libmpc-devel mpfr-devel`
+  - Building: `make clang nasm lld gdisk mtools dosfstools`
+  - Toolchain: `wget git gmp-devel libmpc-devel mpfr-devel`
 - macOS (`brew install FORMULAE`):
   - Running: `qemu`
-  - Building: `nasm lld git mtools gptfdisk`
-  - Toolchain: `wget bison flex gmp libmpc mpfr texinfo`
+  - Building: `nasm lld mtools gptfdisk`
+  - Toolchain: `wget git bison flex gmp libmpc mpfr texinfo`
 - Windows: Unsupported.
 
 To build the operating system image, run `make` in the root folder.
@@ -34,5 +34,5 @@ The [Dockerfile](../Environment/Dockerfile) will build an image containing all t
 and can be used to build the image without downloading the dependencies on your system. To do so, run the following commands:
 
 - Change current directory to mugOS folder `cd path/to/mugOS`
-- Build the compiler-hosting image: `docker build -t mug-os:2.0 .`
-- Compile the OS: `docker run --rm -v .:/srv/mugOS mug-os:2.0 make && sudo chown -R $(whoami):$(whoami) build`
+- Build the compiler-hosting image: `docker build -t mug-os:2.1 .`
+- Compile the OS: `docker run --rm -v .:/srv/mugOS mug-os:2.1 make && sudo chown -R $(whoami):$(whoami) build`
