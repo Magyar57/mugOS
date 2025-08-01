@@ -10,19 +10,18 @@
 #define ERROR 4
 #define PANIC 5
 
-void Logging_log(int logLevel, const char* moduleName, const char* logFmtStr, ...);
+/// @brief Log a formatted string
+/// @param logLevel SUCCESS, INFO, WARNING, ERROR... See `Logging.h` for values
+/// @param moduleName Nullable string of the module from which log is emitted
+/// @param logFmtStr Formatted string to log
+/// @param ... formatting arguments (printf syntax)
+void log(int logLevel, const char* moduleName, const char* logFmtStr, ...);
 
 /// @brief Dump the memory (in hexadecimal) in the console
-void Logging_hexdump(int logLevel, const char* moduleName, void* addr , size_t n);
+void hexdump(int logLevel, const char* moduleName, void* addr , size_t n);
 
-/// @brief Alias for Logging_log
-#define log Logging_log
-
-/// @brief Alias for `Logging_log`, with default arguments.
+/// @brief Alias for `log`, with default arguments.
 /// Handy for writing quick logs while debugging
-#define debug(fmt, ...) Logging_log(DEBUG, __FILE__, fmt, ##__VA_ARGS__)
-
-/// @brief Debug alias for Logging_hexdump (similar to the `debug` alias)
-#define hexdump(addr, n) Logging_hexdump(DEBUG, __FILE__, addr, n)
+#define debug(fmt, ...) log(DEBUG, __FILE__, fmt, ##__VA_ARGS__)
 
 #endif

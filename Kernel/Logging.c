@@ -34,10 +34,10 @@ static inline bool formatLogString(char* str, size_t n, int logLevel, const char
 	return true;
 }
 
-void Logging_log(int logLevel, const char* moduleName, const char* logFmtStr, ...){
+void log(int logLevel, const char* moduleName, const char* logFmtStr, ...){
 	if (logLevel<0 || logLevel>PANIC) return;
 	if (logFmtStr == NULL){
-		Logging_log(logLevel, moduleName, "(null)");
+		log(logLevel, moduleName, "(null)");
 		return;
 	}
 
@@ -62,11 +62,11 @@ void Logging_log(int logLevel, const char* moduleName, const char* logFmtStr, ..
 	Serial_sendStringDefault(buff);
 }
 
-void Logging_hexdump(int logLevel, const char* moduleName, void* addr , size_t n){
+void hexdump(int logLevel, const char* moduleName, void* addr , size_t n){
 	if (logLevel<0 || logLevel>PANIC)return;
 
 	if (addr == NULL){
-		Logging_log(logLevel, moduleName, "Hexdump: (null)");
+		log(logLevel, moduleName, "Hexdump: (null)");
 		return;
 	}
 
@@ -86,10 +86,10 @@ void Logging_hexdump(int logLevel, const char* moduleName, void* addr , size_t n
 			data[i+8], data[i+9], data[i+10], data[i+11], data[i+12], data[i+13], data[i+14], data[i+15]
 		);
 		if (printed < 0) {
-			Logging_log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
+			log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
 			return;
 		}
-		Logging_log(logLevel, moduleName, buff);
+		log(logLevel, moduleName, buff);
 	}
 
 	// Final, partial line
@@ -99,7 +99,7 @@ void Logging_hexdump(int logLevel, const char* moduleName, void* addr , size_t n
 
 	printed = snprintf(buff, sizeof(buff), "Hexdump: %#.8llx - ", i);
 	if (printed < 0) {
-		Logging_log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
+		log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
 		return;
 	}
 
@@ -108,7 +108,7 @@ void Logging_hexdump(int logLevel, const char* moduleName, void* addr , size_t n
 	for ( ; i<n ; i++){
 		printed = snprintf(buff+offset, sizeof(buff)-i-offset, "%.2hhx ", data[i]);
 		if (printed < 0){
-			Logging_log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
+			log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
 			return;
 		}
 		offset += printed;
@@ -117,11 +117,11 @@ void Logging_hexdump(int logLevel, const char* moduleName, void* addr , size_t n
 		if (i % 8 == 7){
 			printed = snprintf(buff+offset, sizeof(buff)-i-offset, " ");
 			if (printed < 0){
-				Logging_log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
+				log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
 				return;
 			}
 			offset += printed;
 		}
 	}
-	Logging_log(logLevel, moduleName, buff);
+	log(logLevel, moduleName, buff);
 }
