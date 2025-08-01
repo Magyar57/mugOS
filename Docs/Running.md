@@ -16,9 +16,7 @@ Alternatively, if you wish to choose the architecure and booting mode, you can c
 - x86_64 UEFI: `qemu-system-x86_64 -drive if=pflash,file=/usr/share/edk2/x64/OVMF.4m.fd,format=raw,readonly=on -drive if=ide,media=disk,file=build/disk.img,format=raw`
 - x86_64 Legacy BIOS: `qemu-system-x86_64 -drive -drive if=ide,media=disk,file=build/disk.img,format=raw`
 
-## Debugging
-
-### ... With QEMU+GDB
+## Debugging (QEMU+GDB)
 
 GDB allows you to debug both the assembly and the C code, step by step.
 
@@ -29,10 +27,3 @@ GDB allows you to debug both the assembly and the C code, step by step.
   - break kmain
   - layout src
   - continue
-
-### ... With Bochs
-
-Bochs allows you to debug the assembly step by step. 
-To debug the OS, you can use bochs: `bochs-debugger -f Environment/Bochs.cfg`.
-
-Note: This does NOT support UEFI booting, as Bochs doesn't support OVMF.
