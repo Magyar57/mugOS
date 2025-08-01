@@ -1,4 +1,0 @@
-# Everything but the vbox
-*
-!*.vbox
-!.gitignore
