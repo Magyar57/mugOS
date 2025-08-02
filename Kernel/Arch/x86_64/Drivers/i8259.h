@@ -8,11 +8,11 @@
 // Initialize/configure (remap) the PIC
 void i8259_init();
 
-// Disables (masks) a given IRQ
-void i8259_disableIRQ(int irq);
-
 // Enables (unmasks) a given IRQ
-void i8259_enableIRQ(int irq);
+void i8259_enableSpecific(int irq);
+
+// Disables (masks) a given IRQ
+void i8259_disableSpecific(int irq);
 
 // Disables (masks) all IRQ
 void i8259_disableAllIRQ();

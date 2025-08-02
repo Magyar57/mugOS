@@ -30,7 +30,9 @@
 #define PIC_CMD_READ_IRR	0x0a	// Read IRR Interrupt Request Register
 #define PIC_CMD_READ_ISR	0x0b	// Read ISR In-Service Register
 
-#define isValidIRQ(irq)	(irq >= 0 && irq < 16)
+#define assertValidIRQ(irq) assert(irq >= 0 && irq < 16)
+
+static uint8_t m_remapOffset;
 
 static inline bool isDivisibleBy8(uint8_t num){
 	return ((num & 7) == 0);
@@ -56,12 +58,14 @@ static uint16_t i8259_getCombinedISR(){
 	return getCombinedRegister(PIC_CMD_READ_ISR);
 }
 
-static void remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
-	if ( !isDivisibleBy8(offsetMasterPIC) || !isDivisibleBy8(offsetSlavePIC) ){
-		log(PANIC, MODULE, "PIC Configuration error: tried to remap with an incorrect offset");
-		log(PANIC, MODULE, "Both %p and %p must be divisible by 8", offsetMasterPIC, offsetSlavePIC);
+static void remap(uint8_t offset){
+	if (!isDivisibleBy8(offset)){
+		log(PANIC, MODULE, "PIC configuration error: tried to remap with an incorrect offset");
+		log(PANIC, MODULE, "'offset' must be divisible by 8 (got %#hhx)", offset);
 		panic();
 	}
+
+	m_remapOffset = offset;
 
 	// According to this forum: https://forum.osdev.org/viewtopic.php?t=30111
 	// We don't need to io_wait in between PIC coms if we interleave them
@@ -70,8 +74,8 @@ static void remap(uint8_t offsetMasterPIC, uint8_t offsetSlavePIC){
 	outb(PIC_MASTER_CMD, PIC_ICW1_ICW4|PIC_ICW1_INIT);
 	outb(PIC_SLAVE_CMD, PIC_ICW1_ICW4|PIC_ICW1_INIT);
 	// ICW2 - Offsets
-	outb(PIC_MASTER_DATA, offsetMasterPIC);
-	outb(PIC_SLAVE_DATA, offsetSlavePIC);
+	outb(PIC_MASTER_DATA, offset);
+	outb(PIC_SLAVE_DATA, offset + 8);
 	// ICW3
 	outb(PIC_MASTER_DATA, 4); // Tell master for the slave at IRQ2 (0000 0100)
 	outb(PIC_SLAVE_DATA, 2); // Tell slave for its cascade identity (0000 0010)
@@ -108,15 +112,37 @@ static void handleSpuriousIRQ15(struct ISR_Params* params){
 }
 
 void i8259_init(){
-	remap(ISA_IRQ_OFFSET, ISA_IRQ_OFFSET+8);
+	remap(ISA_IRQ_OFFSET);
 	ISR_installHandler(IRQ_LPT1, handleSpuriousIRQ7);
 	ISR_installHandler(IRQ_ATA2, handleSpuriousIRQ15);
 
 	i8259_enableAllIRQ();
 }
 
-void i8259_disableIRQ(int irq){
-	if (isValidIRQ(irq)) return;
+void i8259_enableSpecific(int irq){
+	irq -= m_remapOffset; // remap to PIC IRQ indexes
+	assertValidIRQ(irq);
+
+	uint8_t port;
+
+	// Master PIC
+	if (irq < 8){
+		port = PIC_MASTER_DATA;
+	}
+	// Slave PIC
+	else {
+		port = PIC_SLAVE_DATA;
+		irq -= 8;
+	}
+
+	uint8_t mask = inb(port);
+	mask &= ~(1 << irq); // Remove the corresponding bit to the mask
+	outb(port, mask);
+}
+
+void i8259_disableSpecific(int irq){
+	irq -= m_remapOffset;
+	assertValidIRQ(irq);
 
 	uint8_t port;
 
@@ -135,24 +161,6 @@ void i8259_disableIRQ(int irq){
 	outb(port, mask);
 }
 
-void i8259_enableIRQ(int irq){
-	if (isValidIRQ(irq)) return;
-	uint8_t port;
-
-	// Master PIC
-	if (irq < 8){
-		port = PIC_MASTER_DATA;
-	}
-	// Slave PIC
-	else {
-		port = PIC_SLAVE_DATA;
-		irq -= 8;
-	}
-	uint8_t mask = inb(port);
-	mask &= ~(1 << irq); // Remove the corresponding bit to the mask
-	outb(port, mask);
-}
-
 void i8259_enableAllIRQ(){
 	// Unmask all interrupts
 	outb(PIC_MASTER_DATA, 0x00);
@@ -166,9 +174,8 @@ void i8259_disableAllIRQ(){
 }
 
 void i8259_sendEIO(int irq){
-	if (isValidIRQ(irq)) return;
-	assert(irq >= ISA_IRQ_OFFSET);
-	irq -= ISA_IRQ_OFFSET;
+	irq -= m_remapOffset;
+	assertValidIRQ(irq);
 
 	if (irq >= 8)
 		outb(PIC_SLAVE_CMD, PIC_CMD_EOI);
