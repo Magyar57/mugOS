@@ -10,6 +10,8 @@
 struct IRQChip {
 	void (*init)(void);
 	void (*sendEOI)(int irq);
+	void (*enableSpecific)(int irq);
+	void (*disableSpecific)(int irq);
 	void (*installPrehandler)(irqhandler_t prehandler);
 };
 

@@ -176,3 +176,11 @@ void IOAPIC_init(){
 		initIOAPIC(m_IOAPICs + i);
 	}
 }
+
+void IOAPIC_enableSpecific(int irq){
+	debug("unimplemented"); // TODO
+}
+
+void IOAPIC_disableSpecific(int irq){
+	debug("unimplemented"); // TODO
+}

@@ -3,6 +3,7 @@
 #include "CPU.h"
 #include "Drivers/i8259.h"
 #include "Drivers/APIC.h"
+#include "Drivers/IOAPIC.h"
 #include "HAL/IRQFlags.h"
 #include "ISR.h"
 
@@ -25,11 +26,15 @@ struct IRQChip* IRQChip_get(){
 		log(INFO, MODULE, "APIC found");
 		m_chip.init = APIC_init;
 		m_chip.sendEOI = APIC_sendEIO;
+		m_chip.enableSpecific = IOAPIC_enableSpecific;
+		m_chip.disableSpecific = IOAPIC_disableSpecific;
 	}
 	else {
 		log(INFO, MODULE, "APIC not found, using legacy 8259 PIC");
 		m_chip.init = i8259_init;
 		m_chip.sendEOI = i8259_sendEIO;
+		m_chip.enableSpecific = i8259_enableSpecific;
+		m_chip.disableSpecific = i8259_disableSpecific;
 	}
 
 	m_chip.installPrehandler = installPrehandler;
