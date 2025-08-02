@@ -16,8 +16,8 @@ include BuildScripts/Arch.mk
 OVMF_URL:=https://cdn.download.clearlinux.org/image/OVMF.fd
 LIMINE_BRANCH:=v9.x-binary
 # Get the latest versions: https://ftp.gnu.org/gnu/binutils/ and https://gcc.gnu.org/releases.html
-BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz
-GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-14.1.0/gcc-14.1.0.tar.gz
+BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.45.tar.xz
+GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-15.1.0/gcc-15.1.0.tar.gz
 
 # Compilation for target system
 export TARGET_ASM:=nasm

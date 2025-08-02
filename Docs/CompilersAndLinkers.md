@@ -3,32 +3,36 @@
 Building the OS, as of any program, takes two steps: compilation and linking.
 
 Both gcc, clang, ld and lld are supported. The default is the LLVM toolchain, as it support
-cross-compilation by default. If you wish to use gcc, you will need to recompile it. And if you wish
-to use ld, you will need to recompile binutils. This is handled automatically by the
-`BuildScripts/Toolchain.mk` makefile: run `make toolchain` **at the top** of the projet directory tree.
+cross-compilation by default. To change which compiler and linker is used, modify the
+environment variables in the `BuildScripts/Config.mk` script, as shown below.
 
-Note: By default, it will build for the x86_64 architecture. If you wish to build for another architecture,
-(e.g. arm64) add the `make toolchain -E ARCH=arm64` option.
+Note 1: If you wish to use gcc or ld, you will need to recompile the right
+        packages (see the corresponding section below)
+
+Note 2: By default, it will build for the x86_64 architecture. If you wish to build for
+        another architecture, (e.g. arm64) add the `make toolchain -E ARCH=arm64` option.
 
 ## Compilers
 
-To change compiler, replace the "TARGET_CC" value in `BuildScripts/Config.mk`.
-
-- x86_64 GCC: `x86_64-elf-gcc`
-- x86_64 Clang: `clang --target=x86_64-none-elf`
+- x86_64 Clang (default): `TARGET_CC=clang --target=x86_64-none-elf`
+- x86_64 GCC: `TARGET_CC=x86_64-elf-gcc`
 
 ## Linkers
 
-To change compiler, replace the "TARGET_LD" value in `BuildScripts/Config.mk`.
+Note: Only direct invocation of the linker is supported.
 
-Note: Only calling the linker directly is supported.
-
-- x86_64 LD: `x86_64-elf-ld`
-- x86_64 LLD: `ld.lld`
+- x86_64 LLD (default): `TARGET_LD=ld.lld` and `TARGET_LIBS=`
+- x86_64 LD: `TARGET_LD=x86_64-elf-ld` and `TARGET_LIBS=-lgcc -L$(TOOLCHAIN_PATH)/lib/gcc/x86_64-elf/[version]`
+  (replace version with the value in the GCC_URL variable)
 
 ## Building your toolchain
 
-If you're NOT using LLVM (clang/lld), you'll need to build what you wish to use:
+If you're NOT using LLVM (clang/lld), you'll need to build what you wish to use.
+This is handled automatically by the `BuildScripts/Toolchain.mk` script.
 
-- ld: `make toolchain_binutils`
-- gcc: `make toolchain_binutils toolchain_gcc`
+Build the tools that you need, from **the top** of the project directory tree:
+
+- Clang: N/A
+- LLD: N/A
+- LD: `make toolchain_binutils`
+- GCC: `make toolchain_binutils && make toolchain_gcc`
