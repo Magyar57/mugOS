@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-// Object cache, with optional constructors and destructors
+// Object cache, with an optional constructor
 typedef struct Cache cache_t;
 
 // Object constructor: sets an object to its initialized state

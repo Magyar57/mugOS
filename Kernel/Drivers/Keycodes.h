@@ -1,7 +1,7 @@
 #ifndef __KEYAMPS_H__
 #define __KEYAMPS_H__
 
-typedef unsigned int Keycode;
+typedef unsigned int keycode_t;
 
 // Keycodes that the keyboard subsystem can return
 // Most of the keys/buttons are modeled after USB HUT 1.12 (see https://www.usb.org/hid)

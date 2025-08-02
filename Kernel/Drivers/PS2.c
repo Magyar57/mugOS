@@ -12,8 +12,7 @@
 
 #define MODULE "PS/2"
 
-// Note 1: we support only keyboard on port 1 and mouse on port 2
-// This is similar to other OSes
+// Note: we support only keyboard on port 1 and mouse on port 2 (standard configuration)
 
 // Commands (prefixes: KB=Keyboard, MOUSE=Mouse, None=Both)
 #define PS2_CMD_IDENTIFY				0xf2
@@ -78,8 +77,8 @@ static struct PS2Mouse m_PS2Mouse;
 #define PS2_KB_SCANCODE1_SYSRQ					0x54
 #define PS2_KB_SCANCODE2_SYSRQ					0x84
 
-// Translates the PS/2 scancode into mugOS Keycode. Returns KEY_RESERVED on unrecognized keycode
-static Keycode getKeycodeSet1(uint8_t scancode){
+// Translates the PS/2 scancode into mugOS keycode_t. Returns KEY_RESERVED on unrecognized keycode
+static keycode_t getKeycodeSet1(uint8_t scancode){
 	switch (scancode){
 		case 0x00: return KEY_RESERVED;
 		case 0x01: return KEY_ESC;
@@ -183,7 +182,7 @@ static Keycode getKeycodeSet1(uint8_t scancode){
 }
 
 // Same as getKeycodeSet2, but for escaped characters
-static Keycode getKeycodeEscapedSet1(uint8_t scancode){
+static keycode_t getKeycodeEscapedSet1(uint8_t scancode){
 	switch (scancode){
 		case 0x10: return KEY_PREVIOUSSONG;
 		case 0x19: return KEY_NEXTSONG;
@@ -389,7 +388,7 @@ static inline void handleScancodeSet1(uint8_t scancode){
 	}
 
 	// 3. If we're here, we got a simple one-press scancode. Convert it to keycode
-	Keycode keycode;
+	keycode_t keycode;
 	keycode = (escaped_state) ? getKeycodeEscapedSet1(scancode) : getKeycodeSet1(scancode);
 
 	// 4. Handle keycode
@@ -436,8 +435,8 @@ static inline void handleScancodeSet1(uint8_t scancode){
 	pause_sequence = 0;
 }
 
-// Translates the PS/2 scancode into mugOS Keycode. Returns KEY_RESERVED on unrecognized keycode
-static Keycode getKeycodeSet2(uint8_t scancode){
+// Translates the PS/2 scancode into mugOS keycode_t. Returns KEY_RESERVED on unrecognized keycode
+static keycode_t getKeycodeSet2(uint8_t scancode){
 	switch (scancode){
 		case 0x01: return KEY_F9;
 		case 0x03: return KEY_F5;
@@ -540,7 +539,7 @@ static Keycode getKeycodeSet2(uint8_t scancode){
 }
 
 // Same as getKeycodeSet2, but for escaped characters
-static Keycode getKeycodeEscapedSet2(uint8_t scancode){
+static keycode_t getKeycodeEscapedSet2(uint8_t scancode){
 	switch (scancode){
 		case 0x10: return KEY_SEARCH;
 		case 0x11: return KEY_RALT;
@@ -728,7 +727,7 @@ static inline void handleScancodeSet2(uint8_t scancode){
 		break;
 	}
 
-	Keycode keycode;
+	keycode_t keycode;
 	keycode = (escaped_state) ? getKeycodeEscapedSet2(scancode) : getKeycodeSet2(scancode);
 
 	switch (keycode){

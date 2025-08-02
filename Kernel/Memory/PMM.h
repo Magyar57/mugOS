@@ -9,12 +9,12 @@ void PMM_init();
 
 /// @brief Allocate `n_pages` contiguous physical pages
 /// @returns The start address of the allocated block
-physical_address_t PMM_allocatePages(uint64_t n_pages);
+paddr_t PMM_allocatePages(uint64_t n_pages);
 
 /// @brief Free pages allocated by `PMM_allocatePages`
 /// @param addr Address returned by `PMM_allocatePages`
 /// @param n_pages Number of pages that were allocated (passed to `PMM_allocatePages`)
-void PMM_freePages(physical_address_t addr, uint64_t n_pages);
+void PMM_freePages(paddr_t addr, uint64_t n_pages);
 
 /// @brief Pretty-print the physical memory usage.
 void PMM_printMemoryUsage();

@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include "HAL/IRQFlags.h"
 
-// IRQHandler function type
-typedef void (*IRQHandler)(void* registers);
+// irqhandler_t function type
+typedef void (*irqhandler_t)(void* registers);
 
 /// @brief Initialise the IRQs & the IRQ chip
 void IRQ_init();
@@ -17,7 +17,7 @@ void IRQ_enableSpecific(int irq);
 void IRQ_disableSpecific(int irq);
 
 /// @brief Register a new IRQ handler (if set, replace the current handler)
-void IRQ_installHandler(int irq, IRQHandler handler);
+void IRQ_installHandler(int irq, irqhandler_t handler);
 
 /// @brief Remove a set IRQ handler
 void IRQ_removeHandler(int irq);

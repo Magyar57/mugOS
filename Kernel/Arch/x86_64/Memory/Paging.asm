@@ -49,7 +49,7 @@ enablePaging:
 	ret
 ; END enablePaging
 
-; bool setPML4(physical_address_t pml4);
+; bool setPML4(paddr_t pml4);
 global setPML4
 setPML4:
 	; Check that the table is page aligned
@@ -74,7 +74,7 @@ setPML4:
 	ret
 ; END setPML4
 
-; bool setPML5(physical_address_t pml5);
+; bool setPML5(paddr_t pml5);
 global setPML5
 setPML5:
 	; Check that the table is page aligned

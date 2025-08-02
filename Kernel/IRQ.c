@@ -8,7 +8,7 @@
 
 struct IRQInfo {
 	bool enabled;			// Note: `true` doesn't mean that handler is not NULL !!
-	IRQHandler handler;		// Installed IRQ handler (nullable)
+	irqhandler_t handler;		// Installed IRQ handler (nullable)
 };
 
 #define N_IRQ 256
@@ -53,7 +53,7 @@ void IRQ_disableSpecific(int irq){
 	m_irqInfos[irq].enabled = false;
 }
 
-void IRQ_installHandler(int irq, IRQHandler handler){
+void IRQ_installHandler(int irq, irqhandler_t handler){
 	assert(isValidIRQ(irq));
 	m_irqInfos[irq].handler = handler;
 	m_irqInfos[irq].enabled = true;

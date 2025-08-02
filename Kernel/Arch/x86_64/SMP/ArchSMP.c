@@ -66,7 +66,7 @@ void ArchSMP_startCPUs(){
 	// Prepare CPU's startup code
 	int size = (void*) &endEntryAP - (void*) entryAP;
 	int n_pages = roundToPage(size);
-	physical_address_t ap_entry_phys = PMM_allocatePages(n_pages);
+	paddr_t ap_entry_phys = PMM_allocatePages(n_pages);
 	if ((ap_entry_phys & ~0xff000) != 0){
 		log(ERROR, MODULE, "Could not allocate low memory needed for starting CPUs. SMP disabled");
 		return;
@@ -74,7 +74,7 @@ void ArchSMP_startCPUs(){
 
 	// Copy the entryAP code to low memory. This CPU is in long mode, so we need to map the region
 	// We use a temporary userspace page: it is guaranteed to be free (userspace isn't up yet)
-	virtual_address_t ap_entry_virt = 0x1000;
+	vaddr_t ap_entry_virt = 0x1000;
 	VMM_map(ap_entry_phys, ap_entry_virt, n_pages, PAGE_KERNEL|PAGE_READ|PAGE_WRITE);
 	memcpy((void*) ap_entry_virt, entryAP, size);
 

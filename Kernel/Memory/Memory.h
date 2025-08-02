@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 typedef uintptr_t address_t;
-typedef address_t physical_address_t;
-typedef address_t virtual_address_t;
+typedef address_t paddr_t; // Physical address
+typedef address_t vaddr_t; // Virtual address
 
 #define SIZE_4KB 0x00001000 // 4 KiB is 4 * 2^10 = 4*1024
 #define SIZE_2MB 0x00200000 // 2 MiB is 2 * 2^20 = 2*1024*1024

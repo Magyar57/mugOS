@@ -85,8 +85,8 @@ static inline void writeRegister64(struct IOAPIC* ioapic, uint8_t reg, uint64_t 
 /// @brief Init a specific I/O APIC
 static void initIOAPIC(struct IOAPIC* ioapic){
 	// Map the memory-mapped registers in the VMM
-	physical_address_t ioapic_phys = (physical_address_t) ioapic->address;
-	virtual_address_t ioapic_virt = ioapic_phys | VMM_KERNEL_MEMORY;
+	paddr_t ioapic_phys = (paddr_t) ioapic->address;
+	vaddr_t ioapic_virt = ioapic_phys | VMM_KERNEL_MEMORY;
 	VMM_map(ioapic_phys, ioapic_virt, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL|PAGE_CACHE_DISABLED);
 
 	ioapic->address = (void*) ioapic_virt;

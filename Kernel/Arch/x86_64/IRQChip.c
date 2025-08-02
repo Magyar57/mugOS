@@ -11,10 +11,10 @@
 
 static struct IRQChip m_chip;
 
-static void installPrehandler(IRQHandler prehandler){
+static void installPrehandler(irqhandler_t prehandler){
 	for (int irq=32 ; irq<256 ; irq++){
 		if (!ISR_isHandlerPresent(irq)){
-			ISR_installHandler(irq, (ISR) prehandler);
+			ISR_installHandler(irq, (isr_t) prehandler);
 		}
 	}
 }

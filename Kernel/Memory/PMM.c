@@ -14,7 +14,7 @@
 
 struct BitmapAllocator {
 	uint64_t nBlocks; // (= #bits)
-	physical_address_t start;
+	paddr_t start;
 	uint64_t allocatableBlocks; // #blocks that can be allocated (<= nBlocks)
 	uint64_t allocatedBlocks; // #allocated blocks at a given time
 
@@ -197,13 +197,13 @@ static bool isFullyAllocated(struct BitmapAllocator* allocator, uint64_t start_b
 	return true;
 }
 
-static inline physical_address_t allocate_firstFit(struct BitmapAllocator* allocator, uint64_t n_pages){
+static inline paddr_t allocate_firstFit(struct BitmapAllocator* allocator, uint64_t n_pages){
 	// Search for n_blocks consecutive free bits in the bitmap
 	uint64_t n_bits = 0; // consecutive free bits in the current sequence
 	uint64_t cur;
 
 	if (n_pages == 0)
-		return (physical_address_t) NULL;
+		return (paddr_t) NULL;
 
 	uint64_t i;
 	int j;
@@ -245,14 +245,14 @@ static inline physical_address_t allocate_firstFit(struct BitmapAllocator* alloc
 		cur <<= 1;
 	}
 
-	return (physical_address_t) NULL;
+	return (paddr_t) NULL;
 }
 
-physical_address_t PMM_allocatePages(uint64_t n_pages){
+paddr_t PMM_allocatePages(uint64_t n_pages){
 	return allocate_firstFit(&m_bitmapAllocator, n_pages);
 }
 
-void PMM_freePages(physical_address_t addr, uint64_t n_pages){
+void PMM_freePages(paddr_t addr, uint64_t n_pages){
 	// Note 1: we don't check that the freed address is invalid ; We assume that
 	// the kernel code that called this doesn't mess up its addresses and sizes
 	// Note 2: Bounds are checked by both isFullyAllocated and clearBits
@@ -303,7 +303,7 @@ void PMM_printPagesUsage(){
 
 /// @brief Get the bitmap start address.
 /// In the case where it would be 0, returns the next free page
-static physical_address_t getBitmapStart(){
+static paddr_t getBitmapStart(){
 	for (int i=0 ; i<g_memoryMap.size ; i++){
 		struct MemoryMapEntry* cur = g_memoryMap.entries + i;
 
@@ -347,7 +347,7 @@ static uint64_t getAllocatableBlocks(){
 }
 
 // One-time-use memory allocation, using first fit algorithm. Guaranteed to return a value
-static physical_address_t earlyAllocate(struct limine_memmap_response* memmap, uint64_t n_pages){
+static paddr_t earlyAllocate(struct limine_memmap_response* memmap, uint64_t n_pages){
 	uint64_t needed = n_pages * PAGE_SIZE;
 
 	// Ensure one-time-use
@@ -377,7 +377,7 @@ static physical_address_t earlyAllocate(struct limine_memmap_response* memmap, u
 }
 
 static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memmap,
-					   physical_address_t bitmap_addr_phys, uint64_t nPages){
+					   paddr_t bitmap_addr_phys, uint64_t nPages){
 	// Note: Before calling initBitmap, start, nBlocks and allocatableBlocks needs to be set
 
 	allocator->bitmapLength = (allocator->nBlocks + 63) / 64;
@@ -428,8 +428,8 @@ void PMM_init(){
 	// Allocate memory for the bitmap
 	size_t bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
 	uint64_t n_pages = getSizeAsPages(bitmapSize);
-	physical_address_t allocated = earlyAllocate(g_memmapReq.response, n_pages);
-	virtual_address_t allocated_virt = VMM_toHHDM(allocated);
+	paddr_t allocated = earlyAllocate(g_memmapReq.response, n_pages);
+	vaddr_t allocated_virt = VMM_toHHDM(allocated);
 	VMM_premap(allocated, allocated_virt, n_pages, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 	m_bitmapAllocator.bitmap = (uint64_t*) allocated_virt;
 

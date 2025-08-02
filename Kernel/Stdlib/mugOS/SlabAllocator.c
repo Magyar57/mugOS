@@ -467,7 +467,7 @@ static void* allocatePages(long n, bool clear){
 	void* res;
 	size_t size = n*PAGE_SIZE;
 
-	physical_address_t addr = PMM_allocatePages(n);
+	paddr_t addr = PMM_allocatePages(n);
 	if (addr == 0) return NULL;
 	res = (void*) VMM_mapInHeap(addr, n, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 
@@ -477,8 +477,8 @@ static void* allocatePages(long n, bool clear){
 }
 
 static void freePages(void* pages, long n){
-	physical_address_t addr = VMM_toPhysical((virtual_address_t) pages);
-	VMM_unmap((virtual_address_t)pages, n);
+	paddr_t addr = VMM_toPhysical((vaddr_t) pages);
+	VMM_unmap((vaddr_t)pages, n);
 	PMM_freePages(addr, n);
 }
 

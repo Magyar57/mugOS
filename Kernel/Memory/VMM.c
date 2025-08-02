@@ -22,8 +22,8 @@ static constexpr uint64_t m_hsdmSize = 0x0000100000000000; // 0xffffd00000000000
 static bool m_pagingInitialized = false;
 
 struct Mapping {
-	physical_address_t phys;
-	physical_address_t virt;
+	paddr_t phys;
+	paddr_t virt;
 	uint64_t n_pages;
 	int flags;
 };
@@ -48,11 +48,11 @@ void VMM_init(){
 
 // ================ Map memory ================
 
-void VMM_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
+void VMM_map(paddr_t phys, vaddr_t virt, uint64_t n_pages, int flags){
 	return Paging_map(phys, virt, n_pages, flags);
 }
 
-void VMM_premap(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
+void VMM_premap(paddr_t phys, vaddr_t virt, uint64_t n_pages, int flags){
 	if (m_nPremappings >= MAX_PREMAPPINGS){
 		log(PANIC, MODULE, "Cannot pre-map more than %d times !!", MAX_PREMAPPINGS);
 		panic();
@@ -65,32 +65,32 @@ void VMM_premap(physical_address_t phys, virtual_address_t virt, uint64_t n_page
 	m_nPremappings++;
 }
 
-virtual_address_t VMM_mapInHHDM(physical_address_t addr){
+vaddr_t VMM_mapInHHDM(paddr_t addr){
 	assert(m_hhdmOffset != HHDM_BULLSHIT_VALUE);
 	return addr + m_hhdmOffset;
 }
 
-virtual_address_t VMM_mapInHeap(physical_address_t addr, uint64_t n_pages, int flags){
+vaddr_t VMM_mapInHeap(paddr_t addr, uint64_t n_pages, int flags){
 	if (addr >= m_hsdmSize){
 		log(PANIC, MODULE,
 			"Heap structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_hsdmSize));
 		panic();
 	}
 
-	virtual_address_t mapped_addr = addr + m_hsdmOffset;
+	vaddr_t mapped_addr = addr + m_hsdmOffset;
 	VMM_map(addr, mapped_addr, n_pages, flags);
 	return mapped_addr;
 }
 
 // ================ Unmap memory ================
 
-void VMM_unmap(virtual_address_t addr, uint64_t n_pages){
+void VMM_unmap(vaddr_t addr, uint64_t n_pages){
 	return Paging_unmap(addr, n_pages);
 }
 
 // ================ Physical -> Virtual ================
 
-physical_address_t VMM_toPhysical(virtual_address_t addr){
+paddr_t VMM_toPhysical(vaddr_t addr){
 	// Special regions: direct mappings, easy
 	if (addr & (0xfffff00000000000)){
 		return addr & ~0xfffff00000000000;
@@ -106,12 +106,12 @@ physical_address_t VMM_toPhysical(virtual_address_t addr){
 
 // ================ Virtual -> Physical ================
 
-virtual_address_t VMM_toHHDM(physical_address_t addr){
+vaddr_t VMM_toHHDM(paddr_t addr){
 	assert(m_hhdmOffset != HHDM_BULLSHIT_VALUE);
 	return addr + m_hhdmOffset;
 }
 
-virtual_address_t VMM_toHeap(physical_address_t addr){
+vaddr_t VMM_toHeap(paddr_t addr){
 	return addr + m_hsdmOffset;
 }
 

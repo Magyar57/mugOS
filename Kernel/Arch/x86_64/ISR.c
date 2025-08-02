@@ -15,7 +15,7 @@
 
 // Global array of [un]registered exception/trap handlers
 // It is handled (edited) in ISR.c, and handlers are called in ISR.asm
-ISR g_handlers[256];
+isr_t g_handlers[256];
 
 static const char* const EXCEPTION_TYPES[] = {
     "Exception (Fault) - Divide by zero error",
@@ -160,7 +160,7 @@ void ISR_init(){
 	ISR_installHandler(ISR_PAGE_FAULT, ISR_pageFault);
 }
 
-void ISR_installHandler(uint8_t vector, ISR handler){
+void ISR_installHandler(uint8_t vector, isr_t handler){
 	g_handlers[vector] = handler;
 }
 

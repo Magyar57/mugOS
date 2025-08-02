@@ -18,14 +18,14 @@ enum MemoryType {
 
 struct MemoryMap {
 	size_t totalUsableMemory; // in bytes
-	physical_address_t firstUsablePage;
-	physical_address_t lastUsablePage;
-	physical_address_t kernelAddress;
+	paddr_t firstUsablePage;
+	paddr_t lastUsablePage;
+	paddr_t kernelAddress;
 	size_t kernelSize;
 
 	int size; // number of MemoryMapEntry in entries
 	struct MemoryMapEntry {
-		physical_address_t address;
+		paddr_t address;
 		uint64_t length;
 		enum MemoryType type;
 	} entries[MMAP_MAX_ENTRIES];

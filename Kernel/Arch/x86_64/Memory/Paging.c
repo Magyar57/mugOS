@@ -32,14 +32,14 @@
 // Virtual address = [ [ PML4 ] [ Directory Ptr ] [ Directory ] [ Table ] [ Offset ] ]
 //            bits = [ 47    39 38             30 29         21 20     12 11       0 ]
 
-#define getIndexPML4(addr) 						( ( (virtual_address_t )addr & 0x0000ff8000000000) >> 39 )
-#define getIndexPageDirectoryPointerTable(addr)	( ( (virtual_address_t )addr & 0x0000007fc0000000) >> 30 )
-#define getIndexPageDirectory(addr)				( ( (virtual_address_t )addr & 0x000000003fe00000) >> 21 )
-#define getIndexPageTable(addr)					( ( (virtual_address_t )addr & 0x00000000001ff000) >> 12 )
+#define getIndexPML4(addr) 						( ( (vaddr_t )addr & 0x0000ff8000000000) >> 39 )
+#define getIndexPageDirectoryPointerTable(addr)	( ( (vaddr_t )addr & 0x0000007fc0000000) >> 30 )
+#define getIndexPageDirectory(addr)				( ( (vaddr_t )addr & 0x000000003fe00000) >> 21 )
+#define getIndexPageTable(addr)					( ( (vaddr_t )addr & 0x00000000001ff000) >> 12 )
 
-#define get4KBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000fffffffff000) >> 12 )
-#define get2MBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000ffffffe00000) >> 21 )
-#define get1GBEntryAddress(addr)				( ( (physical_address_t)addr & 0x0000ffffc0000000) >> 30 )
+#define get4KBEntryAddress(addr)				( ( (paddr_t)addr & 0x0000fffffffff000) >> 12 )
+#define get2MBEntryAddress(addr)				( ( (paddr_t)addr & 0x0000ffffffe00000) >> 21 )
+#define get1GBEntryAddress(addr)				( ( (paddr_t)addr & 0x0000ffffc0000000) >> 30 )
 #define getTableEntryAddress(addr) 				get4KBEntryAddress(addr)
 
 #define getEntryAddress(entry_addr)				((entry_addr) << 12)
@@ -64,7 +64,7 @@ struct PDTPDescriptor {
 	uint64_t reserved0 : 1;
 	uint64_t ignored1 : 3;
 	uint64_t restart : 1; // Used if using HLAT paging
-	physical_address_t address : ADDRESS_SIZE-12;
+	paddr_t address : ADDRESS_SIZE-12;
 	uint64_t reserved1 : 52-ADDRESS_SIZE;
 	uint64_t ignored2 : 11;
 	uint64_t executeDisabled : 1;
@@ -82,7 +82,7 @@ struct PageDirectoryDescriptor {
 	uint64_t pageSize : 1; // Must be zero (otherwise, this would be a PageDescriptor1GB)
 	uint64_t ignored1 : 3;
 	uint64_t restart : 1; // Used if using HLAT paging
-	physical_address_t address : ADDRESS_SIZE-12;
+	paddr_t address : ADDRESS_SIZE-12;
 	uint64_t reserved : 52-ADDRESS_SIZE;
 	uint64_t ignored2 : 11;
 	uint64_t executeDisabled : 1;
@@ -103,7 +103,7 @@ struct PageDescriptor1GB {
 	uint64_t restart : 1; // Used if using HLAT paging
 	uint64_t pat : 1;
 	uint64_t reserved0 : 17;
-	physical_address_t address : ADDRESS_SIZE-30; // @phys of the 1GB page (ADDRESS_SIZE-30 bits)
+	paddr_t address : ADDRESS_SIZE-30; // @phys of the 1GB page (ADDRESS_SIZE-30 bits)
 	uint64_t reserved1 : 52-ADDRESS_SIZE;
 	uint64_t ignored1 : 7;
 	uint64_t protectionKey : 4;
@@ -128,7 +128,7 @@ struct PageTableDescriptor {
 	uint64_t pageSize : 1; // Must be zero (otherwise, this would be a PageDescriptor2MB)
 	uint64_t ignored1 : 3;
 	uint64_t restart : 1; // Used if using HLAT paging
-	physical_address_t address : ADDRESS_SIZE-12;
+	paddr_t address : ADDRESS_SIZE-12;
 	uint64_t reserved : 52-ADDRESS_SIZE;
 	uint64_t ignored2 : 11;
 	uint64_t executeDisabled : 1;
@@ -149,7 +149,7 @@ struct PageDescriptor2MB {
 	uint64_t restart : 1; // Used if using HLAT paging
 	uint64_t pat : 1;
 	uint64_t reserved0 : 8;
-	physical_address_t address : ADDRESS_SIZE-21; // @phys of the 2MB page (ADDRESS_SIZE-21 bits)
+	paddr_t address : ADDRESS_SIZE-21; // @phys of the 2MB page (ADDRESS_SIZE-21 bits)
 	uint64_t reserved1 : 52-ADDRESS_SIZE;
 	uint64_t ignored1 : 7;
 	uint64_t protectionKey : 4;
@@ -175,7 +175,7 @@ struct PageDescriptor4KB {
 	uint64_t global : 1;
 	uint64_t ignored0 : 2;
 	uint64_t restart : 1; // Used if HLAT set
-	physical_address_t address : ADDRESS_SIZE-12; // @phys of the 4KB page (ADDRESS_SIZE-12 bits)
+	paddr_t address : ADDRESS_SIZE-12; // @phys of the 4KB page (ADDRESS_SIZE-12 bits)
 	uint64_t reserved : 52-ADDRESS_SIZE;
 	uint64_t ignored1 : 7;
 	uint64_t protectionKey : 4; // Used if CR4.PKE or CR4.PKS are set
@@ -204,7 +204,7 @@ compile_assert(sizeof(m_pml4) == PAGE_SIZE);
 // -> Concerns bits PWT "writeThrough", PCD "cacheDisabled"
 
 // Paging.asm
-bool setPML4(physical_address_t pml4);
+bool setPML4(paddr_t pml4);
 void flushTLB(void* addr);
 
 // ================ Paging_map ================
@@ -213,13 +213,13 @@ void flushTLB(void* addr);
 // Those are used by Paging_map when needing to access/modify tables.
 // We have 3 pages permanently map, that are switched dynamically to a table
 // when said table needs to be accessed. It avoids mapping permanenlty all tables :)
-static constexpr virtual_address_t m_dynamicPDPT = 0xffffffffffffd000;
-static constexpr virtual_address_t m_dynamicPD   = 0xffffffffffffe000;
-static constexpr virtual_address_t m_dynamicPT   = 0xfffffffffffff000;
+static constexpr vaddr_t m_dynamicPDPT = 0xffffffffffffd000;
+static constexpr vaddr_t m_dynamicPD   = 0xffffffffffffe000;
+static constexpr vaddr_t m_dynamicPT   = 0xfffffffffffff000;
 // PageTable in which the dynamic tables are mapped in (for dynamically mapping said tables)
 static struct PageTableDescriptor* m_dynamicTablesHost = (void*) 0xffffffffffffc000;
 
-static inline void* mapDynamicPDPT(physical_address_t addr){
+static inline void* mapDynamicPDPT(paddr_t addr){
 	if (!m_enabled)
 		return (void*) VMM_mapInHHDM(addr);
 
@@ -228,7 +228,7 @@ static inline void* mapDynamicPDPT(physical_address_t addr){
 	return (void*) m_dynamicPDPT;
 }
 
-static inline void* mapDynamicPD(physical_address_t addr){
+static inline void* mapDynamicPD(paddr_t addr){
 	if (!m_enabled)
 		return (void*) VMM_mapInHHDM(addr);
 
@@ -237,7 +237,7 @@ static inline void* mapDynamicPD(physical_address_t addr){
 	return (void*) m_dynamicPD;
 }
 
-static inline void* mapDynamicPT(physical_address_t addr){
+static inline void* mapDynamicPT(paddr_t addr){
 	if (!m_enabled)
 		return (void*) VMM_mapInHHDM(addr);
 
@@ -246,7 +246,7 @@ static inline void* mapDynamicPT(physical_address_t addr){
 	return (void*) m_dynamicPT;
 }
 
-static void set4KBPage(struct PageDescriptor4KB* entry, physical_address_t addr, int flags){
+static void set4KBPage(struct PageDescriptor4KB* entry, paddr_t addr, int flags){
 	assert(!entry->present);
 
 	entry->present = true;
@@ -265,7 +265,7 @@ static void set4KBPage(struct PageDescriptor4KB* entry, physical_address_t addr,
 	entry->executeDisabled = !(flags & PAGE_EXEC);
 }
 
-static void set2MBPage(struct PageDescriptor2MB* entry, physical_address_t addr, int flags){
+static void set2MBPage(struct PageDescriptor2MB* entry, paddr_t addr, int flags){
 	assert(!entry->present);
 
 	entry->present = true;
@@ -286,7 +286,7 @@ static void set2MBPage(struct PageDescriptor2MB* entry, physical_address_t addr,
 	entry->executeDisabled = !(flags & PAGE_EXEC);
 }
 
-static void set1GBPage(struct PageDescriptor1GB* entry, physical_address_t addr, int flags){
+static void set1GBPage(struct PageDescriptor1GB* entry, paddr_t addr, int flags){
 	assert(!entry->present);
 	assert(m_has1GBPages);
 
@@ -308,8 +308,8 @@ static void set1GBPage(struct PageDescriptor1GB* entry, physical_address_t addr,
 	entry->executeDisabled = !(flags & PAGE_EXEC);
 }
 
-static physical_address_t allocatePageOrPanic(){
-	physical_address_t res = PMM_allocatePages(1);
+static paddr_t allocatePageOrPanic(){
+	paddr_t res = PMM_allocatePages(1);
 	if (!res){
 		log(PANIC, MODULE, "Could not allocate necessary paging structure !");
 		panic();
@@ -320,7 +320,7 @@ static physical_address_t allocatePageOrPanic(){
 
 static inline union PageDirectoryPointerTableEntry* getPDP(struct PDTPDescriptor* entry, bool alloc){
 	union PageDirectoryPointerTableEntry* pdp;
-	physical_address_t page_phys;
+	paddr_t page_phys;
 
 	if (entry->present)
 		return mapDynamicPDPT(getEntryAddress(entry->address));
@@ -352,7 +352,7 @@ static inline union PageDirectoryPointerTableEntry* getPDP(struct PDTPDescriptor
 
 static inline union PageDirectoryEntry* getPD(union PageDirectoryPointerTableEntry* entry, bool alloc){
 	union PageDirectoryEntry* pd;
-	physical_address_t page_phys;
+	paddr_t page_phys;
 
 	if (entry->pageDirectory.present)
 		return mapDynamicPD(getEntryAddress(entry->pageDirectory.address));
@@ -384,7 +384,7 @@ static inline union PageDirectoryEntry* getPD(union PageDirectoryPointerTableEnt
 
 static inline struct PageDescriptor4KB* getPT(union PageDirectoryEntry* entry, bool alloc){
 	struct PageDescriptor4KB* pt;
-	physical_address_t page_phys;
+	paddr_t page_phys;
 
 	if (entry->pageTable.present)
 		return mapDynamicPT(getEntryAddress(entry->pageTable.address));
@@ -414,12 +414,12 @@ static inline struct PageDescriptor4KB* getPT(union PageDirectoryEntry* entry, b
 	return pt;
 }
 
-void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags){
+void Paging_map(paddr_t phys, vaddr_t virt, uint64_t n_pages, int flags){
 	union PageDirectoryPointerTableEntry* cur_pdp;
 	union PageDirectoryEntry* cur_pd;
 	struct PageDescriptor4KB* cur_pt;
-	physical_address_t phys_cur = phys;
-	virtual_address_t virt_cur = virt;
+	paddr_t phys_cur = phys;
+	vaddr_t virt_cur = virt;
 
 	uint64_t mappable;
 	uint64_t pages_remaining = n_pages; // in 4KB pages
@@ -493,15 +493,15 @@ static void freeTable(void* table){
 	struct PageDescriptor4KB* polymorphic_table = table;
 	polymorphic_table->present = false;
 
-	physical_address_t phys = getEntryAddress(polymorphic_table->address);
+	paddr_t phys = getEntryAddress(polymorphic_table->address);
 	PMM_freePages(phys, 1);
 }
 
-void Paging_unmap(virtual_address_t virt, uint64_t n_pages){
+void Paging_unmap(vaddr_t virt, uint64_t n_pages){
 	union PageDirectoryPointerTableEntry* cur_pdp;
 	union PageDirectoryEntry* cur_pd;
 	struct PageDescriptor4KB* cur_pt;
-	virtual_address_t virt_cur = virt;
+	vaddr_t virt_cur = virt;
 
 	uint64_t removable;
 	uint64_t pages_remaining = n_pages; // in 4KB pages
@@ -616,8 +616,8 @@ static void initializeFeatures(){
 static inline void mapKernel(){
 	extern uint8_t LOAD_ADDRESS;
 	extern uint8_t __text_start, __rodata_start, __data_start;
-	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
-	virtual_address_t kernel_virt = (virtual_address_t) &LOAD_ADDRESS;
+	paddr_t kernel_phys = g_memoryMap.kernelAddress;
+	vaddr_t kernel_virt = (vaddr_t) &LOAD_ADDRESS;
 
 	// Compute size (in #pages) of kernel regions to map
 	// Note: since the __end symbol from the linker map points before the actual end of the bss,
@@ -626,16 +626,16 @@ static inline void mapKernel(){
 	uint64_t rodata_size = (&__data_start - &__rodata_start) / PAGE_SIZE;
 
 	uint64_t data_size = (g_memoryMap.kernelSize/PAGE_SIZE - (rodata_size+text_size));
-	physical_address_t ktext_phys = (physical_address_t)&__text_start - kernel_virt + kernel_phys;
-	physical_address_t rodata_phys = (physical_address_t)&__rodata_start - kernel_virt + kernel_phys;
-	physical_address_t data_phys = (physical_address_t)&__data_start - kernel_virt + kernel_phys;
+	paddr_t ktext_phys = (paddr_t)&__text_start - kernel_virt + kernel_phys;
+	paddr_t rodata_phys = (paddr_t)&__rodata_start - kernel_virt + kernel_phys;
+	paddr_t data_phys = (paddr_t)&__data_start - kernel_virt + kernel_phys;
 
 	// .text section: r-x
-	Paging_map(ktext_phys, (virtual_address_t) &__text_start, text_size, PAGE_READ|PAGE_EXEC|PAGE_KERNEL);
+	Paging_map(ktext_phys, (vaddr_t) &__text_start, text_size, PAGE_READ|PAGE_EXEC|PAGE_KERNEL);
 	// .rodata section: r--
-	Paging_map(rodata_phys, (virtual_address_t) &__rodata_start, rodata_size, PAGE_READ|PAGE_KERNEL);
+	Paging_map(rodata_phys, (vaddr_t) &__rodata_start, rodata_size, PAGE_READ|PAGE_KERNEL);
 	// .data and .bss sections: rw-
-	Paging_map(data_phys, (virtual_address_t) &__data_start, data_size, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+	Paging_map(data_phys, (vaddr_t) &__data_start, data_size, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 }
 
 void mapDynamicTables(){
@@ -653,10 +653,10 @@ void mapDynamicTables(){
 	uint64_t pd_index = getIndexPageDirectory(m_dynamicPDPT);
 	struct PDTPDescriptor* pdpt = (void*) VMM_toHHDM(getEntryAddress(m_pml4[pml4_index].address));
 	struct PageTableDescriptor* pd = (void*) VMM_toHHDM(getEntryAddress(pdpt[pdp_index].address));
-	physical_address_t pt_phys = getEntryAddress(pd[pd_index].address);
+	paddr_t pt_phys = getEntryAddress(pd[pd_index].address);
 
 	// Now that we have our physical address, map it
-	Paging_map(pt_phys, (virtual_address_t) m_dynamicTablesHost, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+	Paging_map(pt_phys, (vaddr_t) m_dynamicTablesHost, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 }
 
 void Paging_initTables(){
@@ -702,13 +702,13 @@ void Paging_initTables(){
 
 void Paging_enable(){
 	extern uint8_t LOAD_ADDRESS;
-	physical_address_t kernel_phys = g_memoryMap.kernelAddress;
-	virtual_address_t kernel_virt = (virtual_address_t) &LOAD_ADDRESS;
+	paddr_t kernel_phys = g_memoryMap.kernelAddress;
+	vaddr_t kernel_virt = (vaddr_t) &LOAD_ADDRESS;
 
 	// Now load our page table
 	// Note: g_pml4 is not in the HHDM region, so we cannot use VMM_hhdm_virtualToPhysical
 	// It is in the kernel data section, so we use the kernel code offset
-	physical_address_t pml4_phys = kernel_phys + ((uint64_t)m_pml4 - kernel_virt);
+	paddr_t pml4_phys = kernel_phys + ((uint64_t)m_pml4 - kernel_virt);
 	bool res = setPML4(pml4_phys);
 	if (!res){
 		log(PANIC, MODULE, "Could not set page table !!");

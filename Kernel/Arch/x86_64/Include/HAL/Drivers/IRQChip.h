@@ -10,7 +10,7 @@
 struct IRQChip {
 	void (*init)(void);
 	void (*sendEOI)(int irq);
-	void (*installPrehandler)(IRQHandler prehandler);
+	void (*installPrehandler)(irqhandler_t prehandler);
 };
 
 // Get the plateform's (best) IRQ chip

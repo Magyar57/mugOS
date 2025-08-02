@@ -11,14 +11,14 @@ struct ISR_Params {
 	uint64_t rip, cs, rflags, rsp, ss;
 } packed;
 
-typedef void (*ISR)(struct ISR_Params*);
+typedef void (*isr_t)(struct ISR_Params*);
 
 /// @brief Initialize the ISR (Interrupt Service Routines) in the IDT
 /// @note Call IDT_init beforehand !
 void ISR_init();
 
 /// @brief Install a handler for a given interrupt vector
-void ISR_installHandler(uint8_t vector, ISR handler);
+void ISR_installHandler(uint8_t vector, isr_t handler);
 
 /// @brief Remove (clear) a handler for a given interrupt vector
 void ISR_removeHandler(uint8_t vector);

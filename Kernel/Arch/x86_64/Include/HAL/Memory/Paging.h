@@ -20,10 +20,10 @@ void Paging_initTables();
 /// @brief Actually loads CR3 with our root page table. Call `Paging_initTables` first !
 void Paging_enable();
 
-void Paging_unmap(virtual_address_t virt, uint64_t n_pages);
+void Paging_unmap(vaddr_t virt, uint64_t n_pages);
 
 /// @brief Map `n_pages` pages from physical address `phys` to virtual `virt`.
 /// See the `PAGE_`-prefixed macros for flag informations
-void Paging_map(physical_address_t phys, virtual_address_t virt, uint64_t n_pages, int flags);
+void Paging_map(paddr_t phys, vaddr_t virt, uint64_t n_pages, int flags);
 
 #endif

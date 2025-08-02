@@ -200,8 +200,8 @@ static void parseXSDT(struct XSDT* xsdt){
 
 	// Parse available tables
 	for (int i=0 ; i<m_nTables ; i++){
-		physical_address_t table_phys = xsdt->tables[i];
-		virtual_address_t table_virt = table_phys | VMM_KERNEL_MEMORY;
+		paddr_t table_phys = xsdt->tables[i];
+		vaddr_t table_virt = table_phys | VMM_KERNEL_MEMORY;
 		VMM_map(table_phys, table_virt, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 
 		struct SDTHeader* hdr = (struct SDTHeader*) table_virt;
@@ -224,8 +224,8 @@ static void parseXSDT(struct XSDT* xsdt){
 }
 
 void ACPI_init(){
-	physical_address_t rsdp_phys = (physical_address_t) g_rsdpReq.response->address;
-	virtual_address_t tempRsdp = rsdp_phys | VMM_KERNEL_MEMORY;
+	paddr_t rsdp_phys = (paddr_t) g_rsdpReq.response->address;
+	vaddr_t tempRsdp = rsdp_phys | VMM_KERNEL_MEMORY;
 	VMM_map(rsdp_phys, tempRsdp, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 
 	// Parse RSDP
@@ -248,7 +248,7 @@ void ACPI_init(){
 	log(INFO, MODULE, "Found RSDP revision %d from OEM '%s' ", rsdp->revision, oem);
 
 	// Parse XSDT, and the tables it references
-	virtual_address_t tempXsdt = rsdp->xsdtAddress | VMM_KERNEL_MEMORY;
+	vaddr_t tempXsdt = rsdp->xsdtAddress | VMM_KERNEL_MEMORY;
 	VMM_map(rsdp->xsdtAddress, tempXsdt, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
 	parseXSDT((struct XSDT*) tempXsdt);
 

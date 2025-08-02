@@ -210,20 +210,18 @@ static void handleSpuriousIRQ(struct ISR_Params* params){
 	}
 }
 
-static physical_address_t getAPICAddress(){
+static paddr_t getAPICAddress(){
 	if (!g_MADTPresent)
 		return APIC_REGISTERS_ADDR_DEFAULT;
 
-	physical_address_t addr = (physical_address_t) g_MADT.localApicAddress;
-
 	if (g_MADT.nLAPIC_ADDR_OVERRIDE == 0)
-		return addr;
+		return (paddr_t) g_MADT.localApicAddress;
 
 	if (g_MADT.nLAPIC_ADDR_OVERRIDE > 1)
 		log(WARNING, MODULE_APIC, "Found several APIC address overrides, should not happen !!");
 
 	log(INFO, MODULE_APIC, "Found APIC address override, using its address");
-	return (physical_address_t) g_MADT.LAPIC_ADDR_OVERRIDEs[0].address;
+	return (paddr_t) g_MADT.LAPIC_ADDR_OVERRIDEs[0].address;
 }
 
 /// @brief Apply the NMI configurations (given by ACPI) to the LINT pins
@@ -266,8 +264,8 @@ void APIC_init(){
 	Registers_writeMSR(MSR_ADDR_IA32_APIC_BASE, apic_base.value);
 
 	// If ACPI MADT is present, use the address it provides
-	physical_address_t apic_regs_phys = getAPICAddress();
-	virtual_address_t apics_regs_virt = apic_regs_phys | VMM_KERNEL_MEMORY;
+	paddr_t apic_regs_phys = getAPICAddress();
+	vaddr_t apics_regs_virt = apic_regs_phys | VMM_KERNEL_MEMORY;
 	m_apicRegs = (uint8_t*) apics_regs_virt;
 
 	// Memory-map the APIC registers
@@ -317,7 +315,7 @@ void APIC_sendEIO(int){
 	writeRegister32(APIC_REG_EOI, 0);
 }
 
-void APIC_wakeCPU(int lapicID, physical_address_t entry){
+void APIC_wakeCPU(int lapicID, paddr_t entry){
 	// Send an INIT IPI
 	union InterruptCommandRegister icr;
 	icr.value = 0;

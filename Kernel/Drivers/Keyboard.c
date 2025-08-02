@@ -22,9 +22,9 @@ static bool m_leftMetaPressed;
 static bool m_rightMetaPressed;
 
 #define MAX_CALLBACKS 16
-KeyCallback g_callbacks[MAX_CALLBACKS];
+keycallback_t g_callbacks[MAX_CALLBACKS];
 
-static char getNumpadKey_NoNumluck(Keycode k){
+static char getNumpadKey_NoNumluck(keycode_t k){
 	switch (k){
 		case KEY_NUMPAD_7: return KEY_HOME;
 		case KEY_NUMPAD_8: return KEY_UP;
@@ -41,9 +41,9 @@ static char getNumpadKey_NoNumluck(Keycode k){
 	}
 }
 
-/// @returns Whether the Keycode `k` is a numpad key THAT DO CHANGE depending on the NumLock state
+/// @returns Whether the keycode_t `k` is a numpad key THAT DO CHANGE depending on the NumLock state
 ///          e.g. KEY_NUMPAD_ENTER returns false !
-static inline bool isNumpadKey(Keycode k){
+static inline bool isNumpadKey(keycode_t k){
 	switch (k){
 		case KEY_NUMPAD_7: return true;
 		case KEY_NUMPAD_8: return true;
@@ -60,9 +60,9 @@ static inline bool isNumpadKey(Keycode k){
 	}
 }
 
-// ================ Get printable character from corresponding Keycode ================
+// ================ Get printable character from corresponding keycode_t ================
 
-static char getChar_AZERTY_NoModifier(Keycode k){
+static char getChar_AZERTY_NoModifier(keycode_t k){
 	switch (k){
 		case KEY_RESERVED:			return (char) 0;
 		case KEY_1:					return '&';
@@ -137,7 +137,7 @@ static char getChar_AZERTY_NoModifier(Keycode k){
 	}
 }
 
-static char getChar_AZERTY_CapsLock(Keycode k){
+static char getChar_AZERTY_CapsLock(keycode_t k){
 		switch (k){
 		case KEY_RESERVED:			return (char) 0;
 		case KEY_1:					return '&';
@@ -212,7 +212,7 @@ static char getChar_AZERTY_CapsLock(Keycode k){
 	}
 }
 
-static char getChar_AZERTY_ShiftAltGr(Keycode k){
+static char getChar_AZERTY_ShiftAltGr(keycode_t k){
 		switch (k){
 		case KEY_RESERVED:			return (char) 0;
 		case KEY_1:					return (char) 173; // ¡
@@ -287,7 +287,7 @@ static char getChar_AZERTY_ShiftAltGr(Keycode k){
 	}
 }
 
-static char getChar_AZERTY_AltGr(Keycode k){
+static char getChar_AZERTY_AltGr(keycode_t k){
 		switch (k){
 		case KEY_RESERVED:			return (char) 0;
 		case KEY_1:					return (char) 0; // ¹
@@ -362,7 +362,7 @@ static char getChar_AZERTY_AltGr(Keycode k){
 	}
 }
 
-static char getChar_AZERTY_Shift(Keycode k){
+static char getChar_AZERTY_Shift(keycode_t k){
 	switch (k){
 		case KEY_RESERVED:			return (char) 0;
 		case KEY_1:					return '1';
@@ -439,7 +439,7 @@ static char getChar_AZERTY_Shift(Keycode k){
 
 // Returns the ASCII char corresponding to the keycode, in AZERTY (Q is A, W is Z...)
 // If 'keycode' is non printable, returns 0
-static char getChar_AZERTY(Keycode k){
+static char getChar_AZERTY(keycode_t k){
 	// Only shift
 	if ((m_leftShiftPressed || m_rightShiftPressed) && !m_rightAltPressed && !m_capslockOn)
 		return getChar_AZERTY_Shift(k);
@@ -471,14 +471,14 @@ static inline int findAvailableCallbackIndex(){
 	return -1;
 }
 
-static inline void executeCallbacks(Keycode keycode, int character, enum KeypressMode mode, uint8_t modifierKeys){
+static inline void executeCallbacks(keycode_t keycode, int character, enum KeypressMode mode, uint8_t modifierKeys){
 	for(int i=0 ; i<MAX_CALLBACKS ; i++){
 		if (g_callbacks[i] == NULL) continue;
 		g_callbacks[i](keycode, character, mode, modifierKeys);
 	}
 }
 
-static void keyCallback_printKey(Keycode keycode, int character, enum KeypressMode mode, uint8_t){
+static void keyCallback_printKey(keycode_t keycode, int character, enum KeypressMode mode, uint8_t){
 	const char* mode_string = (mode == KB_KEYMODE_KEY_PRESSED) ? "pressed " : "released";
 
 	// Non-printable key
@@ -500,7 +500,7 @@ static void keyCallback_printKey(Keycode keycode, int character, enum KeypressMo
 	debug("key %s %#.2x '%c'", mode_string, keycode, character);
 }
 
-bool Keyboard_registerKeyCallback(KeyCallback callback){
+bool Keyboard_registerKeyCallback(keycallback_t callback){
 	int index = findAvailableCallbackIndex();
 	if (index == -1) return false;
 
@@ -508,7 +508,7 @@ bool Keyboard_registerKeyCallback(KeyCallback callback){
 	return true;
 }
 
-void Keyboard_unregisterKeyCallback(KeyCallback callback){
+void Keyboard_unregisterKeyCallback(keycallback_t callback){
 	for (int i=0 ; i<MAX_CALLBACKS ; i++){
 		if (g_callbacks[i] == callback){
 			g_callbacks[i] = NULL;
@@ -516,7 +516,7 @@ void Keyboard_unregisterKeyCallback(KeyCallback callback){
 	}
 }
 
-const char* Keyboard_getKeyString(Keycode keycode){
+const char* Keyboard_getKeyString(keycode_t keycode){
 	switch (keycode){
 		case KEY_ESC:			return "ESC";
 		case KEY_BACKSPACE: 	return "BACKSPACE";
@@ -616,7 +616,7 @@ void Keyboard_init(){
 	log(SUCCESS, MODULE, "Initialization success");
 }
 
-void Keyboard_notifyReleased(Keycode keycode){
+void Keyboard_notifyReleased(keycode_t keycode){
 	switch (keycode){
 		case KEY_LCTRL:
 			m_rightCtrlPressed = false;
@@ -744,7 +744,7 @@ void Keyboard_notifyReleased(Keycode keycode){
 	executeCallbacks(keycode, (int) c, KB_KEYMODE_KEY_RELEASED, m_modifierKeys);
 }
 
-void Keyboard_notifyPressed(Keycode keycode){
+void Keyboard_notifyPressed(keycode_t keycode){
 	switch (keycode){
 		case KEY_LCTRL:
 			m_rightCtrlPressed = true;
