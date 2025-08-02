@@ -18,7 +18,7 @@
 
 // Memory-mapped APIC registers page address
 #define APIC_REGISTERS_ADDR_DEFAULT 0x00000000fee00000
-volatile static void* m_apicRegs;
+static volatile void* m_apicRegs;
 
 // Memory-mapped APIC registers offsets in the page
 #define APIC_REG_ID						0x020

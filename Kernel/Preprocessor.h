@@ -20,7 +20,9 @@
 
 #define compile_assert(condition) static_assert(condition, "Compile-time assertion failed: " # condition)
 
+#ifndef unreachable
 #define unreachable() __builtin_unreachable()
+#endif
 
 // https://stackoverflow.com/questions/3437404/min-and-max-in-c
 #define min(a,b) \

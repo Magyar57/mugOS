@@ -17,7 +17,7 @@ struct CPUInfo* g_CPUInfos;
 
 // EntryAP.asm
 extern void entryAP();
-extern void endEntryAP; // label in EntryAP.asm
+extern uint8_t endEntryAP; // label in EntryAP.asm
 
 static inline void setCPUInfo(struct CPUInfo* info){
 	Registers_writeMSR(MSR_ADDR_IA32_GS_BASE, (uintptr_t) info);
