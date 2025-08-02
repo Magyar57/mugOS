@@ -6,7 +6,8 @@ See:
 - The [general](./Docs/General.md) documentation for OS features
 - The [building](./Docs/Building.md) documentation for building locally, or with docker
 - The [running](./Docs/Running.md) documentation for emulation, debugging, or running on hardware
-- The [roadmap](./Docs/Roadmap.md) for future plans.
+- The [roadmap](./Docs/Roadmap.md) for future plans
+- The [coding style](./Docs/CodingStyle.md) if you want to contribute
 
 ## Try it yourself !
 

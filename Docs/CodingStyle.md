@@ -5,15 +5,16 @@ This document describe the coding style that the project's code follows.
 Note: a 'typedef' and a 'type alias', or simply 'alias', are the same thing
 
 - [Kernighan & Ritchie](https://en.wikipedia.org/wiki/Indentation_style#K&R) style brackets
-- Tabs are 4 spaces wide, and use the '\t' character
+- Tabs are 4 spaces wide, and use the `'\t'` character
 - Structs and enums should **NOT** be typedef-ed, unless for abstraction or OOP (see below)
 
-- By default, names are lowerCamelCase (function names, attributes, global variables, etc)
-- Local variables *can* be snake_case
-- Global variables are prefixed with 'g_': 'g_someGlobalVariable'
+- Functions, parameters, variables and members are lowerCamelCase
+- But local variables *can be* snake_case
+- Global variables are prefixed with `g_`: `g_someGlobalVariable`
 - Un-aliased structs and enums are UpperCamelCase (`struct MyStruct`)
-- Non-class types aliases are snake_case, with a `_t` suffix (eg [`irqhandler_t`](../Kernel/IRQ.h))
-- Macros that defines values (eg `define MY_MACRO 10`), and constant global variables are SCREAMING_SNAKE_CASE
+- Aliases are snake_case, with a `_t` suffix (eg [`irqhandler_t`](../Kernel/IRQ.h))
+- Macros that defines values (eg `#define MY_MACRO 10`), and constant global variables are SCREAMING_SNAKE_CASE
+- Macros that defines functions (eg `#define computeDouble(x) 2*x`) are lowerCamelCase
 
 - OOP may be used when necessary:
   - Modules and classes names are UpperCamelCase
@@ -21,8 +22,8 @@ Note: a 'typedef' and a 'type alias', or simply 'alias', are the same thing
     `ModuleName_functionName(...)`
   - Modules' privates members should always be `static` and prefixed with `m_` (instead of `g_`)
   - Do **NOT** define classes in modules, modules should only contain members and functions
-  - Classes should be typedef-ed, with either the UpperCamelCase name
-    (eg [`Framebuffer`](../Kernel/Drivers/Graphics/Framebuffer.h)), or a non-class type alias
+  - Classes must be typedef-ed, with either the UpperCamelCase name
+    (eg [`Framebuffer`](../Kernel/Drivers/Graphics/Framebuffer.h)), or follow the regular alias rule
   - Methods should be prefixed with the UpperCamelCase class name,
     as modules: `ClassName_methodName(ClassName* this, ...)`
 
