@@ -14,7 +14,7 @@ Note 2: By default, it will build for the x86_64 architecture. If you wish to bu
 
 ## Compilers
 
-- x86_64 Clang (default): `TARGET_CC=clang --target=x86_64-none-elf`
+- x86_64 Clang (default): `TARGET_CC=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths`
 - x86_64 GCC: `TARGET_CC=x86_64-elf-gcc`
 
 ## Linkers

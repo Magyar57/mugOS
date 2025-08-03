@@ -22,7 +22,7 @@ GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-15.1.0/gcc-15.1.0.tar.gz
 # Compilation for target system
 export TARGET_ASM:=nasm
 export TARGET_ASMFLAGS:=-f elf64 -g -F dwarf
-export TARGET_CC:=clang --target=x86_64-none-elf
+export TARGET_CC:=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths
 export TARGET_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding -mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined
 export TARGET_LD:=ld.lld
 export TARGET_LDFLAGS:=-nostdlib -static
