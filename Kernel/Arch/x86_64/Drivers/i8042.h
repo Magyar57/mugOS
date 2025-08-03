@@ -8,7 +8,7 @@
 // Initialize the i8042 PS/2 controller
 void i8042_init();
 
-void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out, bool* translationOut);
+void i8042_getStatus(bool* enabled, bool* port1Valid, bool* port2Valid, bool* translation);
 void i8042_setDevicesIRQ(bool device1, bool device2);
 bool i8042_sendByteToDevice(int device, uint8_t byte);
 bool i8042_receiveByte(uint8_t* byte_out);

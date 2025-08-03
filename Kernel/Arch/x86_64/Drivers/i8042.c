@@ -75,8 +75,10 @@ static inline uint8_t readControllerConfigurationByte(){
 
 	sendCommand(PS2C_CMD_READ_CONFIG_BYTE);
 
-	if (!i8042_receiveByte(&res))
-		log(WARNING, MODULE, "Failed to read the Controller Configuration Byte !! Returned value is invalid");
+	if (!i8042_receiveByte(&res)){
+		log(WARNING, MODULE, "Failed to read the Controller Configuration Byte !!");
+		return 0x00;
+	}
 
 	return res;
 }
@@ -119,9 +121,9 @@ void i8042_init(){
 
 	// 6. Perform self-test
 	// However, according to: https://forum.osdev.org/viewtopic.php?t=57546
-	// we shouldn't use the PS/2 controller's self-test command as it can have unrecoverable side
-	// effects, and doesn't work correctly on hardware that is emulating a PS/2 controller in SMM.
-	// So we skip this part
+	// we shouldn't use the PS/2 controller's self-test command, as it can have
+	// unrecoverable side effects, and doesn't work correctly on hardware that
+	// is emulating a PS/2 controller in SMM. So we skip this part
 
 	// 7. Determine presence of port 2
 	sendCommand(PS2C_CMD_ENABLE_PORT2);
@@ -165,16 +167,15 @@ void i8042_init(){
 	// will be sent to the controller that could change it
 	m_configByte = readControllerConfigurationByte();
 
-	log(SUCCESS, MODULE, "Initalization success (port 1 %s, port 2 %s)", m_isPort1Valid ? "ON":"OFF", m_isPort2Valid ? "ON":"OFF");
-	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
-	IRQ_enableSpecific(IRQ_PS2_MOUSE);
+	log(SUCCESS, MODULE, "Initalization success (port 1 %s, port 2 %s)",
+		m_isPort1Valid ? "ON":"OFF", m_isPort2Valid ? "ON":"OFF");
 }
 
-void i8042_getStatus(bool* isEnabled_out, bool* port1Available_out, bool* port2Available_out, bool* translationOut){
-	*isEnabled_out = m_enabled;
-	*port1Available_out = m_isPort1Valid;
-	*port2Available_out = m_isPort2Valid;
-	*translationOut = m_translation;
+void i8042_getStatus(bool* enabled, bool* port1Valid, bool* port2Valid, bool* translation){
+	*enabled = m_enabled;
+	*port1Valid = m_isPort1Valid;
+	*port2Valid = m_isPort2Valid;
+	*translation = m_translation;
 }
 
 void i8042_setDevicesIRQ(bool device1, bool device2){
@@ -193,7 +194,8 @@ void i8042_setDevicesIRQ(bool device1, bool device2){
 	writeControllerConfigurationByte(m_configByte);
 }
 
-// Wait until a bit (given by the 'mask') in the status register evaluates to 'value', or we hit the timeout
+/// @brief Wait until a bit (given by the 'mask' argument) in the status register
+/// evaluates to 'value', or until we hit a timeout
 static inline bool waitUntilBitValueOrTimeout(uint8_t mask, uint8_t value){
 	int timer = 0;
 
