@@ -892,13 +892,15 @@ static bool receiveByte(uint8_t* byte_out){
 
 static void pushResponseBuffer(uint8_t value){
 	unsigned long flags;
-	IRQ_disableSave(flags); // lock the buffer (change for a lock here too)
+	IRQ_disableSave(flags); // lock the buffer (TODO: change for a lock here too)
 
-	if (m_inBuffer == RESPONSE_BUFFER_SIZE) goto end;
+	if (m_inBuffer == RESPONSE_BUFFER_SIZE){
+		IRQ_restore(flags);
+		return;
+	}
+
 	m_responseBuffer[m_inBuffer] = value;
 	m_inBuffer++;
-
-	end:
 	IRQ_restore(flags);
 }
 
@@ -916,7 +918,7 @@ static void initIRQ(void*){
 }
 
 /// @brief Send a byte to a device, and resends (max 3 times) if response is Resend
-/// @returns response on success, PS2_KB_RES_RESEND on failure (timed out)
+/// @returns Response on success, `PS2_KB_RES_RESEND` on failure (timed out)
 static uint8_t sendByteToDeviceHandleResend(int device, uint8_t byte){
 	uint8_t response;
 
@@ -935,8 +937,8 @@ static uint8_t sendByteToDeviceHandleResend(int device, uint8_t byte){
 	return response;
 }
 
-// Get a keyboard name/type (scanning must be disabled !!)
-// Returns its name (NULL if unrecognized or is a mouse)
+/// @brief Get a keyboard name/type (scanning must be disabled !!)
+/// @returns Keyboard name, or `NULL` if unrecognized or device is a mouse
 static const char* getKeyboardName(){
 	uint8_t buff, byte1, byte2;
 	bool res;
