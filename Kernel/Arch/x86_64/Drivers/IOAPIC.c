@@ -155,29 +155,18 @@ static void initIOAPIC(struct IOAPIC* ioapic){
 		ioapic->id, ioapic->version.bits.version, ioapic->pins, ioapic->GSIBase);
 }
 
-/// @brief Get the I/O APIC that is handling the given `irq`
-/// @returns The corresponding I/O APIC, NULL if none exists on the system
-static struct IOAPIC* getIOAPIC(int irq){
+static void setIrqMask(int irq, bool masked){
+	union RedirectionReg redir;
+
 	for (int i=0 ; i<m_nIOAPIC ; i++){
-		int first = ISA_IRQ_OFFSET + m_IOAPICs[i].GSIBase;
-		int last = ISA_IRQ_OFFSET + m_IOAPICs[i].GSIBase + m_IOAPICs[i].pins;
-		// That's the one
-		if (first <= irq && irq < last){
-			return m_IOAPICs + i;
+		for (int j=0 ; j<m_IOAPICs[i].pins ; j++){
+			redir.value = readRegister64(m_IOAPICs+i, IOAPIC_REG_REDIR_TABLE(j));
+			if (redir.bits.vector == irq){
+				redir.bits.masked = masked;
+				writeRegister64(m_IOAPICs+i, IOAPIC_REG_REDIR_TABLE(j), redir.value);
+			}
 		}
 	}
-
-	// IRQ isn't managed by any of the I/O APIC present on the system
-	return NULL;
-}
-
-static void setIrqMask(struct IOAPIC* ioapic, int irq, bool masked){
-	union RedirectionReg redirection;
-	int pin = irq - ioapic->GSIBase;
-
-	redirection.value = readRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(pin));
-	redirection.bits.masked = masked;
-	writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(pin), redirection.value);
 }
 
 // ================ Public API ================
@@ -206,21 +195,9 @@ void IOAPIC_init(){
 }
 
 void IOAPIC_enableSpecific(int irq){
-	struct IOAPIC* corresponding = getIOAPIC(irq);
-	if (corresponding == NULL){
-		log(WARNING, MODULE, "Cannot enable IRQ %d, no I/O APIC manages it", irq);
-		return;
-	}
-
-	setIrqMask(corresponding, irq, true);
+	setIrqMask(irq, false);
 }
 
 void IOAPIC_disableSpecific(int irq){
-	struct IOAPIC* corresponding = getIOAPIC(irq);
-	if (corresponding == NULL){
-		log(WARNING, MODULE, "Cannot disable IRQ %d, no I/O APIC manages it", irq);
-		return;
-	}
-
-	setIrqMask(corresponding, irq, false);
+	setIrqMask(irq, true);
 }
