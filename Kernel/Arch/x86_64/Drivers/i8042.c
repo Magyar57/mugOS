@@ -116,7 +116,8 @@ void i8042_init(){
 	buff = readControllerConfigurationByte();
 	// Note: we keep translation as it is by default
 	m_translation = (buff & PS2C_CONFBYTE_PORT1_TRANSLATION);
-	buff &= ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT1_CLOCK);
+	buff &= ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT
+			  |PS2C_CONFBYTE_PORT1_CLOCK);
 	writeControllerConfigurationByte(buff);
 
 	// 6. Perform self-test
@@ -126,19 +127,15 @@ void i8042_init(){
 	// is emulating a PS/2 controller in SMM. So we skip this part
 
 	// 7. Determine presence of port 2
+	// The port 2 is present if the clock is enabled (bit clear) by an 'enable' command
 	sendCommand(PS2C_CMD_ENABLE_PORT2);
 	buff = readControllerConfigurationByte();
-	// The port 2 is present if the clock was cleared (disabled) when we enabled the port
-	if ( (buff & PS2C_CONFBYTE_PORT2_CLOCK) == 0 ){
-		// If it is present, configure it: set controller config byte, and disable port 2
-		m_isPort2Valid = true; // temp, we'll test it before actually setting it to valid
+	m_isPort2Valid = ((buff & PS2C_CONFBYTE_PORT2_CLOCK) == 0);
+	if (m_isPort2Valid){
 		sendCommand(PS2C_CMD_DISABLE_PORT2);
-		// Disable port 2's IRQ and enable its clock
+		// Disable port 2's IRQ, and enable its clock for later
 		buff &= ~(PS2C_CONFBYTE_PORT2_INTERRUPT|PS2C_CONFBYTE_PORT2_CLOCK);
 		writeControllerConfigurationByte(buff);
-	}
-	else {
-		m_isPort2Valid = false;
 	}
 
 	// 8. Perform interface tests
@@ -150,7 +147,7 @@ void i8042_init(){
 	if (m_isPort2Valid) {
 		sendCommand(PS2C_CMD_TEST_PORT2);
 		i8042_receiveByte(&buff);
-		m_isPort2Valid = (buff == PS2C_RES_PORT2_TEST_SUCCESS);
+		m_isPort2Valid = (buff == PS2C_RES_PORT2_TEST_SUCCESS); // update validity
 	}
 	// Update driver state
 	m_enabled = (m_isPort1Valid || m_isPort2Valid);
@@ -159,13 +156,17 @@ void i8042_init(){
 		return;
 	}
 
-	// Re-enable devices
+	// 9. Re-enable devices
 	if (m_isPort1Valid) sendCommand(PS2C_CMD_ENABLE_PORT1);
 	if (m_isPort2Valid)	sendCommand(PS2C_CMD_ENABLE_PORT2);
 
-	// For now on, we can bufferize the configuration byte, as no command
-	// will be sent to the controller that could change it
+	// Re-enable IRQs for functionning ports
+	// Note: From now on, we can bufferize the configuration byte, as no command
+	//       will be sent to the controller that could change it
 	m_configByte = readControllerConfigurationByte();
+	if (m_isPort1Valid) m_configByte |= PS2C_CONFBYTE_PORT1_INTERRUPT;
+	if (m_isPort2Valid) m_configByte |= PS2C_CONFBYTE_PORT2_INTERRUPT;
+	writeControllerConfigurationByte(m_configByte);
 
 	log(SUCCESS, MODULE, "Initalization success (port 1 %s, port 2 %s)",
 		m_isPort1Valid ? "ON":"OFF", m_isPort2Valid ? "ON":"OFF");
@@ -176,22 +177,6 @@ void i8042_getStatus(bool* enabled, bool* port1Valid, bool* port2Valid, bool* tr
 	*port1Valid = m_isPort1Valid;
 	*port2Valid = m_isPort2Valid;
 	*translation = m_translation;
-}
-
-void i8042_setDevicesIRQ(bool device1, bool device2){
-	if (device1)
-		m_configByte |=  PS2C_CONFBYTE_PORT1_INTERRUPT; // Set IRQ bit for device 1
-	else
-		m_configByte &= ~PS2C_CONFBYTE_PORT1_INTERRUPT; // Clear IRQ bit for device 1
-
-	if (device2){
-		m_configByte |=  PS2C_CONFBYTE_PORT2_INTERRUPT;
-	}
-	else{
-		m_configByte &= ~PS2C_CONFBYTE_PORT2_INTERRUPT;
-	}
-
-	writeControllerConfigurationByte(m_configByte);
 }
 
 /// @brief Wait until a bit (given by the 'mask' argument) in the status register

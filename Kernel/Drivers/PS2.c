@@ -1021,9 +1021,6 @@ void PS2_initKeyboard(struct PS2Keyboard* keyboard){
 	uint8_t buff1, buff2;
 	keyboard->enabled = false;
 
-	// Enable interrupts for keyboard
-	PS2Controller_setDevicesIRQ(true, false);
-
 	// Disable scanning for initialization
 	// Note that we ignore any error if any, to let the self-test message pop instead
 	sendByteToDeviceHandleResend(1, PS2_CMD_DISABLE_SCANNING);
@@ -1070,9 +1067,6 @@ void PS2_initKeyboard(struct PS2Keyboard* keyboard){
 // Note: check that port 2 is available and populated before calling this method
 void PS2_initMouse(struct PS2Mouse* mouse){
 	mouse->enabled = false;
-
-	// Enable interrupts for keyboard
-	PS2Controller_setDevicesIRQ(false, true);
 
 	// Disable scanning for initialization
 	// Note that we ignore any error if any, to let the self-test message pop instead
@@ -1141,11 +1135,14 @@ void PS2_initMouse(struct PS2Mouse* mouse){
 
 void PS2_init(){
 	PS2Controller_init();
-	// By default, the PS/2 controller leaves the device's IRQs disabled
+	// PS2Controller_init leaves the specific keyboard & mouse IRQs disabled
+	// Each one of its ports is configured to fire IRQs, if the port is valid
 
 	// Temporary handler for intialization
 	IRQ_installHandler(IRQ_PS2_KEYBOARD, initIRQ);
 	IRQ_installHandler(IRQ_PS2_MOUSE, initIRQ);
+	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
+	IRQ_enableSpecific(IRQ_PS2_MOUSE);
 
 	bool enabled, port1_enabled, port2_enabled;
 	PS2Controller_getStatus(&enabled, &port1_enabled, &port2_enabled, &m_PS2Keyboard.translated);
@@ -1162,16 +1159,15 @@ void PS2_init(){
 	if (port1_enabled) PS2_initKeyboard(&m_PS2Keyboard);
 	if (port2_enabled) PS2_initMouse(&m_PS2Mouse);
 
-	// After intialization, we can re-enable irqs for functionning devices
-	PS2Controller_setDevicesIRQ(m_PS2Keyboard.enabled, m_PS2Mouse.enabled);
-
-	// Same for scanning ; and we can now register the scancodes-capable IRQ handlers
+	// After initialization, we can enable scanning for functionning device
+	// and install the final, scancodes-capable IRQ handlers
 	if (m_PS2Keyboard.enabled) {
 		sendByteToDeviceHandleResend(1, PS2_CMD_ENABLE_SCANNING);
 		IRQ_installHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
 	} else {
 		IRQ_removeHandler(IRQ_PS2_KEYBOARD);
 	}
+
 	if (m_PS2Mouse.enabled) {
 		sendByteToDeviceHandleResend(2, PS2_CMD_ENABLE_SCANNING);
 		IRQ_installHandler(IRQ_PS2_MOUSE, mouseIRQ);
