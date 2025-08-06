@@ -66,16 +66,49 @@ static uint8_t m_configByte; // Bufferized configuration byte (used after initia
 // TODO: replace by an actual timer (which does not vary on the CPU speed...)
 #define TIMEOUT 1<<20
 
-static bool sendCommand(uint8_t command);
-static inline bool waitUntilBitValueOrTimeout(uint8_t mask, uint8_t value);
+/// @brief Wait until a bit (given by the 'mask' argument) in the status register
+/// evaluates to 'value', or until we hit a timeout
+static inline bool waitUntilBitValueOrTimeout(uint8_t mask, uint8_t value){
+	int timer = 0;
 
-// Warning: this function can fail, but will still return a value
+	while (timer < TIMEOUT) {
+		// Check if bit has the value requested
+		uint8_t status_register = inb(PS2C_PORT_STATUS_REGISTER);
+		if ( (status_register & mask) == value )
+			break;
+
+		// 'Batch' waiting, to avoid reading register consecutively
+		// TODO replace with a 'wait 50 microseconds'
+		for(int i=0 ; i<(1<<16); i++)
+			timer++;
+	}
+
+	return (timer < TIMEOUT);
+}
+
+static bool pollByte(uint8_t* byte_out){
+	if (!waitUntilBitValueOrTimeout(PS2C_STATUS_OUTPUT_BUFF, 1))
+		return false;
+
+	*byte_out = inb(PS2C_PORT_DATA);
+	return true;
+}
+
+static inline bool sendCommand(uint8_t command){
+	if (!waitUntilBitValueOrTimeout(PS2C_STATUS_INPUT_BUFF, 0))
+		return false;
+
+	outb(PS2C_PORT_COMMAND, command);
+	return true;
+}
+
+/// @warning This function can fail, but will still return a value
 static inline uint8_t readControllerConfigurationByte(){
 	uint8_t res = 0x00;
 
 	sendCommand(PS2C_CMD_READ_CONFIG_BYTE);
 
-	if (!i8042_receiveByte(&res)){
+	if (!pollByte(&res)){
 		log(WARNING, MODULE, "Failed to read the Controller Configuration Byte !!");
 		return 0x00;
 	}
@@ -84,7 +117,6 @@ static inline uint8_t readControllerConfigurationByte(){
 }
 
 static inline bool writeControllerConfigurationByte(uint8_t byte){
-
 	if (!sendCommand(PS2C_CMD_WRITE_CONFIG_BYTE))
 		return false;
 
@@ -94,6 +126,8 @@ static inline bool writeControllerConfigurationByte(uint8_t byte){
 	outb(PS2C_PORT_DATA, byte);
 	return true;
 }
+
+// ================ Public API ================
 
 void i8042_init(){
 	uint8_t buff;
@@ -141,13 +175,13 @@ void i8042_init(){
 	// 8. Perform interface tests
 	// Port 1
 	sendCommand(PS2C_CMD_TEST_PORT1);
-	i8042_receiveByte(&buff);
+	pollByte(&buff);
 	m_isPort1Valid = (buff == PS2C_RES_PORT1_TEST_SUCCESS);
 	// Port 2
 	if (m_isPort2Valid) {
 		sendCommand(PS2C_CMD_TEST_PORT2);
-		i8042_receiveByte(&buff);
-		m_isPort2Valid = (buff == PS2C_RES_PORT2_TEST_SUCCESS); // update validity
+		pollByte(&buff);
+		m_isPort2Valid = (buff == PS2C_RES_PORT2_TEST_SUCCESS);
 	}
 	// Update driver state
 	m_enabled = (m_isPort1Valid || m_isPort2Valid);
@@ -172,36 +206,18 @@ void i8042_init(){
 		m_isPort1Valid ? "ON":"OFF", m_isPort2Valid ? "ON":"OFF");
 }
 
+void i8042_enableIRQs(){
+	m_configByte = readControllerConfigurationByte();
+	if (m_isPort1Valid) m_configByte |= PS2C_CONFBYTE_PORT1_INTERRUPT;
+	if (m_isPort2Valid) m_configByte |= PS2C_CONFBYTE_PORT2_INTERRUPT;
+	writeControllerConfigurationByte(m_configByte);
+}
+
 void i8042_getStatus(bool* enabled, bool* port1Valid, bool* port2Valid, bool* translation){
 	*enabled = m_enabled;
 	*port1Valid = m_isPort1Valid;
 	*port2Valid = m_isPort2Valid;
 	*translation = m_translation;
-}
-
-/// @brief Wait until a bit (given by the 'mask' argument) in the status register
-/// evaluates to 'value', or until we hit a timeout
-static inline bool waitUntilBitValueOrTimeout(uint8_t mask, uint8_t value){
-	int timer = 0;
-
-	while (timer < TIMEOUT) {
-		// Check if bit has the value requested
-		uint8_t status_register = inb(PS2C_PORT_STATUS_REGISTER);
-		if ( (status_register & mask) == value )
-			break;
-
-		timer++;
-	}
-
-	return (timer != TIMEOUT);
-}
-
-static inline bool sendCommand(uint8_t command){
-	if (!waitUntilBitValueOrTimeout(PS2C_STATUS_INPUT_BUFF, 0))
-		return false;
-
-	outb(PS2C_PORT_COMMAND, command);
-	return true;
 }
 
 bool i8042_sendByteToDevice(int device, uint8_t byte){
@@ -221,9 +237,6 @@ bool i8042_sendByteToDevice(int device, uint8_t byte){
 }
 
 bool i8042_receiveByte(uint8_t* byte_out){
-	if (!waitUntilBitValueOrTimeout(PS2C_STATUS_OUTPUT_BUFF, 1))
-		return false;
-
 	*byte_out = inb(PS2C_PORT_DATA);
 	return true;
 }
