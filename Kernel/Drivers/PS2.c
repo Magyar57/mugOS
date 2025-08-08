@@ -868,15 +868,16 @@ static void mouseIRQ(void*){
 #define RESPONSE_BUFFER_SIZE 5
 static uint8_t m_responseBuffer[RESPONSE_BUFFER_SIZE];
 static int m_inBuffer = 0;
-#define TIMEOUT 1llu<<24
+#define TIMEOUT (1U<<24)
 
 static bool receiveByte(uint8_t* byte_out){
 	// receiveByte is simply popResponseBuffer, with a wait timeout:
 	// we try to wait a certain time for the buffer to be filled
 
-	unsigned long long counter = 0;
-	while (m_inBuffer<1 && counter<TIMEOUT)
+	unsigned int counter = 0;
+	while ((m_inBuffer<1) && (counter<TIMEOUT))
 		counter++;
+
 	if (m_inBuffer < 1) return false;
 
 	unsigned long flags;
@@ -1145,6 +1146,7 @@ void PS2_init(){
 	IRQ_installHandler(IRQ_PS2_MOUSE, initIRQ);
 	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
 	IRQ_enableSpecific(IRQ_PS2_MOUSE);
+	i8042_enableDevicesIRQs();
 
 	bool enabled, port1_enabled, port2_enabled;
 	PS2Controller_getStatus(&enabled, &port1_enabled, &port2_enabled, &m_PS2Keyboard.translated);

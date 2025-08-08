@@ -194,23 +194,12 @@ void i8042_init(){
 	if (m_isPort1Valid) sendCommand(PS2C_CMD_ENABLE_PORT1);
 	if (m_isPort2Valid)	sendCommand(PS2C_CMD_ENABLE_PORT2);
 
-	// Re-enable IRQs for functionning ports
-	// Note: From now on, we can bufferize the configuration byte, as no command
-	//       will be sent to the controller that could change it
+	// From now on, we can bufferize the configuration byte, as no command
+	// will be sent to the controller that could change it
 	m_configByte = readControllerConfigurationByte();
-	if (m_isPort1Valid) m_configByte |= PS2C_CONFBYTE_PORT1_INTERRUPT;
-	if (m_isPort2Valid) m_configByte |= PS2C_CONFBYTE_PORT2_INTERRUPT;
-	writeControllerConfigurationByte(m_configByte);
 
 	log(SUCCESS, MODULE, "Initalization success (port 1 %s, port 2 %s)",
 		m_isPort1Valid ? "ON":"OFF", m_isPort2Valid ? "ON":"OFF");
-}
-
-void i8042_enableIRQs(){
-	m_configByte = readControllerConfigurationByte();
-	if (m_isPort1Valid) m_configByte |= PS2C_CONFBYTE_PORT1_INTERRUPT;
-	if (m_isPort2Valid) m_configByte |= PS2C_CONFBYTE_PORT2_INTERRUPT;
-	writeControllerConfigurationByte(m_configByte);
 }
 
 void i8042_getStatus(bool* enabled, bool* port1Valid, bool* port2Valid, bool* translation){
@@ -218,6 +207,12 @@ void i8042_getStatus(bool* enabled, bool* port1Valid, bool* port2Valid, bool* tr
 	*port1Valid = m_isPort1Valid;
 	*port2Valid = m_isPort2Valid;
 	*translation = m_translation;
+}
+
+void i8042_enableDevicesIRQs(){
+	if (m_isPort1Valid) m_configByte |= PS2C_CONFBYTE_PORT1_INTERRUPT;
+	if (m_isPort2Valid) m_configByte |= PS2C_CONFBYTE_PORT2_INTERRUPT;
+	writeControllerConfigurationByte(m_configByte);
 }
 
 bool i8042_sendByteToDevice(int device, uint8_t byte){
