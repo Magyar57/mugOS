@@ -113,6 +113,16 @@ static void parseMADT(struct rawMADT* madt_ptr){
 	g_MADT.X2APICs = kmalloc(g_MADT.nX2APIC * sizeof(struct MADTEntry_LX2APIC));
 	g_MADT.X2APIC_NMIs = kmalloc(g_MADT.nX2APIC_NMI * sizeof(struct MADTEntry_LX2APIC_NMI));
 
+	// Assert that we got memory where needed
+	assert(g_MADT.LAPICs!=NULL || g_MADT.nLAPIC==0);
+	assert(g_MADT.IOAPICs!=NULL || g_MADT.nIOAPIC==0);
+	assert(g_MADT.IOAPIC_ISOs!=NULL || g_MADT.nIOAPIC_ISO==0);
+	assert(g_MADT.IOAPIC_NMI_SRCs!=NULL || g_MADT.nIOAPIC_NMI_SRC==0);
+	assert(g_MADT.LAPIC_NMIs!=NULL || g_MADT.nLAPIC_NMI==0);
+	assert(g_MADT.LAPIC_ADDR_OVERRIDEs!=NULL || g_MADT.nLAPIC_ADDR_OVERRIDE==0);
+	assert(g_MADT.X2APICs!=NULL || g_MADT.nX2APIC==0);
+	assert(g_MADT.X2APIC_NMIs!=NULL || g_MADT.nX2APIC_NMI==0);
+
 	// Now reloop and copy the structures
 	// We use g_MADT.n* as temporary indexes
 	g_MADT.nLAPIC = 0;
