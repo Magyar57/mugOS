@@ -11,6 +11,6 @@ void i8042_init();
 void i8042_getStatus(bool* enabled, bool* port1Valid, bool* port2Valid, bool* translation);
 void i8042_enableDevicesIRQs();
 bool i8042_sendByteToDevice(int device, uint8_t byte);
-bool i8042_receiveByte(uint8_t* byte_out);
+uint8_t i8042_receiveByte();
 
 #endif

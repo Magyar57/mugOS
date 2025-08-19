@@ -231,7 +231,6 @@ bool i8042_sendByteToDevice(int device, uint8_t byte){
 	return true;
 }
 
-bool i8042_receiveByte(uint8_t* byte_out){
-	*byte_out = inb(PS2C_PORT_DATA);
-	return true;
+uint8_t i8042_receiveByte(){
+	return inb(PS2C_PORT_DATA);
 }

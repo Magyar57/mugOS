@@ -24,8 +24,8 @@ static always_inline bool PS2Controller_sendByteToDevice(int device, uint8_t byt
 /// @brief Receive a byte from a previously sent command
 /// @param byte_out Received byte is written here
 /// @returns `true` on success, `false` if no response was received (timeout).
-static always_inline bool PS2Controller_receiveByte(uint8_t* byte_out){
-	return i8042_receiveByte(byte_out);
+static always_inline uint8_t PS2Controller_receiveByte(){
+	return i8042_receiveByte();
 }
 
 #endif

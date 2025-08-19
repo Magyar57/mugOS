@@ -772,11 +772,8 @@ static inline void handleScancodeSet2(uint8_t scancode){
 
 static void keyboardIRQ(void*){
 	if(!m_PS2Keyboard.enabled) return;
-	uint8_t code;
 
-	bool res = PS2Controller_receiveByte(&code);
-	if (!res) return; // Ignore spurious IRQ
-
+	uint8_t code = PS2Controller_receiveByte();
 	// debug("Received keycode %#.2hhx", code);
 
 	switch (m_PS2Keyboard.scancodeSet){
@@ -831,11 +828,9 @@ static void handleMousePacket(uint8_t flags, uint8_t raw_dx, uint8_t raw_dy, uin
 
 static void mouseIRQ(void*){
 	static int packet_index = 0; // current index in packet streams
-	static uint8_t flags, dx, dy;
-	uint8_t data;
+	static uint8_t data, flags, dx, dy;
 
-	bool res = PS2Controller_receiveByte(&data);
-	if (!res) return;
+	data = PS2Controller_receiveByte();
 
 	switch (packet_index){
 	case 0:
@@ -906,13 +901,7 @@ static void pushResponseBuffer(uint8_t value){
 }
 
 static void initIRQ(void*){
-	uint8_t value;
-
-	bool res = PS2Controller_receiveByte(&value);
-	if (!res){
-		log(WARNING, MODULE, "Received intialization interrupt, but no value is available to be read");
-		return;
-	}
+	uint8_t value = PS2Controller_receiveByte();
 
 	// debug("initIRQ %#.2hhx", value);
 	pushResponseBuffer(value);
