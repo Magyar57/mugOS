@@ -13,12 +13,12 @@ toolchain-limine:	| $(TOOLCHAIN_PATH)/bin/limine
 toolchain-binutils:	| $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld
 toolchain-gcc:		| $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc
 
-.PHONY: all toolchain toolchain-firmware toolchain-limine toolchain-binutils toolchain-gcc
-.PHONY: clean-toolchain remove-toolchain
+.PHONY: all toolchain toolchain-firmware toolchain-limine toolchain-binutils toolchain-gcc clean-toolchain
 
 $(TOOLCHAIN_PATH)/bin/limine: | $(TOOLCHAIN_PATH)
 	if [ ! -d "$(TOOLCHAIN_PATH)/limine" ]; then git clone https://github.com/limine-bootloader/limine.git $(TOOLCHAIN_PATH)/limine --branch=$(LIMINE_BRANCH) --depth=1; fi
 	$(MAKE) -C $(TOOLCHAIN_PATH)/limine install PREFIX=$(TOOLCHAIN_PATH)
+	rm -rf $(TOOLCHAIN_PATH)/limine
 
 $(UEFI_FIRMWARE): | $(TOOLCHAIN_PATH)
 	mkdir -p $(dir $@)
@@ -34,6 +34,7 @@ $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld: | $(TOOLCHAIN_PATH)
 	$(CLEAR_ENV) ../binutils-src/configure --target=$(TARGET) --prefix=$(TOOLCHAIN_PATH) --with-sysroot --disable-nls --disable-werror
 	$(MAKE) -C $(TOOLCHAIN_PATH)/binutils-build
 	$(MAKE) -C $(TOOLCHAIN_PATH)/binutils-build install
+	rm -rf $(TOOLCHAIN_PATH)/binutils.tar.xz $(TOOLCHAIN_PATH)/binutils-src $(TOOLCHAIN_PATH)/binutils-build
 
 $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc: | $(TOOLCHAIN_PATH)
 	if [ ! -f "$(TOOLCHAIN_PATH)/gcc.tar.gz" ]; then wget $(GCC_URL) -O $(TOOLCHAIN_PATH)/gcc.tar.gz; fi
@@ -44,17 +45,13 @@ $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc: | $(TOOLCHAIN_PATH)
 	$(CLEAR_ENV) ../gcc-src/configure --target=$(TARGET) --prefix=$(TOOLCHAIN_PATH) --disable-nls --enable-languages=c,c++ --without-headers
 	$(MAKE) -C $(TOOLCHAIN_PATH)/gcc-build all-gcc all-target-libgcc
 	$(MAKE) -C $(TOOLCHAIN_PATH)/gcc-build install-gcc install-target-libgcc
+	rm -rf $(TOOLCHAIN_PATH)/gcc.tar.gz $(TOOLCHAIN_PATH)/gcc-src $(TOOLCHAIN_PATH)/gcc-build
 
 $(TOOLCHAIN_PATH):
 	mkdir -p $@
 
 #
-# Clean
+# Clean toolchain
 #
 clean-toolchain:
-	rm -rf $(TOOLCHAIN_PATH)/binutils.tar.xz $(TOOLCHAIN_PATH)/binutils-src $(TOOLCHAIN_PATH)/binutils-build
-	rm -rf $(TOOLCHAIN_PATH)/gcc.tar.gz $(TOOLCHAIN_PATH)/gcc-src $(TOOLCHAIN_PATH)/gcc-build
-	rm -rf $(TOOLCHAIN_PATH)/limine
-
-remove-toolchain:
 	rm -rf $(TOOLCHAIN_PATH)
