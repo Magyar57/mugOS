@@ -39,13 +39,6 @@ $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.map: $(shell find Kernel/** -type f)
 	@$(MAKE) -C Kernel $(MAKE_FLAGS)
 
 #
-# Tools
-#
-.PHONY: tools
-tools:
-	@$(MAKE) -C Tools/FAT $(MAKE_FLAGS)
-
-#
 # Run (if needed, add arguments using `make run -e QEMU_ARGS="arg1 arg2"`)
 #
 run:

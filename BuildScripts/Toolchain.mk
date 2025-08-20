@@ -1,17 +1,20 @@
 # Toolchain.mk: makefile for the toolchain compilation
-# Note: you need to have the build dependencies installed. See the README for more informations.
+# Note: you need to have the build dependencies installed.
+# See the docs for more informations.
 
 # This is needed only if these variables are defined in the environment
 CLEAR_ENV:=ASM= ASMFLAGS= CC= CFLAGS= CXX= LD= LDFLAGS= LINKFLAGS= LIBS=
 
 all: toolchain
-toolchain: firmware limine
-firmware:			| $(UEFI_FIRMWARE)
-limine:				| $(TOOLCHAIN_PATH)/bin/limine
-toolchain_binutils:	| $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld
-toolchain_gcc:		| $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc
+toolchain: toolchain-firmware toolchain-limine
 
-.PHONY: toolchain limine clean-toolchain toolchain_binutils toolchain_gcc clean-toolchain remove-toolchain
+toolchain-firmware:	| $(UEFI_FIRMWARE)
+toolchain-limine:	| $(TOOLCHAIN_PATH)/bin/limine
+toolchain-binutils:	| $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld
+toolchain-gcc:		| $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc
+
+.PHONY: all toolchain toolchain-firmware toolchain-limine toolchain-binutils toolchain-gcc
+.PHONY: clean-toolchain remove-toolchain
 
 $(TOOLCHAIN_PATH)/bin/limine: | $(TOOLCHAIN_PATH)
 	if [ ! -d "$(TOOLCHAIN_PATH)/limine" ]; then git clone https://github.com/limine-bootloader/limine.git $(TOOLCHAIN_PATH)/limine --branch=$(LIMINE_BRANCH) --depth=1; fi

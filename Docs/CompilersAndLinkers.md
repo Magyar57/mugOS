@@ -34,5 +34,5 @@ Build the tools that you need, from **the top** of the project directory tree:
 
 - Clang: N/A
 - LLD: N/A
-- LD: `make toolchain_binutils`
-- GCC: `make toolchain_binutils && make toolchain_gcc`
+- LD: `make toolchain-binutils`
+- GCC: `make toolchain-binutils && make toolchain-gcc`
