@@ -8,6 +8,7 @@ export TARGET:=x86_64-elf
 QEMU_ARCH:=x86_64
 LIMINE_UEFI_EXEC:=$(TOOLCHAIN_PATH)/share/limine/BOOTX64.EFI
 LIMINE_BIOS_EXEC:=$(TOOLCHAIN_PATH)/share/limine/limine-bios.sys
+UEFI_FIRMWARE:=$(TOOLCHAIN_PATH)/share/edk2/x64/OVMF.fd
 
 # arm64 (aka Aarch64)
 else ifeq ($(ARCH), $(filter $(ARCH),arm64 ARM64))
@@ -16,6 +17,7 @@ export TARGET:=x86_64-elf
 QEMU_ARCH:=aarch64
 LIMINE_UEFI_EXEC:=$(TOOLCHAIN_PATH)/share/limine/BOOTAA64.EFI
 LIMINE_BIOS_EXEC:=
+UEFI_FIRMWARE:=$(TOOLCHAIN_PATH)/share/edk2/aarch64/OVMF.fd
 $(error Sorry, the ARM architecture is unsupported yet)
 
 else

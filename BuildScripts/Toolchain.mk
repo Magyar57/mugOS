@@ -22,7 +22,9 @@ $(TOOLCHAIN_PATH)/bin/limine: | $(TOOLCHAIN_PATH)
 
 $(UEFI_FIRMWARE): | $(TOOLCHAIN_PATH)
 	mkdir -p $(dir $@)
-	wget -O $@ $(OVMF_URL)
+	if [ ! -d "$(TOOLCHAIN_PATH)/uefi-firmware" ]; then git clone $(OVMF_URL) $(TOOLCHAIN_PATH)/uefi-firmware; fi
+	cp $(TOOLCHAIN_PATH)/uefi-firmware/OVMF_X64.fd $@
+	rm -rf $(TOOLCHAIN_PATH)/uefi-firmware
 
 $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld: | $(TOOLCHAIN_PATH)
 	if [ ! -f "$(TOOLCHAIN_PATH)/binutils.tar.xz" ]; then wget $(BINUTILS_URL) -O $(TOOLCHAIN_PATH)/binutils.tar.xz; fi

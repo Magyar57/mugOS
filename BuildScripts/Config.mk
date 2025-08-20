@@ -13,7 +13,7 @@ export ARCH?=x86_64
 include BuildScripts/Arch.mk
 
 # Download links
-OVMF_URL:=https://cdn.download.clearlinux.org/image/OVMF.fd
+OVMF_URL:=https://github.com/ilobilo/ovmf-binaries.git
 LIMINE_BRANCH:=v9.x-binary
 # Get the latest versions: https://ftp.gnu.org/gnu/binutils/ and https://gcc.gnu.org/releases.html
 BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.45.tar.xz
@@ -30,7 +30,6 @@ export TARGET_LIBS:=
 export MAKE_FLAGS:=--no-print-directory ARCH=$(ARCH)
 
 # Output files & configurations
-UEFI_FIRMWARE:=$(TOOLCHAIN_PATH)/share/edk2/x64/OVMF.fd
 LIMINE_CONF:=Bootloader/limine.conf
 IMAGE:=$(BUILD_DIR)/disk.img
 IMAGE_FILES:=$(BUILD_DIR)/kernel.elf
