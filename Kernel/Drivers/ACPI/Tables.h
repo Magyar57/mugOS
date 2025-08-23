@@ -40,8 +40,10 @@ struct GenericAddressStructure {
 	uint8_t bitWidth;
 	uint8_t bitOffset;
 	uint8_t accessSize;
-	uint64_t address;
+	// 64 bit address (we can't put a uint64_t because of alignment+pack constraints)
+	uint32_t address[2];
 } packed;
+compile_assert(sizeof(struct GenericAddressStructure) == 12);
 
 struct FADT {
 	struct SDTHeader header;
@@ -105,6 +107,10 @@ struct FADT {
 	struct GenericAddressStructure X_PMTimerBlock;
 	struct GenericAddressStructure X_GPE0Block;
 	struct GenericAddressStructure X_GPE1Block;
+	struct GenericAddressStructure X_sleepControlRegister;
+	struct GenericAddressStructure X_sleepStatusRegister;
+
+	uint64_t hypervisorVendorIdentity;
 } packed;
 
 // ================ MADT: Multiple APIC Description Table ================
