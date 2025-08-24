@@ -9,7 +9,10 @@ struct CPUInfo {
 	uint32_t apicID;
 };
 
-// extern struct CPUInfo g_bspInfo;
+// Initial BSP info, used during early boot
+extern struct CPUInfo g_bspInfo;
+
+// Final CPU infos, final malloc-ed array
 extern struct CPUInfo* g_CPUInfos;
 
 /// @brief Get the value of the `member` (of type `type`) from the per-CPU struct CPUInfo instance
@@ -24,6 +27,9 @@ extern struct CPUInfo* g_CPUInfos;
 })
 
 #define PerCPU_getCpuId() PerCPU_getCPUInfoMember(ID)
+
+/// @brief Sets up the BSP's per-CPU info for early boot
+void PerCPU_wake();
 
 void PerCPU_setInfo(struct CPUInfo* info);
 
