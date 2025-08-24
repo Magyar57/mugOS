@@ -4,12 +4,11 @@
 #include "Panic.h"
 #include "Logging.h"
 #include "Memory/VMM.h"
-#include "SMP/SMP.h"
 #include "IRQ.h"
-#include "Registers.h"
 #include "ISR.h"
-#include "Drivers/i8259.h"
 #include "Drivers/ACPI/ACPI.h"
+#include "HAL/SMP/PerCPU.h"
+#include "Drivers/i8259.h"
 #include "Drivers/IOAPIC.h"
 
 #include "APIC.h"
@@ -300,6 +299,8 @@ void APIC_init(){
 void APIC_initLAPIC(){
 	uint32_t lapicId = readRegister32(APIC_REG_ID);
 	uint32_t acpi_processor_id = getAcpiProcessorId(lapicId);
+
+	PerCPU_setCPUInfoMember(apicID, lapicId);
 
 	configurePins(acpi_processor_id);
 

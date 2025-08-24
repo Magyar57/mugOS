@@ -41,11 +41,13 @@ void kmain(){
 
 	ACPI_init();
 
+	// Enable IRQs for the boostrap CPU
+	IRQ_init();
+	IRQ_enable();
+
 	// CPUs initializations
 	SMP_init();
-	IRQ_init();
 	SMP_startCPUs();
-	IRQ_enable();
 
 	// Drivers initializations
 	Serial_init();

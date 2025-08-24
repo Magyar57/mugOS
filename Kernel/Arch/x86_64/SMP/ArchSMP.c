@@ -34,23 +34,7 @@ static int parseNumberOfValidCPUs(){
 
 void ArchSMP_init(){
 	g_nCPUs = parseNumberOfValidCPUs();
-
-	g_CPUInfos = kmalloc(g_nCPUs * sizeof(struct CPUInfo));
-	if (g_CPUInfos == NULL){
-		log(PANIC, MODULE, "Couldn't allocate enough memory for per-CPU informations structures !!");
-		panic();
-	}
-
-	// Initialize each CPU's ID and local APIC ID
-	int id = 0;
-	for (int i=0 ; i<g_nCPUs ; i++){
-		g_CPUInfos[id].ID = id;
-		g_CPUInfos[id].apicID = g_MADT.LAPICs[i].lapicID;
-		id++;
-	}
-
-	// Set the BootStrap Processor (BSP)'s per-CPU informations
-	PerCPU_setInfo(g_CPUInfos); // first of the array
+	PerCPU_init(g_nCPUs);
 }
 
 void ArchSMP_startCPUs(){
@@ -73,12 +57,17 @@ void ArchSMP_startCPUs(){
 	VMM_map(ap_entry_phys, ap_entry_virt, n_pages, PAGE_KERNEL|PAGE_READ|PAGE_WRITE);
 	memcpy((void*) ap_entry_virt, entryAP, size);
 
-	for (int i=0 ; i<g_nCPUs ; i++){
-		if (g_CPUInfos[i].ID == PerCPU_getCpuId())
+	uint32_t this_lapic = PerCPU_getCPUInfoMember(apicID);
+	struct MADTEntry_LAPIC* cur;
+	for (int i=0 ; i<g_MADT.nLAPIC ; i++){
+		cur = g_MADT.LAPICs + i;
+		if (!cur->flags.bits.onlineCapable && !cur->flags.bits.enabled)
+			continue;
+		if (cur->lapicID == this_lapic)
 			continue;
 
 		// Wake each CPU, which will start executing the entryAP
-		APIC_wakeCPU(g_CPUInfos[i].apicID, ap_entry_phys);
+		APIC_wakeCPU(cur->lapicID, ap_entry_phys);
 	}
 
 	VMM_unmap(ap_entry_virt, n_pages);
