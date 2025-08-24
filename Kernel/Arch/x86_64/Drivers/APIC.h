@@ -4,14 +4,21 @@
 #include "Memory/Memory.h"
 
 // APIC.h: Advanced Programmable Interrupt Controller driver
-// Includes CPU-local APIC as well as global(s) I/O APIC
+// Includes CPU-local APIC as well as global(s) I/O APIC(s)
 
-/// @brief Initialize the CPU's local APIC
+/// @brief Initialize the APIC subsystem: BSP's local APIC, and the global I/O APICs
 void APIC_init();
+
+/// @brief Initialize the current CPU's local APIC
+/// @note It is NOT necessary to call it for the BSP's, this is done by `APIC_init`
+void APIC_initLAPIC();
 
 /// @brief Send EOI (end of interrupt) to the local APIC
 void APIC_sendEIO(int irq);
 
+/// @brief Wake (starts) a local CPU, by sending an INIT IPI interrupt
+/// @param lapicID The local APIC ID of the CPU to start
+/// @param entry The entry point for the awoken CPU, as a (page-aligned) physical address
 void APIC_wakeCPU(int lapicID, paddr_t entry);
 
 #endif

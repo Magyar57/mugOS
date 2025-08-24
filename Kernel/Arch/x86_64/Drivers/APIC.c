@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "assert.h"
 #include "IO.h"
+#include "Panic.h"
 #include "Logging.h"
 #include "Memory/VMM.h"
 #include "SMP/SMP.h"
@@ -224,15 +225,28 @@ static paddr_t getAPICAddress(){
 	return (paddr_t) g_MADT.LAPIC_ADDR_OVERRIDEs[0].address;
 }
 
+static uint32_t getAcpiProcessorId(uint32_t lapicId){
+	for (int i=0 ; i<g_MADT.nLAPIC ; i++){
+		if (g_MADT.LAPICs[i].lapicID == lapicId)
+			return g_MADT.LAPICs[i].processorID;
+	}
+
+	// Shouldn't happen, but better safe than sorry
+	log(PANIC, MODULE_APIC, "No ACPI processor ID corresponding to LAPIC %d !!",
+		lapicId);
+	panic();
+	unreachable();
+}
+
 /// @brief Apply the NMI configurations (given by ACPI) to the LINT pins
-static void configurePins(int cpu_id){
+static void configurePins(int acpiProcessorId){
 	struct MADTEntry_LAPIC_NMI* entry;
 	union LINTRegister lint;
 	lint.value = 0;
 
 	for (int i=0 ; i<g_MADT.nLAPIC_NMI ; i++){
 		const int cur_id = g_MADT.LAPIC_NMIs[i].ACPIProcessorID;
-		if (cur_id != cpu_id && cur_id != 0xff)
+		if (cur_id != acpiProcessorId && cur_id != 0xff)
 			continue;
 
 		entry = g_MADT.LAPIC_NMIs + i;
@@ -242,7 +256,7 @@ static void configurePins(int cpu_id){
 		lint.bits.vector = 0; // does not matter, ignored by hardware
 		lint.bits.deliveryMode = APIC_DELIVERY_NMI;
 		lint.bits.pinPolarity = entry->flags.bits.pinPolarity;
-		lint.bits.triggerMode = 0; // edge-triggered, Intel SDM states that we shall ignore the ACPI value
+		lint.bits.triggerMode = 0; // edge-triggered, Intel SDM says we must ignore the ACPI value
 		lint.bits.masked = false;
 		writeRegister32((entry->LINTi == 0) ? APIC_REG_LINT0 : APIC_REG_LINT1, lint.value);
 	}
@@ -255,6 +269,10 @@ void APIC_init(){
 	// can still fire spurious IRQs
 	i8259_init();
 	i8259_disableAllIRQ();
+
+	// Install our necessary handlers
+	ISR_installHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ);
+	IRQ_installHandler(IRQ_APIC_TIMER, timerIRQ);
 
 	// Setup the APIC in its MSR
 	union MSR_IA32_APIC_BASE apic_base;
@@ -271,7 +289,19 @@ void APIC_init(){
 	// Memory-map the APIC registers
 	VMM_map(apic_regs_phys, apics_regs_virt, 1, PAGE_READ|PAGE_WRITE|PAGE_CACHE_DISABLED|PAGE_KERNEL);
 
-	configurePins(SMP_getCpuId());
+	// Initialize the BSP's LAPIC
+	// Other LAPICs will be intialized by the SMP system
+	APIC_initLAPIC();
+
+	// Finally, initialize the I/O APIC(s)
+	IOAPIC_init();
+}
+
+void APIC_initLAPIC(){
+	uint32_t lapicId = readRegister32(APIC_REG_ID);
+	uint32_t acpi_processor_id = getAcpiProcessorId(lapicId);
+
+	configurePins(acpi_processor_id);
 
 	// Setup the TPR (Task Priority Register)
 	union TaskPriorityRegister tpr;
@@ -286,10 +316,8 @@ void APIC_init(){
 	dfr.bits.reserved_all_ones = 0xffffff;
 	writeRegister32(APIC_REG_DFR, dfr.value);
 
-	// Install a spurious interrupt handler
-	ISR_installHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ);
-
 	// Finally, set the 'enable' bit in the Spurious Interrupt Register
+	// Note: the IRQ handlers are installed already in the module's init code
 	union SpuriousInterruptRegister spur;
 	spur.value = 0;
 	spur.bits.vector = IRQ_APIC_SPURIOUS;
@@ -302,13 +330,10 @@ void APIC_init(){
 	m_timerReg.bits.masked = false;
 	writeRegister32(APIC_REG_TIMER, m_timerReg.value);
 
-	IRQ_installHandler(IRQ_APIC_TIMER, timerIRQ);
 	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
 	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 1000000000); // 1GHz bus speed => 1s
 
-	log(SUCCESS, MODULE_APIC, "Initalized local APIC (ID=%d)", readRegister32(APIC_REG_ID));
-
-	IOAPIC_init();
+	log(SUCCESS, MODULE_APIC, "Initalized local APIC (ID=%d)", lapicId);
 }
 
 void APIC_sendEIO(int){
