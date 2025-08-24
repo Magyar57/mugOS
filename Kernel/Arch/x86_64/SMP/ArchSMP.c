@@ -3,25 +3,20 @@
 #include "assert.h"
 #include "Logging.h"
 #include "Panic.h"
-#include "Registers.h"
 #include "Memory/PMM.h"
 #include "Memory/VMM.h"
 #include "Drivers/ACPI/ACPI.h"
+#include "HAL/SMP/PerCPU.h"
 #include "Drivers/APIC.h"
 
 #include "HAL/SMP/ArchSMP.h"
 #define MODULE "Arch SMP"
 
 int g_nCPUs;
-struct CPUInfo* g_CPUInfos;
 
 // EntryAP.asm
 extern void entryAP();
 extern uint8_t endEntryAP; // label in EntryAP.asm
-
-static inline void setCPUInfo(struct CPUInfo* info){
-	Registers_writeMSR(MSR_ADDR_IA32_GS_BASE, (uintptr_t) info);
-}
 
 static int parseNumberOfValidCPUs(){
 	int n_cpus = 0;
@@ -55,7 +50,7 @@ void ArchSMP_init(){
 	}
 
 	// Set the BootStrap Processor (BSP)'s per-CPU informations
-	setCPUInfo(g_CPUInfos); // first of the array
+	PerCPU_setInfo(g_CPUInfos); // first of the array
 }
 
 void ArchSMP_startCPUs(){
@@ -79,7 +74,7 @@ void ArchSMP_startCPUs(){
 	memcpy((void*) ap_entry_virt, entryAP, size);
 
 	for (int i=0 ; i<g_nCPUs ; i++){
-		if (g_CPUInfos[i].ID == ArchSMP_getCpuId())
+		if (g_CPUInfos[i].ID == PerCPU_getCpuId())
 			continue;
 
 		// Wake each CPU, which will start executing the entryAP
