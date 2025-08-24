@@ -41,7 +41,7 @@ void kmain(){
 
 	ACPI_init();
 
-	// CPUs intializations
+	// CPUs initializations
 	SMP_init();
 	IRQ_init();
 	SMP_startCPUs();

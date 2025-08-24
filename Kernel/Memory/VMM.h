@@ -21,8 +21,8 @@ void VMM_init();
 /// @param flags Properties to give to the mapping ; see PAGE_* macros in `HAL/Paging.h`
 void VMM_map(paddr_t phys, vaddr_t virt, uint64_t n_pages, int flags);
 
-/// @brief Store a mapping to be applied at paging intialization ; use instead of VMM_map
-/// when VMM_intialize hasn't been called already. See VMM_map for arguments description
+/// @brief Store a mapping to be applied at paging initialization ; use instead of VMM_map
+/// when VMM_initialize hasn't been called already. See VMM_map for arguments description
 /// @warning Can only be called so many times !
 void VMM_premap(paddr_t phys, vaddr_t virt, uint64_t n_pages, int flags);
 

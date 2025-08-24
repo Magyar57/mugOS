@@ -41,7 +41,7 @@
 - [ ] *(Refactor)* Abstract the Serial ports from the Serial driver
 - [X] *(Fix)* Replace direct memory-mapped I/O (MMIO) access with safe, ordered and fenced calls
 - [ ] *(Requires a timer subsystem)* Set a minimum delay between set LEDs for the PS/2 keyboard, to prevent bricking the device
-- [ ] *(Requires USB implemented)* Intialize and disable USB legacy support BEFORE initializing the PS/2 controller
+- [ ] *(Requires USB implemented)* Initialize and disable USB legacy support BEFORE initializing the PS/2 controller
 - [ ] *(Requires ACPI implemented)* Finish step 2 of the 8042 PS/2 controller initalization
 - [ ] *(Requires proper executable and lib support)* Remove callbacks from the keyboard driver when its owner exits
 - [ ] *(Requires threads)* Implement threaded interrupts (so that we minimize time with masked interrupts) ; see linux request_threaded_irq kernel/irq/manage.c

@@ -290,7 +290,7 @@ void APIC_init(){
 	VMM_map(apic_regs_phys, apics_regs_virt, 1, PAGE_READ|PAGE_WRITE|PAGE_CACHE_DISABLED|PAGE_KERNEL);
 
 	// Initialize the BSP's LAPIC
-	// Other LAPICs will be intialized by the SMP system
+	// Other LAPICs will be initialized by the SMP system
 	APIC_initLAPIC();
 
 	// Finally, initialize the I/O APIC(s)

@@ -18,7 +18,7 @@
 
 // Heap.c: Heap implementation, inspired by OpenBSD's sbrk-free implementation
 // - All allocations are done with mmap
-// - No intialization needed (it's done dynamically)
+// - No initialization needed (it's done dynamically)
 // - Fast O(1) allocations and deallocations
 // - Quite big metadata
 // - Metadata is kept away from user blocks, to avoid under/overflow issues

@@ -1130,7 +1130,7 @@ void PS2_init(){
 	// PS2Controller_init leaves the specific keyboard & mouse IRQs disabled
 	// Each one of its ports is configured to fire IRQs, if the port is valid
 
-	// Temporary handler for intialization
+	// Temporary handler for initialization
 	IRQ_installHandler(IRQ_PS2_KEYBOARD, initIRQ);
 	IRQ_installHandler(IRQ_PS2_MOUSE, initIRQ);
 	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
