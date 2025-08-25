@@ -70,8 +70,7 @@ ISR_asmPrehandler:
 	mov ax, 0x10	; ensure that we're using kdata segment
 	mov ds, ax
 	mov es, ax
-	mov fs, ax
-	mov gs, ax
+	; Note: we don't touch gs/fs, as they hold kernel/user per-CPU data
 
 	; rax = g_handlers[irq]
 	mov rax, [rbp+0x78]				; rax = irq
@@ -92,12 +91,10 @@ ISR_asmPrehandler:
 
 	.exit:
 
-	; restore old segment
+	; restore old segments
 	pop rax
 	mov ds, ax
 	mov es, ax
-	mov fs, ax
-	mov gs, ax
 
 	; restore registers
 	pop r15
