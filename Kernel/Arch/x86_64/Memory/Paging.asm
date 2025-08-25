@@ -1,10 +1,14 @@
 section .text
 
+global enablePaging
+global setPML4
+global setPML5
+global flushTLB
+
 ; void enablePaging(void* pageTable, uint16_t ktextSegment, uint16_t kdataSegment);
 ; 					rdi=pageTable,   rsi=ktextSegment,      rdx=kdataSegment
 ; NOTE: This function is present as an example on how to enable paging (and long mode), but
 ; it is not actually used, since Limine already does it for us.
-global enablePaging
 enablePaging:
 	; Disable paging
 	mov rbx, cr0
@@ -47,10 +51,9 @@ enablePaging:
 
 	[bits 64]
 	ret
-; END enablePaging
+;
 
 ; bool setPML4(paddr_t pml4);
-global setPML4
 setPML4:
 	; Check that the table is page aligned
 	mov rax, rdi
@@ -72,10 +75,9 @@ setPML4:
 	.err:
 	xor rax, rax
 	ret
-; END setPML4
+;
 
 ; bool setPML5(paddr_t pml5);
-global setPML5
 setPML5:
 	; Check that the table is page aligned
 	mov rax, rdi
@@ -97,11 +99,10 @@ setPML5:
 	.err:
 	xor rax, rax
 	ret
-; END setPML5
+;
 
 ; void flushTLB(void* addr);
-global flushTLB
 flushTLB:
 	invlpg [rdi]
 	ret
-; END flushTLB
+;

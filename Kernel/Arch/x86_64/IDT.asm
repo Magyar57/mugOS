@@ -1,7 +1,8 @@
-bits 64
+section .text
+
+global setIDT
 
 ; void setIDT(struct IDTLocationDescriptor* descriptor);
-global setIDT
 setIDT:
 	push rbp
 	mov rbp, rsp
@@ -14,4 +15,4 @@ setIDT:
 	mov rsp, rbp
 	pop rbp
 	ret
-; END setIDT
+;

@@ -1,3 +1,7 @@
+section .text
+
+global usermode_function
+global x86_jumpToUsermode
 
 ; getSegmentSelector(int selector, int ti, int rpl)
 ; https://wiki.osdev.org/Segment_Selector
@@ -5,7 +9,6 @@
 %define getSegmentSelector(selector, ti, cpl) \
 	((selector & 0xfff8) | ((ti << 2) & 0x0004) | (cpl & 0x0003))
 
-global usermode_function
 usermode_function:
 	nop
 	; hlt ; execute privileged instruction to trigger General Protection Fault
@@ -17,7 +20,6 @@ usermode_function:
 ;
 
 ; void x86_jumpToUsermode(uint16_t UTEXT, uint16_t UDATA);
-global x86_jumpToUsermode
 x86_jumpToUsermode:
 	; rdi = UTEXT (usermode code/text segment)
 	; rsi = UDATA (usermode data segment)
