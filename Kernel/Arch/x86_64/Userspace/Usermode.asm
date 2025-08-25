@@ -9,12 +9,12 @@ global usermode_function
 usermode_function:
 	nop
 	; hlt ; execute privileged instruction to trigger General Protection Fault
-.loop:
-	nop
-	jmp .loop
+	.loop:
+		nop
+		jmp .loop
 
 	ret
-; END usermode_function
+;
 
 ; void x86_jumpToUsermode(uint16_t UTEXT, uint16_t UDATA);
 global x86_jumpToUsermode
@@ -38,9 +38,10 @@ x86_jumpToUsermode:
 	mov rax, rsi
 	mov ds, ax
 	mov es, ax
-	mov fs, ax
-	mov gs, ax
 	; ss is set by iretq
+
+	; Store the kernel's gs_base, we're going to userspace
+	swapgs
 
 	; Setup the stack frame for iretq
 
@@ -56,4 +57,4 @@ x86_jumpToUsermode:
 	push rax
 
 	iretq
-; END x86_jumpToUsermode
+;

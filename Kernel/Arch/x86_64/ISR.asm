@@ -46,7 +46,7 @@ ISR_%1:
 ISR_asmPrehandler:
 	; CPU pushed SS:RSP, RFLAGS, cs, rip
 	; caller pushed [dummy] error code
-	; caller pushed interrupt number (vector)
+	; caller pushed interrupt vector
 	push rax
 	push rcx
 	push rdx
@@ -70,7 +70,15 @@ ISR_asmPrehandler:
 	mov ax, 0x10	; ensure that we're using kdata segment
 	mov ds, ax
 	mov es, ax
-	; Note: we don't touch gs/fs, as they hold kernel/user per-CPU data
+
+	; Switch gs_base with kernel_gs_base if we came from userspace
+	mov rax, [rbp+0x90]		; rax = cs
+	test al, 3				; (al & 0b00000011) == 0 ?
+	jz .from_kernel
+	.from_userspace:
+	swapgs
+	; Note: if in the future we want to use fs, we must save it here
+	.from_kernel:
 
 	; rax = g_handlers[irq]
 	mov rax, [rbp+0x78]				; rax = irq
@@ -90,6 +98,14 @@ ISR_asmPrehandler:
 	call ISR_noHandler
 
 	.exit:
+
+	; Restore user's gs if we came from userspace
+	mov rax, [rbp+0x90]		; rax = cs
+	test al, 3				; (al & 0b00000011) == 0 ?
+	jz .from_kernel_bis
+	.from_userspace_bis:
+	swapgs
+	.from_kernel_bis:
 
 	; restore old segments
 	pop rax
@@ -112,6 +128,6 @@ ISR_asmPrehandler:
 	pop rdx
 	pop rcx
 	pop rax
-	add rsp, 16 ; remove error code and IV
+	add rsp, 16 ; remove error code and vector
 	iretq
-; END ISR_irqPrehandler
+;

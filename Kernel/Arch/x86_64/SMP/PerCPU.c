@@ -17,6 +17,10 @@ static struct CPUInfo m_bspInfo = {
 // Final, malloc-ed CPU infos array
 static struct CPUInfo* m_CPUInfos;
 
+/// @brief Set the per-CPU CPUInfo pointer to the gs_base register.
+/// This value will be considered the kernel's.
+/// The `swapgs` instruction switches to the user's value, when going from & to userspace
+/// @param info The per-CPU info to set for the current executing CPU
 static void setInfo(struct CPUInfo* info){
 	Registers_writeMSR(MSR_ADDR_IA32_GS_BASE, (uintptr_t) info);
 }
