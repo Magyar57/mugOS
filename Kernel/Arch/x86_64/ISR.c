@@ -15,7 +15,7 @@
 
 // Global array of [un]registered exception/trap handlers
 // It is handled (edited) in ISR.c, and handlers are called in ISR.asm
-isr_t g_handlers[256];
+isr_t m_handlers[256];
 
 static const char* const EXCEPTION_TYPES[] = {
     "Exception (Fault) - Divide by zero error",
@@ -149,7 +149,7 @@ void ISR_init(){
 
 	// Initialize handlers
 	for (int i=0 ; i<256 ; i++){
-		g_handlers[i] = NULL;
+		m_handlers[i] = NULL;
 		IDT_enableInterruptHandler(i);
 	}
 
@@ -161,13 +161,13 @@ void ISR_init(){
 }
 
 void ISR_installHandler(uint8_t vector, isr_t handler){
-	g_handlers[vector] = handler;
+	m_handlers[vector] = handler;
 }
 
 void ISR_removeHandler(uint8_t vector){
-	g_handlers[vector] = NULL;
+	m_handlers[vector] = NULL;
 }
 
 bool ISR_isHandlerPresent(uint8_t vector){
-	return (g_handlers[vector] != NULL);
+	return (m_handlers[vector] != NULL);
 }

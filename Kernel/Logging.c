@@ -7,7 +7,7 @@
 
 #define MODULE "Logging"
 
-static const char* loglevelPrefix[] = {
+static const char* LOG_LEVEL_PREFIX[] = {
 	"[#DEBUG] ",
 	"[  OK  ] ",
 	"[ INFO ] ",
@@ -18,18 +18,33 @@ static const char* loglevelPrefix[] = {
 
 /// @brief Format str of size n to the string to log (specified by logLevel, moduleName, logFmtStr and args)
 static inline bool formatLogString(char* str, size_t n, int logLevel, const char* moduleName, const char* logFmtStr, va_list args){
-	int written1;
-	if (moduleName == NULL)	written1 = snprintf(str, n, "%s-> ", loglevelPrefix[logLevel]);
-	else 					written1 = snprintf(str, n, "%s%s -> ", loglevelPrefix[logLevel], moduleName);
-	if (written1 < 0) return false; // buffer too small
+	int written1, written2, written3;
+
+	// Insert log level and module into 'str'
+
+	if (moduleName == NULL)
+		written1 = snprintf(str, n, "%s-> ", LOG_LEVEL_PREFIX[logLevel]);
+	else
+		written1 = snprintf(str, n, "%s%s -> ", LOG_LEVEL_PREFIX[logLevel], moduleName);
+
+	if (written1 < 0)
+		return false; // buffer too small
+
 	n -= written1;
 
-	int written2 = vsnprintf(str+written1, n, logFmtStr, args);
-	if (written2 < 0) return false;
+	// Insert formatted string into 'str'
+
+	written2 = vsnprintf(str+written1, n, logFmtStr, args);
+	if (written2 < 0)
+		return false;
+
 	n -= written2;
 
-	int written3 = snprintf(str+written1+written2, n, "\r\n");
-	if (written3 < 0) return false;
+	// Add end of line
+
+	written3 = snprintf(str+written1+written2, n, "\r\n");
+	if (written3 < 0)
+		return false;
 
 	return true;
 }

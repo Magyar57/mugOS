@@ -22,7 +22,7 @@ static bool m_leftMetaPressed;
 static bool m_rightMetaPressed;
 
 #define MAX_CALLBACKS 16
-keycallback_t g_callbacks[MAX_CALLBACKS];
+keycallback_t m_callbacks[MAX_CALLBACKS];
 
 static char getNumpadKey_NoNumluck(keycode_t k){
 	switch (k){
@@ -464,7 +464,7 @@ static char getChar_AZERTY(keycode_t k){
 
 static inline int findAvailableCallbackIndex(){
 	for(int i=0 ; i<MAX_CALLBACKS ; i++){
-		if (g_callbacks[i] == NULL){
+		if (m_callbacks[i] == NULL){
 			return i;
 		}
 	}
@@ -473,8 +473,8 @@ static inline int findAvailableCallbackIndex(){
 
 static inline void executeCallbacks(keycode_t keycode, int character, enum KeypressMode mode, uint8_t modifierKeys){
 	for(int i=0 ; i<MAX_CALLBACKS ; i++){
-		if (g_callbacks[i] == NULL) continue;
-		g_callbacks[i](keycode, character, mode, modifierKeys);
+		if (m_callbacks[i] == NULL) continue;
+		m_callbacks[i](keycode, character, mode, modifierKeys);
 	}
 }
 
@@ -504,14 +504,14 @@ bool Keyboard_registerKeyCallback(keycallback_t callback){
 	int index = findAvailableCallbackIndex();
 	if (index == -1) return false;
 
-	g_callbacks[index] = callback;
+	m_callbacks[index] = callback;
 	return true;
 }
 
 void Keyboard_unregisterKeyCallback(keycallback_t callback){
 	for (int i=0 ; i<MAX_CALLBACKS ; i++){
-		if (g_callbacks[i] == callback){
-			g_callbacks[i] = NULL;
+		if (m_callbacks[i] == callback){
+			m_callbacks[i] = NULL;
 		}
 	}
 }
@@ -609,7 +609,7 @@ void Keyboard_init(){
 	}
 
 	for(int i=0 ; i<MAX_CALLBACKS ; i++){
-		g_callbacks[i] = NULL;
+		m_callbacks[i] = NULL;
 	}
 
 	Keyboard_registerKeyCallback(keyCallback_printKey);

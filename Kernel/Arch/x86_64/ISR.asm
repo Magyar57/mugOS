@@ -1,7 +1,7 @@
 section .text
 
 ; Array of C handlers, managed in ISR.c
-extern g_handlers
+extern m_handlers
 extern ISR_noHandler
 
 ; ISR trap handler
@@ -80,9 +80,9 @@ ISR_asmPrehandler:
 	; Note: if in the future we want to use fs, we must save it here
 	.from_kernel:
 
-	; rax = g_handlers[irq]
+	; rax = m_handlers[irq]
 	mov rax, [rbp+0x78]				; rax = irq
-	mov rax, [g_handlers + 8*rax]	; 8*irq cause g_handlers elements are 8 bytes
+	mov rax, [m_handlers + 8*rax]	; 8*irq cause m_handlers elements are 8 bytes
 
 	; if handler is NULL, call ISR_noHandler instead
 	cmp rax, 0
