@@ -138,16 +138,14 @@ struct TSS {
 	uint16_t iobp;		// IO map base address (a 16 bit offset from the base of the TSS to the IO permission bit map)
 } packed;
 
-// 4 KiB stacks (TODO change for kmalloc allocations when kmalloc implemented)
-uint8_t stack0[4096];
-uint8_t stack1[4096];
-uint8_t stack2[4096];
+// 4 pages (16 KiB) stack (TODO change for a memory allocation instead)
+aligned(0x1000) uint8_t m_stack[4 * 0x1000];
 
 static struct TSS m_TSS = {
 	.reserved0 = 0,
-	.rsp0 = (uint64_t) stack0,
-	.rsp1 = (uint64_t) stack1,
-	.rsp2 = (uint64_t) stack2,
+	.rsp0 = (uint64_t) m_stack,
+	.rsp1 = (uint64_t) NULL,
+	.rsp2 = (uint64_t) NULL,
 	.reserved1 = 0,
 	.ist1 = (uint64_t) NULL,
 	.ist2 = (uint64_t) NULL,
