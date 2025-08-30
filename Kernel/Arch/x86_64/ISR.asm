@@ -71,6 +71,9 @@ ISR_asmPrehandler:
 	mov ds, ax
 	mov es, ax
 
+	; Clear direction flag, in case user code set it. C compilers expect it to be clear
+	cld
+
 	; Switch gs_base with kernel_gs_base if we came from userspace
 	mov rax, [rbp+0x90]		; rax = cs
 	test al, 3				; (al & 0b00000011) == 0 ?

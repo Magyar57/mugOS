@@ -143,7 +143,7 @@ aligned(0x1000) uint8_t m_stack[4 * 0x1000];
 
 static struct TSS m_TSS = {
 	.reserved0 = 0,
-	.rsp0 = (uint64_t) m_stack,
+	.rsp0 = (uint64_t) m_stack + sizeof(m_stack),
 	.rsp1 = (uint64_t) NULL,
 	.rsp2 = (uint64_t) NULL,
 	.reserved1 = 0,
