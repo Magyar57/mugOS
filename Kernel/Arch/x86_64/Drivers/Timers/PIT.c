@@ -1,8 +1,11 @@
 #include <stdint.h>
 #include "Logging.h"
 #include "IO.h"
+#include "HAL/Halt.h"
+#include "IRQ.h"
 
 #include "PIT.h"
+#define MODULE "PIT"
 
 // Programmable Interrupt Timer driver
 // Note: only channel 0 is supported
@@ -12,7 +15,14 @@
 #define PORT_CHANNEL2		0x42 // Channel 2 data port (r/w)
 #define PORT_COMMAND_REG	0x43 // Mode/command register (w)
 
-#define BASE_FREQUENCY 1193181 // Hz (1.1931816666 MHz)
+// Given a PIT base frequency f0 = 1.193181 MHz
+// To choose a divisor d = f0/f
+// T = 1/f = d/f0
+// To have a precision p, we need T <= p <=> d <= f0*p
+
+#define BASE_FREQUENCY	1193181 // Hz (1.1931816666 MHz)
+#define DIVISOR			1193
+#define PRECISION		DIVISOR*1000000 / BASE_FREQUENCY // µs
 
 union CommandReg {
 	uint8_t value;
@@ -41,19 +51,44 @@ union CommandReg {
 	} bits;
 };
 
-// static void setDivisor(uint16_t div){
-// 	debug("todo set divisor to %d", div);
-// }
+uint64_t m_count = 0;
+
+static void setDivisor(uint16_t div){
+	uint8_t low_byte = div & 0xff;
+	uint8_t high_byte = (div >> 8) & 0xff;
+
+	IRQ_disable();
+	outb(PORT_CHANNEL0, low_byte);
+	outb(PORT_CHANNEL0, high_byte);
+	IRQ_enable();
+}
+
+void pitIrq(void*){
+	m_count++;
+}
 
 void PIT_init(){
-
 	union CommandReg command;
-	// command.value = inb(PORT_COMMAND_REG);
 	command.bits.channel = 0b00;
-	command.bits.accessMode = 0b00;
+	command.bits.accessMode = 0b11;
 	command.bits.operatingMode = 0b010;
 	command.bits.bcdMode = false;
 	outb(PORT_COMMAND_REG, command.value);
 
-	debug("set command register with value %#hhx", inb(PORT_COMMAND_REG));
+	setDivisor(DIVISOR);
+
+	IRQ_installHandler(IRQ_PIT, pitIrq);
+	IRQ_enableSpecific(IRQ_PIT);
+
+	log(SUCCESS, MODULE, "Initialized success. Timer period/precision of T=%dus", PRECISION);
+}
+
+void PIT_wait(long ms){
+	uint64_t initialCount = m_count;
+	long waited = 0; // µs (same as PRECISION)
+
+	do {
+		waited = (m_count - initialCount) * PRECISION;
+		halt();
+	} while(waited/1000 <= ms);
 }
