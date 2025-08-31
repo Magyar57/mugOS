@@ -1014,7 +1014,6 @@ void PS2_initKeyboard(struct PS2Keyboard* keyboard){
 	keyboard->enabled = false;
 
 	// Disable scanning for initialization
-	// Note that we ignore any error if any, to let the self-test message pop instead
 	sendByteToDeviceHandleResend(1, PS2_CMD_DISABLE_SCANNING);
 
 	// Reset the device, and check self-test
@@ -1061,7 +1060,6 @@ void PS2_initMouse(struct PS2Mouse* mouse){
 	mouse->enabled = false;
 
 	// Disable scanning for initialization
-	// Note that we ignore any error if any, to let the self-test message pop instead
 	sendByteToDeviceHandleResend(2, PS2_CMD_DISABLE_SCANNING);
 
 	// Reset the device, and check self-test
@@ -1127,8 +1125,7 @@ void PS2_initMouse(struct PS2Mouse* mouse){
 
 void PS2_init(){
 	PS2Controller_init();
-	// PS2Controller_init leaves the specific keyboard & mouse IRQs disabled
-	// Each one of its ports is configured to fire IRQs, if the port is valid
+	// The controller has configured valid ports to fire IRQs
 
 	// Temporary handler for initialization
 	IRQ_installHandler(IRQ_PS2_KEYBOARD, initIRQ);

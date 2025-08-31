@@ -467,6 +467,8 @@ void Serial_init(){
 
 	IRQ_installHandler(IRQ_COM2, handleInterrupt); // ISA IRQ 3: COM2 or COM4 port
 	IRQ_installHandler(IRQ_COM1, handleInterrupt); // ISA IRQ 4: COM1 or COM3 port
+	IRQ_enableSpecific(IRQ_COM1);
+	IRQ_enableSpecific(IRQ_COM2);
 	for(int i=0 ; i<N_PORTS ; i++){
 		if (m_devices[i].present){
 			enableDeviceInterrupts(m_devices[i].port);

@@ -115,8 +115,6 @@ void i8259_init(){
 	remap(ISA_IRQ_OFFSET);
 	ISR_installHandler(IRQ_LPT1, handleSpuriousIRQ7);
 	ISR_installHandler(IRQ_ATA2, handleSpuriousIRQ15);
-
-	i8259_enableAllIRQ();
 }
 
 void i8259_enableSpecific(int irq){
@@ -169,8 +167,9 @@ void i8259_enableAllIRQ(){
 
 void i8259_disableAllIRQ(){
 	// Mask all interrupts
-	outb(PIC_MASTER_DATA, 0xff);
-	outb(PIC_SLAVE_DATA, 0xff);
+	// Note: we don't mask IRQ 2, it's necessary for IRQs in the slave PIC to fire
+	outb(PIC_MASTER_DATA, 0xfb);
+	outb(PIC_SLAVE_DATA,  0xff);
 }
 
 void i8259_sendEIO(int irq){

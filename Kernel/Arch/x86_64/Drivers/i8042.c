@@ -131,8 +131,6 @@ static inline bool writeControllerConfigurationByte(uint8_t byte){
 
 void i8042_init(){
 	uint8_t buff;
-	IRQ_disableSpecific(IRQ_PS2_KEYBOARD);
-	IRQ_disableSpecific(IRQ_PS2_MOUSE);
 
 	// 1. Disable Legacy USB (see USB driver, if present)
 
