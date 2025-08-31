@@ -1,14 +1,15 @@
 #include "stdlib.h"
 #include "string.h"
 #include "Logging.h"
+#include "HAL/HAL.h"
+#include "HAL/Halt.h"
 #include "Boot/LimineRequests.h"
 #include "Memory/MemoryMap.h"
 #include "Memory/PMM.h"
 #include "Memory/VMM.h"
-#include "SMP/SMP.h"
 #include "IRQ.h"
-#include "HAL/HAL.h"
-#include "HAL/Halt.h"
+#include "Time/Time.h"
+#include "SMP/SMP.h"
 #include "Drivers/Graphics/Graphics.h"
 #include "Drivers/ACPI/ACPI.h"
 #include "Drivers/Serial.h"
@@ -41,15 +42,18 @@ void kmain(){
 
 	ACPI_init();
 
-	// Enable IRQs for the boostrap CPU
+	// IRQ subsystem initialization, and enable IRQs for the boostrap CPU
 	IRQ_init();
 	IRQ_enable();
+
+	// Time subsystem initialization
+	Time_init();
 
 	// CPUs initializations
 	SMP_init();
 	SMP_startCPUs();
 
-	// Drivers initializations
+	// Misc drivers initializations
 	Serial_init();
 	PS2_init();
 	Keyboard_init();

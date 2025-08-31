@@ -71,6 +71,17 @@ void pitIrq(void*){
 	m_count++;
 }
 
+static void sleepMiliseconds(unsigned long ms){
+	uint64_t curCount, initialCount = m_count;
+	unsigned long waited = 0; // µs (same as PRECISION)
+
+	do {
+		halt();
+		curCount = atomic_load(&m_count);
+		waited = (curCount - initialCount) * PRECISION;
+	} while(waited/1000 <= ms);
+}
+
 void PIT_init(){
 	union CommandReg command;
 	command.bits.channel = 0b00;
@@ -87,13 +98,20 @@ void PIT_init(){
 	log(SUCCESS, MODULE, "Initialized success. Timer period/precision of T=%dus", PRECISION);
 }
 
-void PIT_wait(long ms){
-	uint64_t curCount, initialCount = m_count;
-	long waited = 0; // µs (same as PRECISION)
+void PIT_sleep(unsigned long sec){
+	sleepMiliseconds(1000*sec);
+}
 
-	do {
-		halt();
-		curCount = atomic_load(&m_count);
-		waited = (curCount - initialCount) * PRECISION;
-	} while(waited/1000 <= ms);
+void PIT_msleep(unsigned long ms){
+	sleepMiliseconds(ms);
+}
+
+void PIT_usleep(unsigned long us){
+	unsigned long ms = max(us / 1000, 1);
+	sleepMiliseconds(ms);
+}
+
+void PIT_nsleep(unsigned long ns){
+	unsigned long ms = max(ns / 1000000, 1);
+	sleepMiliseconds(ms);
 }

@@ -26,6 +26,8 @@
 - [X] Kernel heap (kmalloc, slab allocator)
 - [X] ACPI tables parsing
 - [X] APIC (LAPIC and IOAPIC) drivers
+- [X] Timers: PIT driver
+- [X] Time subsystem
 - [ ] Virtual filesystem
 - [ ] Kernel FAT driver
 - [ ] ELF binary loading

@@ -20,12 +20,14 @@ To this day, the kernel supports the following features:
 - Memory management: memory map, physical and virtual memory managers, paging
 - Kernel heap, implemented through a Slab allocator algorithm
 - Symetric MultiProcessing (SMP) stub
-- ACPI
-- I/O devices: PS/2 mouse and keyboard, serial ports
-- Graphics: VGA, Framebuffer
+- Time subsystem: PIT driver
+- I/O subsystem: PS/2 mouse and keyboard
+- Graphics subsystem: VGA, Framebuffer
   ([GOP](https://uefi.org/specs/UEFI/2.10/12_Protocols_Console_Support.html#graphics-output-protocol) and
   [VBE](https://wiki.osdev.org/VESA_Video_Modes))
 - Filesystem support: none for now
+- Serial ports driver (UART)
+- ACPI tables
 
 The standard library supports:
 - String operations functions
