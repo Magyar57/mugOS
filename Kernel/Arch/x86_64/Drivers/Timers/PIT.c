@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdatomic.h>
 #include "Logging.h"
 #include "IO.h"
 #include "HAL/Halt.h"
@@ -51,7 +52,9 @@ union CommandReg {
 	} bits;
 };
 
-uint64_t m_count = 0;
+// Count of the number of ticks since intialization.
+// Has atomicity for beeing thread and IRQ-safe
+atomic_uint_fast64_t m_count = 0;
 
 static void setDivisor(uint16_t div){
 	uint8_t low_byte = div & 0xff;
@@ -64,6 +67,7 @@ static void setDivisor(uint16_t div){
 }
 
 void pitIrq(void*){
+	// IRQs are disabled, no need for atomicity here
 	m_count++;
 }
 
@@ -84,11 +88,12 @@ void PIT_init(){
 }
 
 void PIT_wait(long ms){
-	uint64_t initialCount = m_count;
+	uint64_t curCount, initialCount = m_count;
 	long waited = 0; // µs (same as PRECISION)
 
 	do {
-		waited = (m_count - initialCount) * PRECISION;
 		halt();
+		curCount = atomic_load(&m_count);
+		waited = (curCount - initialCount) * PRECISION;
 	} while(waited/1000 <= ms);
 }
