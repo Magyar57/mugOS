@@ -5,22 +5,22 @@
 
 // i8259.h: Intel 8259 PIC Driver
 
-// Initialize/configure (remap) the PIC
+/// @brief Initialize/configure (remap) the PIC
 void i8259_init();
 
-// Enables (unmasks) a given IRQ
+/// @brief Enables (unmasks) a given IRQ
 void i8259_enableSpecific(int irq);
 
-// Disables (masks) a given IRQ
+/// @brief Disables (masks) a given IRQ
 void i8259_disableSpecific(int irq);
 
-// Disables (masks) all IRQ
-void i8259_disableAllIRQ();
-
-// Enables (unmasks) all IRQ. This disables the PIC
+/// @brief Enables (unmasks) all IRQ. This disables the PIC
 void i8259_enableAllIRQ();
 
-// Send EOI (end of interrupt) to the PIC
+/// @brief Disables (masks) all IRQ
+void i8259_disableAllIRQ();
+
+/// @brief Send EOI (end of interrupt) to the PIC
 void i8259_sendEIO(int irq);
 
 #endif

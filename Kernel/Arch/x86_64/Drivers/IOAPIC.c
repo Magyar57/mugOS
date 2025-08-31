@@ -169,6 +169,18 @@ static void setIrqMask(int irq, bool masked){
 	}
 }
 
+static void setAllIrqMask(bool masked){
+	union RedirectionReg redir;
+
+	for (int i=0 ; i<m_nIOAPIC ; i++){
+		for (int j=0 ; j<m_IOAPICs[i].pins ; j++){
+			redir.value = readRegister64(m_IOAPICs+i, IOAPIC_REG_REDIR_TABLE(j));
+			redir.bits.masked = masked;
+			writeRegister64(m_IOAPICs+i, IOAPIC_REG_REDIR_TABLE(j), redir.value);
+		}
+	}
+}
+
 // ================ Public API ================
 
 void IOAPIC_init(){
@@ -200,4 +212,12 @@ void IOAPIC_enableSpecific(int irq){
 
 void IOAPIC_disableSpecific(int irq){
 	setIrqMask(irq, true);
+}
+
+void IOAPIC_enableAllIRQ(){
+	setAllIrqMask(false);
+}
+
+void IOAPIC_disableAllIRQ(){
+	setAllIrqMask(true);
 }

@@ -28,6 +28,8 @@ struct IRQChip* IRQChip_get(){
 		m_chip.sendEOI = APIC_sendEIO;
 		m_chip.enableSpecific = IOAPIC_enableSpecific;
 		m_chip.disableSpecific = IOAPIC_disableSpecific;
+		m_chip.enableAll = IOAPIC_enableAllIRQ;
+		m_chip.disableAll = IOAPIC_disableAllIRQ;
 	}
 	else {
 		log(INFO, MODULE, "APIC not found, using legacy 8259 PIC");
@@ -35,6 +37,8 @@ struct IRQChip* IRQChip_get(){
 		m_chip.sendEOI = i8259_sendEIO;
 		m_chip.enableSpecific = i8259_enableSpecific;
 		m_chip.disableSpecific = i8259_disableSpecific;
+		m_chip.enableAll = i8259_enableAllIRQ;
+		m_chip.disableAll = i8259_disableAllIRQ;
 	}
 
 	m_chip.installPrehandler = installPrehandler;
