@@ -86,6 +86,15 @@ static inline bool waitUntilBitValueOrTimeout(uint8_t mask, uint8_t value){
 	return (timer < TIMEOUT);
 }
 
+static void flush(){
+	// Timeout-poll for data in the output buffer,
+	// and discard until there's nothing remaining
+
+	while (waitUntilBitValueOrTimeout(PS2C_STATUS_OUTPUT_BUFF, 1)) {
+		uint8_t data = inb(PS2C_PORT_DATA);
+	}
+}
+
 static bool pollByte(uint8_t* byte_out){
 	if (!waitUntilBitValueOrTimeout(PS2C_STATUS_OUTPUT_BUFF, 1))
 		return false;
@@ -142,7 +151,7 @@ void i8042_init(){
 	sendCommand(PS2C_CMD_DISABLE_PORT2);
 
 	// 4. Flush output buffer (discard data) if there is any
-	inb(PS2C_PORT_DATA);
+	flush();
 
 	// 5. Set Controller Configuration Byte
 	buff = readControllerConfigurationByte();
@@ -151,6 +160,8 @@ void i8042_init(){
 	buff &= ~(PS2C_CONFBYTE_PORT1_INTERRUPT|PS2C_CONFBYTE_PORT2_INTERRUPT
 			  |PS2C_CONFBYTE_PORT1_CLOCK);
 	writeControllerConfigurationByte(buff);
+	// The controller can now send buffered data from the keyboard, flush it
+	flush();
 
 	// 6. Perform self-test
 	// However, according to: https://forum.osdev.org/viewtopic.php?t=57546
@@ -168,6 +179,7 @@ void i8042_init(){
 		// Disable port 2's IRQ, and enable its clock for later
 		buff &= ~(PS2C_CONFBYTE_PORT2_INTERRUPT|PS2C_CONFBYTE_PORT2_CLOCK);
 		writeControllerConfigurationByte(buff);
+		flush();
 	}
 
 	// 8. Perform interface tests
