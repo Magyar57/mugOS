@@ -83,7 +83,18 @@ struct FADT {
 	uint8_t dayAlarm;
 	uint8_t monthAlarm;
 	uint8_t century;
-	uint16_t bootArchitectureFlags; // since ACPI 2.0+
+	union {
+		uint16_t value;
+		struct {
+			uint16_t legacyDevices : 1;
+			uint16_t i8042 : 1; // set if i8042 (or equivalent) is present on motherboard
+			uint16_t vgaNotPresent : 1;
+			uint16_t msiNotSupported : 1;
+			uint16_t pcieAspmControls : 1;
+			uint16_t cmosRtcNotPresent : 1;
+			uint16_t reserved : 10;
+		} bits;
+	} bootArchitectureFlags; // IA-PC boot architecture flags, since ACPI 2.0+
 	uint8_t  reserved_1;
 	union {
 		uint32_t value;

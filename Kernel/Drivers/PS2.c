@@ -1140,7 +1140,7 @@ void PS2_init(){
 		m_enabled = false;
 		m_PS2Keyboard.enabled = false;
 		m_PS2Mouse.enabled = false;
-		log(ERROR, MODULE, "Initalization failed, PS/2 Controller driver is disabled");
+		log(INFO, MODULE, "System does not support PS/2 (no controller found)");
 		return;
 	}
 	m_enabled = true;

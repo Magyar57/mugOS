@@ -2,12 +2,13 @@
 #include "assert.h"
 #include "IO.h"
 #include "IRQ.h"
+#include "Drivers/ACPI/ACPI.h"
 
 #include "i8042.h"
 
-#define MODULE "i8042 PS/2 Controller driver"
+#define MODULE "i8042"
 
-// Intel 8042 PS/2 Controller driver
+// Intel 8042 PS/2 controller driver
 
 // Ports
 #define PS2C_PORT_DATA						0x60 // Read/Write
@@ -91,7 +92,7 @@ static void flush(){
 	// and discard until there's nothing remaining
 
 	while (waitUntilBitValueOrTimeout(PS2C_STATUS_OUTPUT_BUFF, 1)) {
-		uint8_t data = inb(PS2C_PORT_DATA);
+		inb(PS2C_PORT_DATA);
 	}
 }
 
@@ -143,8 +144,12 @@ void i8042_init(){
 
 	// 1. Disable Legacy USB (see USB driver, if present)
 
-	// 2. Determine if the PS/2 Controller exists
-	// When ACPI will be implemented... it is present on QEMU
+	// 2. Determine if this PS/2 controller is present on the system
+	if (!g_FADT.bootArchitectureFlags.bits.i8042){
+		log(INFO, MODULE, "No i8042 or equivalent PS/2 controller present");
+		m_enabled = false;
+		return;
+	}
 
 	// 3. Disable devices (note: these have no responses)
 	sendCommand(PS2C_CMD_DISABLE_PORT1);
