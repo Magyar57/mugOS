@@ -7,7 +7,7 @@
 // CPU.h: Architecture related flags & features (CPUID...)
 
 union Features {
-	uint32_t ints[13];
+	uint32_t ints[16];
 	struct FeaturesBits {
 		// ECX values for CPUID EAX=0x01
 		uint32_t SSE3 : 1;
@@ -210,6 +210,13 @@ union Features {
 		uint32_t reserved_7_20 : 1;
 		uint32_t MONITOR_MITG_NO : 1;
 		uint32_t reserved_7_21 : 24;
+
+		// EAX values for CPUID EAX=0x15
+		uint32_t TscClockRatioDenominator : 32;
+		// EBX values for CPUID EAX=0x15
+		uint32_t TscClockRatioNumerator : 32;
+		// ECX values for CPUID EAX=0x15
+		uint32_t TscFrequency : 32;
 	} bits;
 };
 

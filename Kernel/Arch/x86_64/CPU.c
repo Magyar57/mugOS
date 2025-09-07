@@ -15,14 +15,14 @@ void cpuidWrapperWithSubleaf(int leaf, int subleaf,
 							 uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
 
 // CPUID.EAX = 0x00: Max input value for basic cpuid informations & vendor string
-static void parseCpuid_basic_0(struct CPU* cpu){
-	uint32_t rbx, rcx, rdx;
-	cpuidWrapper(0x00, (uint32_t*) &cpu->maxInformation, &rbx, &rcx, &rdx);
+static void parseCpuid_0x00(struct CPU* cpu){
+	uint32_t ebx, ecx, edx;
+	cpuidWrapper(0x00, (uint32_t*) &cpu->maxInformation, &ebx, &ecx, &edx);
 
-	// The CPU vendor string is contained in rbx, rdx and rcx ; copy it into the structure
-	memcpy(cpu->vendorStr, &rbx, 4);
-	memcpy(cpu->vendorStr+4, &rdx, 4);
-	memcpy(cpu->vendorStr+8, &rcx, 4);
+	// The CPU vendor string is contained in ebx, edx and ecx ; copy it into the structure
+	memcpy(cpu->vendorStr, &ebx, 4);
+	memcpy(cpu->vendorStr+4, &edx, 4);
+	memcpy(cpu->vendorStr+8, &ecx, 4);
 	cpu->vendorStr[12] = '\0';
 
 	if (strncmp(cpu->vendorStr, "GenuineIntel", 13) == 0)
@@ -34,105 +34,115 @@ static void parseCpuid_basic_0(struct CPU* cpu){
 }
 
 // CPUID.EAX = 0x01: Version informations
-static void parseCpuid_basic_1(struct CPU* cpu){
-	uint32_t rax, rbx, rcx, rdx;
-	cpuidWrapper(0x01, &rax, &rbx, &rcx, &rdx);
+static void parseCpuid_0x01(struct CPU* cpu){
+	uint32_t eax, ebx, ecx, edx;
+	cpuidWrapper(0x01, &eax, &ebx, &ecx, &edx);
 
 	// EAX
-	cpu->stepping = (rax & 0x0000000f);
-	cpu->model = (rax & 0x000000f0) >> 4;
-	cpu->family = (rax & 0x00000f00) >> 8;
+	cpu->stepping = (eax & 0x0000000f);
+	cpu->model = (eax & 0x000000f0) >> 4;
+	cpu->family = (eax & 0x00000f00) >> 8;
 	if ((cpu->family == 0x6) || (cpu->family == 0xf)){
-		cpu->model += ((rax & 0x000f0000) >> 12); // extended model ID
+		cpu->model += ((eax & 0x000f0000) >> 12); // extended model ID
 	}
 	if (cpu->family == 0xf){
-		cpu->family += (rax & 0x0ff00000 >> 20); // extended family ID
+		cpu->family += (eax & 0x0ff00000 >> 20); // extended family ID
 	}
-	cpu->type = (rax & 0x00003000) >> 12;
+	cpu->type = (eax & 0x00003000) >> 12;
 	// EBX
-	cpu->brandIndex = (rbx & 0x000000ff);
-	cpu->cflushLineSize = (rbx & 0x0000ff00) >> 8;
-	cpu->maxAddressableCpuIds = (rbx & 0x00ff0000) >> 16;
+	cpu->brandIndex = (ebx & 0x000000ff);
+	cpu->cflushLineSize = (ebx & 0x0000ff00) >> 8;
+	cpu->maxAddressableCpuIds = (ebx & 0x00ff0000) >> 16;
 	// EDX & EXC
-	cpu->features.ints[0] = rcx;
-	cpu->features.ints[1] = rdx;
+	cpu->features.ints[0] = ecx;
+	cpu->features.ints[1] = edx;
 }
 
 // CPUID.EAX = 0x07: Structured extended feature flags enumeration
-static void parseCpuid_basic_7(struct CPU* cpu){
+static void parseCpuid_0x07(struct CPU* cpu){
 	uint32_t maxSubLeaves;
-	uint32_t rax, rbx, rcx, rdx;
-	cpuidWrapper(0x07, &maxSubLeaves, &rbx, &rcx, &rdx);
-	cpu->features.ints[2] = rbx;
-	cpu->features.ints[3] = rcx;
-	cpu->features.ints[4] = rdx;
+	uint32_t eax, ebx, ecx, edx;
+	cpuidWrapper(0x07, &maxSubLeaves, &ebx, &ecx, &edx);
+	cpu->features.ints[2] = ebx;
+	cpu->features.ints[3] = ecx;
+	cpu->features.ints[4] = edx;
 
 	for (uint32_t i=1 ; i<=maxSubLeaves ; i++){
-		cpuidWrapperWithSubleaf(0x07, i, &rax, &rbx, &rcx, &rdx);
-		cpu->features.ints[5+i + 0] = rax;
-		cpu->features.ints[5+i + 1] = rbx;
-		cpu->features.ints[5+i + 2] = rcx;
-		cpu->features.ints[5+i + 3] = rdx;
+		cpuidWrapperWithSubleaf(0x07, i, &eax, &ebx, &ecx, &edx);
+		cpu->features.ints[5+i + 0] = eax;
+		cpu->features.ints[5+i + 1] = ebx;
+		cpu->features.ints[5+i + 2] = ecx;
+		cpu->features.ints[5+i + 3] = edx;
 	}
 }
 
-// CPUID.EAX = 0x80000000: Max input value for extended cpuid informations
-static void parseCpuid_extended_0(struct CPU* cpu){
-	uint32_t rbx, rcx, rdx;
+// CPUID.EAX = 0x15: Time Stamp Counter & Nominal Core Crystal Clock information
+static void parseCpuid_0x15(struct CPU* cpu){
+	uint32_t eax, ebx, ecx, edx;
+	cpuidWrapper(0x15, &eax, &ebx, &ecx, &edx);
 
-	cpuidWrapper(0x80000000, (uint32_t*) &cpu->maxExtendedInformation, &rbx, &rcx, &rdx);
+	cpu->features.bits.TscClockRatioDenominator = eax;
+	cpu->features.bits.TscClockRatioNumerator = ebx;
+	cpu->features.bits.TscFrequency = ecx;
+}
+
+// CPUID.EAX = 0x80000000: Max input value for extended cpuid informations
+static void parseCpuidExtended_0x00(struct CPU* cpu){
+	uint32_t ebx, ecx, edx;
+
+	cpuidWrapper(0x80000000, (uint32_t*) &cpu->maxExtendedInformation, &ebx, &ecx, &edx);
 }
 
 // CPUID.EAX = 0x80000001: Extended flags
-static void parseCpuid_extended_1(struct CPU* cpu){
-	uint32_t rax, rbx, rcx, rdx;
+static void parseCpuidExtended_0x01(struct CPU* cpu){
+	uint32_t eax, ebx, ecx, edx;
 
-	cpuidWrapper(0x80000001, &rax, &rbx, &rcx, &rdx);
+	cpuidWrapper(0x80000001, &eax, &ebx, &ecx, &edx);
 
-	cpu->extFeatures.ints[0] = rcx;
-	cpu->extFeatures.ints[1] = rdx;
+	cpu->extFeatures.ints[0] = ecx;
+	cpu->extFeatures.ints[1] = edx;
 }
 
 // CPUID.EAX = 0x80000004 to 0x80000002: processor brand string
-static void parseCpuid_extended_2to4(struct CPU* cpu){
-	uint32_t rax, rbx, rcx, rdx;
+static void parseCpuidExtended_0x02to0x04(struct CPU* cpu){
+	uint32_t eax, ebx, ecx, edx;
 
 	for (int i=0 ; i<3 ; i++){
-		cpuidWrapper(0x80000002 + i, &rax, &rbx, &rcx, &rdx);
-		memcpy(cpu->brand + 16*i +  0, &rax, 4);
-		memcpy(cpu->brand + 16*i +  4, &rbx, 4);
-		memcpy(cpu->brand + 16*i +  8, &rcx, 4);
-		memcpy(cpu->brand + 16*i + 12, &rdx, 4);
+		cpuidWrapper(0x80000002 + i, &eax, &ebx, &ecx, &edx);
+		memcpy(cpu->brand + 16*i +  0, &eax, 4);
+		memcpy(cpu->brand + 16*i +  4, &ebx, 4);
+		memcpy(cpu->brand + 16*i +  8, &ecx, 4);
+		memcpy(cpu->brand + 16*i + 12, &edx, 4);
 	}
 	cpu->brand[48] = '\0';
 }
 
 // CPUID.EAX = 0x80000006: Extended cache information
-static void parseCpuid_extended_6(struct CPU* cpu){
-	uint32_t rax, rbx, rcx, rdx;
+static void parseCpuidExtended_0x06(struct CPU* cpu){
+	uint32_t eax, ebx, ecx, edx;
 
-	cpuidWrapper(0x80000006, &rax, &rbx, &rcx, &rdx);
+	cpuidWrapper(0x80000006, &eax, &ebx, &ecx, &edx);
 
-	cpu->extFeatures.ints[2] = rcx;
+	cpu->extFeatures.ints[2] = ecx;
 }
 
 // CPUID.EAX = 0x80000007: InvariantTSC
-static void parseCpuid_extended_7(struct CPU* cpu){
-	uint32_t rax, rbx, rcx, rdx;
+static void parseCpuidExtended_0x07(struct CPU* cpu){
+	uint32_t eax, ebx, ecx, edx;
 
-	cpuidWrapper(0x80000007, &rax, &rbx, &rcx, &rdx);
+	cpuidWrapper(0x80000007, &eax, &ebx, &ecx, &edx);
 
-	cpu->extFeatures.ints[3] = rdx;
+	cpu->extFeatures.ints[3] = edx;
 }
 
 // CPUID.EAX = 0x80000008: More extended flags
-static void parseCpuid_extended_8(struct CPU* cpu){
-	uint32_t rax, rbx, rcx, rdx;
+static void parseCpuidExtended_0x08(struct CPU* cpu){
+	uint32_t eax, ebx, ecx, edx;
 
-	cpuidWrapper(0x80000008, &rax, &rbx, &rcx, &rdx);
+	cpuidWrapper(0x80000008, &eax, &ebx, &ecx, &edx);
 
-	cpu->extFeatures.ints[4] = rax;
-	cpu->extFeatures.ints[5] = rbx;
+	cpu->extFeatures.ints[4] = eax;
+	cpu->extFeatures.ints[5] = ebx;
 }
 
 void CPU_init(struct CPU* cpu){
@@ -147,13 +157,13 @@ void CPU_init(struct CPU* cpu){
 	cr0.bits.WP = 1; // inhibits kernel writes to read-only pages
 	Registers_writeCR0(cr0.value);
 
-	parseCpuid_basic_0(cpu);
+	parseCpuid_0x00(cpu);
 	if (cpu->vendor == Vendor_Unsupported){
 		log(PANIC, MODULE, "Unsupported CPU vendor '%s'", cpu->vendorStr);
 		panic();
 	}
 
-	parseCpuid_basic_1(cpu);
+	parseCpuid_0x01(cpu);
 	if (!cpu->features.bits.MSR_RDMSR)
 		panicForMissingFeature("RDMSR and WRMSR instructions");
 
@@ -173,9 +183,25 @@ void CPU_init(struct CPU* cpu){
 
 	switch (cpu->maxInformation){
 	default:
+	case 0x15:
+		// TSC informations
+		parseCpuid_0x15(cpu);
+	case 0x14:
+	case 0x13:
+	case 0x12:
+	case 0x11:
+	case 0x10:
+	case 0x0f:
+	case 0x0e:
+	case 0x0d:
+	case 0x0c:
+	case 0x0b:
+	case 0x0a:
+	case 0x09:
+	case 0x08:
 	case 0x07:
 		// Structured extended feature flags enumeration
-		parseCpuid_basic_7(cpu);
+		parseCpuid_0x07(cpu);
 	case 0x06:
 		// Thermal and power management
 	case 0x05:
@@ -193,29 +219,29 @@ void CPU_init(struct CPU* cpu){
 		break;
 	}
 
-	parseCpuid_extended_0(cpu);
+	parseCpuidExtended_0x00(cpu);
 
 	switch (cpu->maxExtendedInformation){
 	default:
 	case 0x80000008:
 		// More extended flags
-		parseCpuid_extended_8(cpu);
+		parseCpuidExtended_0x08(cpu);
 	case 0x80000007:
 		// InvariantTSC
-		parseCpuid_extended_7(cpu);
+		parseCpuidExtended_0x07(cpu);
 	case 0x80000006:
 		// Extended cache information
-		parseCpuid_extended_6(cpu);
+		parseCpuidExtended_0x06(cpu);
 	case 0x80000005:
 		// Reserved
 	case 0x80000004:
 		// From 0x80000004 to 0x80000002: processor brand string
-		parseCpuid_extended_2to4(cpu);
+		parseCpuidExtended_0x02to0x04(cpu);
 	case 0x80000003:
 	case 0x80000002:
 	case 0x80000001:
 		// Extended flags
-		parseCpuid_extended_1(cpu);
+		parseCpuidExtended_0x01(cpu);
 	case 0x80000000:
 		// Max extended input value (done already)
 		break;
