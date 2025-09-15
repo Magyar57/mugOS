@@ -6,9 +6,27 @@
 
 // CPU.h: Architecture related flags & features (CPUID...)
 
+struct Leaf {
+	uint32_t eax;
+	uint32_t ebx;
+	uint32_t ecx;
+	uint32_t edx;
+} packed;
+
 union Features {
-	uint32_t ints[16];
+	struct CpuidLeaves {
+		struct Leaf leaf_0x01;
+		struct Leaf leaf_0x07_0;
+		struct Leaf leaf_0x07_1;
+		struct Leaf leaf_0x07_2;
+		struct Leaf leaf_0x15;
+	} leaves;
 	struct FeaturesBits {
+		// ================ Leaf 0x01 ================
+		// EAX values for CPUID EAX=0x01
+		uint32_t notpresent_0x01_eax : 32;
+		// EBX values for CPUID EAX=0x01
+		uint32_t notpresent_0x01_ebx : 32;
 		// ECX values for CPUID EAX=0x01
 		uint32_t SSE3 : 1;
 		uint32_t PCLMULQDQ : 1;
@@ -26,7 +44,7 @@ union Features {
 		uint32_t CMPXCHG16B : 1;
 		uint32_t xTPR : 1;
 		uint32_t PDCM : 1;
-		uint32_t reserved_0_0 : 1;
+		uint32_t reserved_0x01_1_0 : 1;
 		uint32_t PCID : 1;
 		uint32_t DCA : 1;
 		uint32_t SSE4_1 : 1;
@@ -41,7 +59,7 @@ union Features {
 		uint32_t AVX : 1;
 		uint32_t F16C : 1;
 		uint32_t RDRAND : 1;
-		uint32_t reserved_0_1 : 1;
+		uint32_t reserved_0x01_1_1 : 1;
 		// EDX values for CPUID EAX=0x01
 		uint32_t FPU : 1;
 		uint32_t VME : 1;
@@ -53,7 +71,7 @@ union Features {
 		uint32_t MCE : 1;
 		uint32_t CX8 : 1;
 		uint32_t APIC : 1;
-		uint32_t reserved_1_0 : 1;
+		uint32_t reserved_0x01_1_2 : 1;
 		uint32_t SEP : 1;
 		uint32_t MTRR : 1;
 		uint32_t PGE : 1;
@@ -63,7 +81,7 @@ union Features {
 		uint32_t PSE_36 : 1;
 		uint32_t PSN : 1;
 		uint32_t CLFSH : 1;
-		uint32_t reserved_1_1 : 1;
+		uint32_t reserved_0x01_1_3 : 1;
 		uint32_t DS : 1;
 		uint32_t ACPI : 1;
 		uint32_t MMX : 1;
@@ -73,9 +91,12 @@ union Features {
 		uint32_t SS : 1;
 		uint32_t HTT : 1;
 		uint32_t TM : 1;
-		uint32_t reserved_1_2 : 1;
+		uint32_t reserved_0x01_2 : 1;
 		uint32_t PBE : 1;
 
+		// ================ Leaf 0x07 (ECX=0) ================
+		// EAX values for CPUID EAX=0x07, ECX=0
+		uint32_t notpresent_0x07_0_eax : 32;
 		// EBX values for CPUID EAX=0x07, ECX=0
 		uint32_t FSGSBASE : 1;
 		uint32_t IA32_TSC_ADJUST : 1;
@@ -99,7 +120,7 @@ union Features {
 		uint32_t ADX : 1;
 		uint32_t SMAP : 1;
 		uint32_t AVX512_IFMA : 1;
-		uint32_t reserved_7_0 : 1;
+		uint32_t reserved_0x07_0_0 : 1;
 		uint32_t CLFLUSHOPT : 1;
 		uint32_t CLWB : 1;
 		uint32_t IntelProcessorTrace : 1;
@@ -125,41 +146,41 @@ union Features {
 		uint32_t AVX512_BITALG : 1;
 		uint32_t TME_EN : 1;
 		uint32_t AVX512_VPOPCNTDQ : 1;
-		uint32_t reserved_7_1 : 1;
+		uint32_t reserved_0x07_0_1 : 1;
 		uint32_t LA57 : 1;
 		uint32_t MAWAU_value : 5;
 		uint32_t RDPID : 1;
 		uint32_t KL : 1;
 		uint32_t BUS_LOCK_DETECT : 1;
 		uint32_t CLDEMOTE : 1;
-		uint32_t reserved_7_2 : 1;
+		uint32_t reserved_0x07_0_2 : 1;
 		uint32_t MOVDIRI : 1;
 		uint32_t MOVDIR64B : 1;
 		uint32_t ENQCMD : 1;
 		uint32_t SGX_LC : 1;
 		uint32_t PKS : 1;
 		// EDX values for CPUID EAX=0x07, ECX=0
-		uint32_t reserved_7_3 : 1;
+		uint32_t reserved_0x07_0_3 : 1;
 		uint32_t SGX_KEYS : 1;
 		uint32_t AVX512_4VNNIW : 1;
 		uint32_t AVX512_4FMAPS : 1;
 		uint32_t FastShortREP_MOV : 1;
 		uint32_t UINTR : 1;
-		uint32_t reserved_7_4 : 2;
+		uint32_t reserved_0x07_0_4 : 2;
 		uint32_t AVX512_VP2INTERSECT : 1;
 		uint32_t SRBDS_CTRL : 1;
 		uint32_t MD_CLEAR : 1;
 		uint32_t RTM_ALWAYS_ABORT : 1;
-		uint32_t reserved_7_5 : 1;
+		uint32_t reserved_0x07_0_5 : 1;
 		uint32_t RTM_FORCE_ABORT : 1;
 		uint32_t SERIALIZE : 1;
 		uint32_t Hybrid : 1;
 		uint32_t TSXLDTRK : 1;
-		uint32_t reserved_7_6 : 1;
+		uint32_t reserved_0x07_0_6 : 1;
 		uint32_t PCONFIG : 1;
 		uint32_t ArchitecturalLBRs : 1;
 		uint32_t CET_IBT : 1;
-		uint32_t reserved_7_7 : 1;
+		uint32_t reserved_0x07_0_7 : 1;
 		uint32_t AMX_BF16 : 1;
 		uint32_t AVX512_FP16 : 1;
 		uint32_t AMX_TILE : 1;
@@ -171,35 +192,36 @@ union Features {
 		uint32_t IA32_CORE_CAPABILITIES : 1;
 		uint32_t SSBD : 1;
 
+		// ================ Leaf 0x07 (ECX=1) ================
 		// EAX values for CPUID EAX=0x07, ECX=1
-		uint32_t reserved_7_8 : 4;
+		uint32_t reserved_0x07_1_8 : 4;
 		uint32_t AVX_VNNI : 1;
 		uint32_t AVX512_BF16 : 1;
-		uint32_t reserved_7_9 : 4;
+		uint32_t reserved_0x07_1_9 : 4;
 		uint32_t FastZeroLength_REP_MOVSB : 1;
 		uint32_t FastShort_REP_STOSB : 1;
 		uint32_t FastShort_REP_CMPSB_SCASB : 1;
-		uint32_t reserved_7_10 : 9;
+		uint32_t reserved_0x07_1_10 : 9;
 		uint32_t HRESET : 1;
-		uint32_t reserved_7_11 : 7;
+		uint32_t reserved_0x07_1_11 : 7;
 		uint32_t INVD_DISABLE_POST_BIOS_DONE : 1;
-		uint32_t reserved_7_12 : 1;
+		uint32_t reserved_0x07_1_12 : 1;
 		// EBX values for CPUID EAX=0x07, ECX=1
 		uint32_t IA32_PPIN : 1;
-		uint32_t reserved_7_13 : 31;
+		uint32_t reserved_0x07_1_13 : 31;
 		// ECX values for CPUID EAX=0x07, ECX=1
-		uint32_t reserved_7_14 : 32;
+		uint32_t reserved_0x07_1_14 : 32;
 		// EDX values for CPUID EAX=0x07, ECX=1
-		uint32_t reserved_7_15 : 18;
+		uint32_t reserved_0x07_1_15 : 18;
 		uint32_t CET_SSS : 1;
-		uint32_t reserved_7_16 : 13;
+		uint32_t reserved_0x07_1_16 : 13;
 
 		// EAX values for CPUID EAX=0x07, ECX=2
-		uint32_t reserved_7_17 : 32;
+		uint32_t reserved_0x07_1_17 : 32;
 		// EBX values for CPUID EAX=0x07, ECX=2
-		uint32_t reserved_7_18 : 32;
+		uint32_t reserved_0x07_1_18 : 32;
 		// ECX values for CPUID EAX=0x07, ECX=2
-		uint32_t reserved_7_19 : 32;
+		uint32_t reserved_0x07_1_19 : 32;
 		// EDX values for CPUID EAX=0x07, ECX=2
 		uint32_t PSFD : 1;
 		uint32_t IPRED_CTRL : 1;
@@ -207,67 +229,102 @@ union Features {
 		uint32_t DDPD_U : 1;
 		uint32_t BHI_CTRL : 1;
 		uint32_t MCDT_NO : 1;
-		uint32_t reserved_7_20 : 1;
+		uint32_t reserved_0x07_1_20 : 1;
 		uint32_t MONITOR_MITG_NO : 1;
-		uint32_t reserved_7_21 : 24;
+		uint32_t reserved_0x07_1_21 : 24;
 
+		// ================ Leaf 0x15 ================
 		// EAX values for CPUID EAX=0x15
 		uint32_t TscClockRatioDenominator : 32;
 		// EBX values for CPUID EAX=0x15
 		uint32_t TscClockRatioNumerator : 32;
 		// ECX values for CPUID EAX=0x15
 		uint32_t TscFrequency : 32;
+		// ECX values for CPUID EAX=0x15
+		uint32_t reserved_0x15_0 : 32;
 	} bits;
 };
 
 union ExtendedFeatures {
-	uint32_t ints[6];
+	struct CpuidExtendedLeaves {
+		struct Leaf leaf_0x80000001;
+		struct Leaf leaf_0x80000006;
+		struct Leaf leaf_0x80000007;
+		struct Leaf leaf_0x80000008;
+	} leaves;
 	struct ExtendedFeaturesBits {
+		// ================ Leaf 0x80000001 ================
+		// EAX values for CPUID EAX=0x80000001
+		uint32_t notpresent_0x80000001_eax : 32;
+		// EBX values for CPUID EAX=0x80000001
+		uint32_t notpresent_0x80000001_ebx : 32;
 		// ECX values for CPUID EAX=0x80000001
 		uint32_t LAHF_SAHF : 1;
-		uint32_t reserved_1_0 : 4;
+		uint32_t reserved_0x80000001_0 : 4;
 		uint32_t LZCNT : 1;
-		uint32_t reserved_1_1 : 2;
+		uint32_t reserved_0x80000001_1 : 2;
 		uint32_t PREFETCHW : 1;
-		uint32_t reserved_1_2 : 23;
+		uint32_t reserved_0x80000001_2 : 23;
 		// EDX values for CPUID EAX=0x80000001
-		uint32_t reserved_1_3 : 11;
+		uint32_t reserved_0x80000001_3 : 11;
 		uint32_t SYSCALL_SYSRET : 1;
-		uint32_t reserved_1_4 : 8;
+		uint32_t reserved_0x80000001_4 : 8;
 		uint32_t NX : 1; // Execute disable bit
-		uint32_t reserved_1_5 : 5;
+		uint32_t reserved_0x80000001_5 : 5;
 		uint32_t PAGES_1GB : 1;
 		uint32_t RDTSCP_and_IA32_TSC_AUX : 1;
-		uint32_t reserved_1_6 : 1;
+		uint32_t reserved_0x80000001_6 : 1;
 		uint32_t LongMode : 1;
-		uint32_t reserved_1_7 : 2;
+		uint32_t reserved_0x80000001_7 : 2;
 
+		// ================ Leaf 0x80000006 ================
+		// EAX values for CPUID EAX=0x80000006
+		uint32_t notpresent_0x80000006_eax : 32;
+		// EBX values for CPUID EAX=0x80000006
+		uint32_t notpresent_0x80000006_ebx : 32;
 		// ECX values for CPUID EAX=0x80000006
 		uint32_t CacheLineSize : 8; // in bytes
-		uint32_t reserved_2_0 : 4;
+		uint32_t reserved_0x80000002_0 : 4;
 		uint32_t L2Associativity : 4;
 		uint32_t CacheSize : 16; // in 1K units
+		// EDX
+		uint32_t notpresent_0x80000006_edx : 32;
 
+		// ================ Leaf 0x80000007 ================
+		// EAX values for CPUID EAX=0x80000007
+		uint32_t notpresent_0x80000007_eax : 32;
+		// EBX values for CPUID EAX=0x80000007
+		uint32_t notpresent_0x80000007_ebx : 32;
+		// ECX values for CPUID EAX=0x80000007
+		uint32_t notpresent_0x80000007_ecx : 32;
 		// EDX values for CPUID EAX=0x80000007
-		uint32_t reserved_3_0 : 8;
+		uint32_t reserved_0x80000003_0 : 8;
 		uint32_t InvariantTSC : 1;
-		uint32_t reserved_3_1 : 23;
+		uint32_t reserved_0x80000003_1 : 23;
 
+		// ================ Leaf 0x80000008 ================
 		// EAX values for CPUID EAX=0x80000008
 		uint32_t NumberOfPhysicalAddressBits : 8;
 		uint32_t NumberOfLinearAddressBits : 8;
-		uint32_t reserved_4_0 : 16;
+		uint32_t reserved_0x80000004_0 : 16;
 		// EBX values for CPUID EAX=0x80000008
-		uint32_t reserved_4_1 : 9;
+		uint32_t reserved_0x80000004_1 : 9;
 		uint32_t WBNOINVD : 1;
-		uint32_t reserved_4_2 : 22;
+		uint32_t reserved_0x80000004_2 : 22;
+		// ECX values for CPUID EAX=0x80000008
+		uint32_t notpresent_0x80000008_ecx : 32;
+		// EDX values for CPUID EAX=0x80000008
+		uint32_t notpresent_0x80000008_edx : 32;
 	} bits;
 };
 
+compile_assert(sizeof(struct CpuidLeaves) == sizeof(struct FeaturesBits));
+compile_assert(sizeof(struct CpuidExtendedLeaves) == sizeof(struct ExtendedFeaturesBits));
+
 enum Vendor {
-	Vendor_Unsupported,
-	Vendor_Intel,
-	Vendor_AMD
+	VENDOR_UNSUPPORTED,
+	VENDOR_INTEL,
+	VENDOR_AMD
 };
 
 struct CPU {
