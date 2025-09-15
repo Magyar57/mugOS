@@ -20,6 +20,7 @@ union Features {
 		struct Leaf leaf_0x07_1;
 		struct Leaf leaf_0x07_2;
 		struct Leaf leaf_0x15;
+		struct Leaf leaf_0x16;
 	} leaves;
 	struct FeaturesBits {
 		// ================ Leaf 0x01 ================
@@ -240,8 +241,21 @@ union Features {
 		uint32_t TscClockRatioNumerator : 32;
 		// ECX values for CPUID EAX=0x15
 		uint32_t TscFrequency : 32;
-		// ECX values for CPUID EAX=0x15
+		// EDX values for CPUID EAX=0x15
 		uint32_t reserved_0x15_0 : 32;
+
+		// ================ Leaf 0x16 ================
+		// EAX values for CPUID EAX=0x16
+		uint32_t BaseFrequency : 16; // in MHz
+		uint32_t reserved_0x16_0 : 16;
+		// EBX values for CPUID EAX=0x16
+		uint32_t MaxFrequency : 16;
+		uint32_t reserved_0x16_1 : 16;
+		// ECX values for CPUID EAX=0x16
+		uint32_t BusFrequency : 16;
+		uint32_t reserved_0x16_2 : 16;
+		// EDX values for CPUID EAX=0x16
+		uint32_t reserved_0x16_3 : 32;
 	} bits;
 };
 

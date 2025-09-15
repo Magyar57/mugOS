@@ -90,10 +90,20 @@ static void parseCpuid_0x07(struct CPU* cpu){
 static void parseCpuid_0x15(struct CPU* cpu){
 	uint32_t eax, ebx, ecx, edx;
 	cpuidWrapper(0x15, &eax, &ebx, &ecx, &edx);
+	cpu->features.leaves.leaf_0x15.eax = eax;
+	cpu->features.leaves.leaf_0x15.ebx = ebx;
+	cpu->features.leaves.leaf_0x15.ecx = ecx;
+	cpu->features.leaves.leaf_0x15.edx = edx;
+}
 
-	cpu->features.bits.TscClockRatioDenominator = eax;
-	cpu->features.bits.TscClockRatioNumerator = ebx;
-	cpu->features.bits.TscFrequency = ecx;
+// CPUID.EAX = 0x16: Processor Frequency Information
+static void parseCpuid_0x16(struct CPU* cpu){
+	uint32_t eax, ebx, ecx, edx;
+	cpuidWrapper(0x16, &eax, &ebx, &ecx, &edx);
+	cpu->features.leaves.leaf_0x16.eax = eax;
+	cpu->features.leaves.leaf_0x16.ebx = ebx;
+	cpu->features.leaves.leaf_0x16.ecx = ecx;
+	cpu->features.leaves.leaf_0x16.edx = edx;
 }
 
 // CPUID.EAX = 0x80000000: Max input value for extended cpuid informations
@@ -199,6 +209,9 @@ void CPU_init(struct CPU* cpu){
 
 	switch (cpu->maxInformation){
 	default:
+	case 0x16:
+		// CPU Frequencies
+		parseCpuid_0x16(cpu);
 	case 0x15:
 		// TSC informations
 		parseCpuid_0x15(cpu);
@@ -281,8 +294,8 @@ void CPU_print(struct CPU* cpu){
 		cpu->extFeatures.bits.CacheSize, cpu->extFeatures.bits.L2Associativity,
 		cpu->extFeatures.bits.CacheLineSize);
 
-	// log(INFO, MODULE, "CPUID max values: basic=%#hhx extended=%#hhx",
-	// 	cpu->maxInformation, cpu->maxExtendedInformation);
+	log(INFO, MODULE, "CPUID max values: basic=%#hhx extended=%#hhx",
+		cpu->maxInformation, cpu->maxExtendedInformation);
 
 	const char* SSE3 = (cpu->features.bits.SSE3) ? "SSE3 " : "";
 	const char* PCLMULQDQ = (cpu->features.bits.PCLMULQDQ) ? "PCLMULQDQ " : "";
@@ -491,6 +504,12 @@ void CPU_print(struct CPU* cpu){
 		log(INFO, MODULE, "TSC Clock frequency: %d MHz (ratio denominator=%d numerator=%d)",
 		cpu->features.bits.TscClockRatioDenominator, cpu->features.bits.TscClockRatioNumerator,
 		cpu->features.bits.TscFrequency);
+	}
+
+	if (cpu->features.bits.BaseFrequency != 0){
+		log(INFO, MODULE, "CPU frequencies: base %d MHz, max %d MHz, bus %d Mhz",
+		cpu->features.bits.BaseFrequency, cpu->features.bits.MaxFrequency,
+		cpu->features.bits.BusFrequency);
 	}
 
 	const char* LAHF_SAHF = (cpu->extFeatures.bits.LAHF_SAHF) ? "LAHF_SAHF " : "";
