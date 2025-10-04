@@ -35,7 +35,7 @@ $(TEMP_PARTITION1): $(LIMINE_CONF) | $(TEMP_IMAGE) $(LIMINE_UEFI_EXEC) $(LIMINE_
 #
 kernel: $(BUILD_DIR)/kernel.elf
 
-$(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.map: $(shell find Kernel/** -type f) | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.map: $(shell find . -path "./Kernel/*" -type f) | $(BUILD_DIR)
 	@$(MAKE) -C Kernel $(MAKE_FLAGS)
 
 #
