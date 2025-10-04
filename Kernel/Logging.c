@@ -4,7 +4,6 @@
 #include "Drivers/Serial.h"
 
 #include "Logging.h"
-
 #define MODULE "Logging"
 
 static const char* LOG_LEVEL_PREFIX[] = {
@@ -77,17 +76,22 @@ void log(int logLevel, const char* moduleName, const char* logFmtStr, ...){
 	Serial_sendStringDefault(buff);
 }
 
-void hexdump(int logLevel, const char* moduleName, void* addr , size_t n){
-	if (logLevel<0 || logLevel>PANIC)return;
+void hexdump(int logLevel, const char* moduleName, void* addr , int n){
+	if (logLevel<0 || logLevel>PANIC) return;
 
 	if (addr == NULL){
 		log(logLevel, moduleName, "Hexdump: (null)");
 		return;
 	}
 
+	if (n <= 0){
+		log(logLevel, moduleName, "Hexdump: Cannot dump size n=%d", n);
+		return;
+	}
+
 	char buff[512];
 	uint8_t* data = addr;
-	size_t i;
+	int i;
 	int printed;
 
 	// Dump 16 bytes per line
