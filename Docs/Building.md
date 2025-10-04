@@ -38,9 +38,9 @@ To build the operating system image, run `make` in the root folder.
 ## Docker build
 
 The [Dockerfile](../Dockerfile) will build an image containing all the dependencies,
-and can be used to build the image without downloading the dependencies on your system.
+and can be used to build mugOS without downloading the dependencies on your system.
 To do so, run the following commands:
 
 - Change current directory to mugOS folder: `cd path/to/mugOS`
-- Build the compiler-hosting image: `docker build -t mug-os:2.1 .`
-- Compile the OS: `docker run --rm -v .:/srv/mugOS mug-os:2.1 make && sudo chown -R $(whoami):$(whoami) build`
+- Build the compiler-hosting image: `docker build --tag mug-os:2.2 .`
+- Compile the OS: `docker run --rm --user $(id -u) --volume .:/srv/mugOS mug-os:2.2`
