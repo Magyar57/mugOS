@@ -28,6 +28,7 @@ struct SDTHeader {
 	uint32_t creatorID;
 	uint32_t creatorRevision;
 } packed;
+compile_assert(sizeof(struct SDTHeader) == 36);
 
 // ACPI table: eXtended System Descriptor Table
 struct XSDT {
@@ -36,10 +37,10 @@ struct XSDT {
 } packed;
 
 struct GenericAddressStructure {
-	uint8_t addressSpace;
-	uint8_t bitWidth;
-	uint8_t bitOffset;
-	uint8_t accessSize;
+	uint8_t addressSpace;	// Enum (e.g. 0x00 => System Memory Space)
+	uint8_t bitWidth;		// If is register: Size in bits
+	uint8_t bitOffset;		// If is register: Bit offset of the given register at the given address
+	uint8_t accessSize;		// 0: undefined, 1:byte, 2:word, 3:dword, 4:qword
 	// 64 bit address (we can't put a uint64_t because of alignment+pack constraints)
 	uint32_t address[2];
 } packed;
@@ -122,6 +123,16 @@ struct FADT {
 	struct GenericAddressStructure X_sleepStatusRegister;
 
 	uint64_t hypervisorVendorIdentity;
+} packed;
+
+// ACPI table: HPET (High Precision Event Timers) Table
+struct HPETT {
+	struct SDTHeader header;
+	uint32_t eventTimerBlockId;
+	struct GenericAddressStructure eventTimerBlockAddress;
+	uint8_t number; // HPET sequence number
+	uint16_t minClockTick; // Minimum Clock_tick in Periodic mode
+	uint8_t pageProtectionAndOemAttribute;
 } packed;
 
 // ================ MADT: Multiple APIC Description Table ================

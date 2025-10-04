@@ -5,9 +5,11 @@
 
 extern struct MADT g_MADT;
 extern struct FADT g_FADT;
+extern struct HPETT g_HPETT;
 
 extern bool g_MADTPresent;
 extern bool g_FADTPresent;
+extern bool g_HPETTPresent;
 
 void ACPI_init();
 

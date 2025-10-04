@@ -11,9 +11,11 @@
 
 struct MADT g_MADT;
 struct FADT g_FADT;
+struct HPETT g_HPETT;
 
 bool g_MADTPresent = false;
 bool g_FADTPresent = false;
+bool g_HPETTPresent = false;
 
 static int m_nTables; // Number of tables in the XSDT
 
@@ -200,6 +202,18 @@ static void parseMADT(struct rawMADT* madt_ptr){
 	g_MADTPresent = true;
 }
 
+static void parseHPETT(void* hpett){
+	struct SDTHeader* hdr = hpett;
+
+	if (!isChecksumValid(hpett, hdr->length)){
+		log(WARNING, MODULE, "Invalid HPETT checksum, table will be ignored");
+		return;
+	}
+
+	memcpy(&g_HPETT, hpett, hdr->length);
+	g_HPETTPresent = true;
+}
+
 static void parseXSDT(struct XSDT* xsdt){
 	// Note: we don't keep this table's data, as it only contains reference to other tables
 	if (!isChecksumValid((uint8_t*)xsdt, xsdt->header.length)){
@@ -224,13 +238,19 @@ static void parseXSDT(struct XSDT* xsdt){
 		else if (strncmp(hdr->signature, "APIC", 4) == 0){
 			parseMADT((struct rawMADT*) hdr);
 		}
+		// HPET: High Precision Event Timers
+		else if (strncmp(hdr->signature, "HPET", 4) == 0){
+			parseHPETT(hdr);
+		}
 
 		VMM_unmap(table_virt, 1);
 	}
 
-	log(INFO, MODULE, "Parsed tables: RSDP XSDT%s%s",
-		g_FADTPresent ? " FADT":"",
-		g_MADTPresent ? " MADT":"");
+	log(INFO, MODULE, "Parsed tables: RSDP XSDT%s%s%s",
+		g_FADTPresent ? " FADT" : "",
+		g_MADTPresent ? " MADT" : "",
+		g_HPETTPresent ? " HPETT" : ""
+	);
 }
 
 void ACPI_init(){
