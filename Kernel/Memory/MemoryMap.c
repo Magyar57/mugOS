@@ -132,7 +132,6 @@ static inline enum MemoryType getMemoryType(uint64_t limineMemoryType){
 	default:
 		log(PANIC, MODULE, "Unsupported limine memory type %d !!", limineMemoryType);
 		panic();
-		unreachable();
 	}
 }
 

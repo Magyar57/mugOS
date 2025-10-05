@@ -323,7 +323,6 @@ static paddr_t getBitmapStart(){
 
 	log(PANIC, MODULE, "No free allocatable memory to manage !!");
 	panic();
-	unreachable();
 }
 
 static uint64_t getAllocatableBlocks(){
@@ -373,7 +372,6 @@ static paddr_t earlyAllocate(struct limine_memmap_response* memmap, uint64_t n_p
 
 	log(PANIC, MODULE, "earlyAllocate out of memory !!");
 	panic();
-	unreachable();
 }
 
 static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memmap,

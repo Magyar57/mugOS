@@ -338,7 +338,7 @@ static inline int getNumberOfDigits(unsigned long long number, int base){
 		return getNumberOfDigits_base8(number);
 	}
 
-	__builtin_unreachable();
+	unreachable();
 	return getNumberOfDigits_base10(number);
 }
 

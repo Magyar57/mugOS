@@ -100,8 +100,6 @@ paddr_t VMM_toPhysical(vaddr_t addr){
 	// We need to find address in paging mappings
 	log(PANIC, MODULE, "Calling VMM_toPhysical on VMM_map-ed region is unimplemented");
 	panic();
-
-	unreachable();
 }
 
 // ================ Virtual -> Physical ================

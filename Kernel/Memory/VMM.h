@@ -40,7 +40,7 @@ paddr_t VMM_toPhysical(vaddr_t addr);
 
 // ================ Virtual -> Physical ================
 
-// /// @brief Get virtual address from HHDM-mapped physical address
+/// @brief Get virtual address from HHDM-mapped physical address
 vaddr_t VMM_toHHDM(paddr_t addr);
 
 /// @brief Get virtual address from heap-structures-region-mapped physical address

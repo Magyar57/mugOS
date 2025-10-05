@@ -4,9 +4,11 @@
 
 #include "Panic.h"
 
+[[noreturn]]
 void panic(){
 	log(PANIC, NULL, "Halting");
 	haltAndCatchFire();
+	unreachable();
 }
 
 void panicForMissingFeature(const char* feature){

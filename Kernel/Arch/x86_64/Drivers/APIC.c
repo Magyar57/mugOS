@@ -234,7 +234,6 @@ static uint32_t getAcpiProcessorId(uint32_t lapicId){
 	log(PANIC, MODULE_APIC, "No ACPI processor ID corresponding to LAPIC %d !!",
 		lapicId);
 	panic();
-	unreachable();
 }
 
 /// @brief Apply the NMI configurations (given by ACPI) to the LINT pins
