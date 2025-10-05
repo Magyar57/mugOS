@@ -1,8 +1,11 @@
-#ifndef __ARCH_FLOW_H__
-#define __ARCH_FLOW_H__
+#ifndef __HALT_H__
+#define __HALT_H__
 
 /// @brief No operation instruction
-#define nop() __asm__ volatile("nop");
+#define nop() __asm__ volatile("nop")
+
+/// @brief Pause instruction. Improves the performance of spin-wait loops
+#define pause() __asm__ volatile("pause")
 
 /// @brief Halt (stops until next interrupt) the processor
 #define halt() __asm__ volatile("hlt")
