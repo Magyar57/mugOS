@@ -145,7 +145,7 @@ void i8042_init(){
 	// 1. Disable Legacy USB (see USB driver, if present)
 
 	// 2. Determine if this PS/2 controller is present on the system
-	if (!g_FADT.bootArchitectureFlags.bits.i8042){
+	if (!g_FADT.bootArchitectureFlags.i8042){
 		log(INFO, MODULE, "No i8042 or equivalent PS/2 controller present");
 		m_enabled = false;
 		return;

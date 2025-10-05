@@ -4,6 +4,68 @@
 #include <stdint.h>
 #include "Preprocessor.h"
 
+// The System Descriptor Table header. Common almost all ACPI tables
+struct SDTHeader {
+	char signature[4];
+	uint32_t length;
+	uint8_t revision;
+	uint8_t checksum;
+	char OEMID[6];
+	char OEMTableID[8];
+	uint32_t OEMRevision;
+	uint32_t creatorID;
+	uint32_t creatorRevision;
+} packed;
+
+compile_assert(sizeof(struct SDTHeader) == 36);
+
+// The Generic Address Structure (GAS) is a standard way to describes
+// system register locations and data structures
+struct GenericAddressStructure {
+	// The address space where the data structure or register exists. Defined values are:
+	// - 0x00: System Memory space
+	// - 0x01: System I/O space
+	// - 0x02: PCI Configuration space
+	// - 0x03: Embedded Controller
+	// - 0x04: SMBus
+	// - 0x05: SystemCMOS
+	// - 0x06: PciBarTarget
+	// - 0x07: IPMI
+	// - 0x08: General PurposeIO
+	// - 0x09: GenericSerialBus
+	// - 0x0a: Platform Communications Channel (PCC)
+	// - 0x0b: Platform Runtime Mechanism (PRM)
+	// - 0x0c: to 0x7E Reserved
+	// - 0x7f: Functional Fixed Hardware
+	// - 0x80: to 0xFF OEM Defined
+	uint8_t addressSpace;
+
+	// The size in bits of the given register.
+	// If entry doesn't describes a register, must be 0
+	uint8_t bitWidth;
+
+	// The bit offset of the given register at the given address.
+	// If entry doesn't describes a register, must be 0
+	uint8_t bitOffset;
+
+	// Specifies access size. Unless otherwise defined by the Address Space ID:
+	// - 0 Undefined (legacy reasons)
+	// - 1 Byte access
+	// - 2 Word access
+	// - 3 Dword access
+	// - 4 QWord access
+	uint8_t accessSize;
+
+	// The 64-bit address of the data structure or register in the given address space
+	// (relative to the processor). Format depends on the address space
+	// Note: we can't put a uint64_t because of alignment+pack constraints
+	uint32_t address[2];
+} packed;
+
+compile_assert(sizeof(struct GenericAddressStructure) == 12);
+
+// ================ RSDP: Root System Description Pointer ================
+
 // ACPI table: Root System Description Pointer
 struct RSDP {
 	char signature[8];
@@ -17,18 +79,7 @@ struct RSDP {
 	uint8_t reserved[3];
 } packed;
 
-struct SDTHeader {
-	char signature[4];
-	uint32_t length;
-	uint8_t revision;
-	uint8_t checksum;
-	char OEMID[6];
-	char OEMTableID[8];
-	uint32_t OEMRevision;
-	uint32_t creatorID;
-	uint32_t creatorRevision;
-} packed;
-compile_assert(sizeof(struct SDTHeader) == 36);
+// ================ XSDT: eXtended System Descriptor Table ================
 
 // ACPI table: eXtended System Descriptor Table
 struct XSDT {
@@ -36,15 +87,7 @@ struct XSDT {
 	uint64_t tables[]; // size is (h.Length - sizeof(h)) / 8
 } packed;
 
-struct GenericAddressStructure {
-	uint8_t addressSpace;	// Enum (e.g. 0x00 => System Memory Space)
-	uint8_t bitWidth;		// If is register: Size in bits
-	uint8_t bitOffset;		// If is register: Bit offset of the given register at the given address
-	uint8_t accessSize;		// 0: undefined, 1:byte, 2:word, 3:dword, 4:qword
-	// 64 bit address (we can't put a uint64_t because of alignment+pack constraints)
-	uint32_t address[2];
-} packed;
-compile_assert(sizeof(struct GenericAddressStructure) == 12);
+// ================ FADT: Fixed ACPI Description Table ================
 
 struct FADT {
 	struct SDTHeader header;
@@ -84,25 +127,43 @@ struct FADT {
 	uint8_t dayAlarm;
 	uint8_t monthAlarm;
 	uint8_t century;
-	union {
-		uint16_t value;
-		struct {
-			uint16_t legacyDevices : 1;
-			uint16_t i8042 : 1; // set if i8042 (or equivalent) is present on motherboard
-			uint16_t vgaNotPresent : 1;
-			uint16_t msiNotSupported : 1;
-			uint16_t pcieAspmControls : 1;
-			uint16_t cmosRtcNotPresent : 1;
-			uint16_t reserved : 10;
-		} bits;
-	} bootArchitectureFlags; // IA-PC boot architecture flags, since ACPI 2.0+
-	uint8_t  reserved_1;
-	union {
-		uint32_t value;
-		struct {
-			uint32_t bit : 1;
-		} bits;
-	} flags;
+	// IA-PC boot architecture flags, since ACPI 2.0+
+	struct BootArchitectureFlags {
+		uint16_t legacyDevices : 1;
+		uint16_t i8042 : 1; // set if i8042 (or equivalent) is present on motherboard
+		uint16_t vgaNotPresent : 1;
+		uint16_t msiNotSupported : 1;
+		uint16_t pcieAspmControls : 1;
+		uint16_t cmosRtcNotPresent : 1;
+		uint16_t reserved : 10;
+	} bootArchitectureFlags;
+	uint8_t reserved_1;
+	struct FixedFeatureFlags {
+		uint32_t WBINVD : 1;
+		uint32_t WBINVD_FLUSH : 1;
+		uint32_t PROC_C1 : 1;
+		uint32_t P_LVL2_UP : 1;
+		uint32_t PWR_BUTTON : 1;
+		uint32_t SLP_BUTTON : 1;
+		uint32_t FIX_RTC : 1;
+		uint32_t RTC_S4 : 1;
+		uint32_t TMR_VAL_EXT : 1;
+		uint32_t DCK_CAP : 1;
+		uint32_t RESET_REG_SUP : 1;
+		uint32_t SEALED_CASE : 1;
+		uint32_t HEADLESS : 1;
+		uint32_t CPU_SW_SLP : 1;
+		uint32_t PCI_EXP_WAK : 1;
+		uint32_t USE_PLATFORM_CLOCK : 1;
+		uint32_t S4_RTC_STS_VALID : 1;
+		uint32_t REMOTE_POWER_ON_CAPABLE : 1;
+		uint32_t FORCE_APIC_CLUSTER_MODEL : 1;
+		uint32_t FORCE_APIC_PHYSICAL_DESTINATION_MODE : 1;
+		uint32_t HW_REDUCED_ACPI : 1;
+		uint32_t LOW_POWER_S0_IDLE_CAPABLE : 1;
+		uint32_t PERSISTENT_CPU_CACHES : 2;
+		uint32_t reserved : 8;
+	} fixedFeatureFlags;
 
 	struct GenericAddressStructure resetReg;
 
@@ -124,6 +185,11 @@ struct FADT {
 
 	uint64_t hypervisorVendorIdentity;
 } packed;
+
+compile_assert(sizeof(struct BootArchitectureFlags) == 2);
+compile_assert(sizeof(struct FixedFeatureFlags) == 4);
+
+// ================ HPETT: HPET (High Precision Event Timers) Table ================
 
 // ACPI table: HPET (High Precision Event Timers) Table
 struct HPETT {
