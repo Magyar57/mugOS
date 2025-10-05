@@ -3,6 +3,6 @@
 
 #include "Time/Timer.h"
 
-struct Timer* ArchTimer_get();
+void ArchTimer_init(struct Timer* timer);
 
 #endif

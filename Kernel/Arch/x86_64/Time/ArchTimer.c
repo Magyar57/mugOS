@@ -1,17 +1,37 @@
+#include "Logging.h"
 #include "Drivers/Timers/PIT.h"
 #include "Time/Timer.h"
 
 #include "HAL/Time/ArchTimer.h"
+#define MODULE "ArchTimer"
 
-static struct Timer m_timer;
+// Summary of available x86 timers:
+//
+// Timer name    Access  Count           Width  Counter freq  IRQs  Max IRQ freq  Comment
+// ============  ======  ==============  =====  ============  ====  ============  =======
+// PIT           IO      Monotonic up    16     1.193 MHz     Yes   < 1.193 MHz   Simple, old AF
+// RTC           IO      Monotonic up    24     1 Hz          Yes   8 kHz         Slow AF
+// LAPIC timer   MMIO    Monotonic down  32     To measure    Yes   To measure    Fucking awesome
+// PM timer      MMIO    Monotonic up    24/32  3.579 MHz     No    N/A           Reliable and simple
+// HPET          MMIO    Monotonic up    64     10-100 MHz    Yes   10-100 MHz    To avoid
+// TSC           rdtsc   Up              64     CPU clock     No    N/A           Variable frequency, sucks
+// InvariantTSC  rdtsc   Monotonic up    64     To measure    No    N/A           Fucking awesome
 
-struct Timer* ArchTimer_get(){
-	// Only PIT is supported for now
-	m_timer.init = PIT_init;
-	m_timer.sleep = PIT_sleep;
-	m_timer.msleep = PIT_msleep;
-	m_timer.usleep = PIT_usleep;
-	m_timer.nsleep = PIT_nsleep;
+static void unimplemented(unsigned long){
+	debug("Unimplemented !!");
+}
 
-	return &m_timer;
+void ArchTimer_init(struct Timer* timer){
+	PIT_init();
+
+	timer->sleep = PIT_sleep;
+	timer->msleep = PIT_msleep;
+	timer->usleep = PIT_usleep;
+	timer->nsleep = PIT_nsleep;
+
+	timer->mdelay = unimplemented;
+	timer->udelay = unimplemented;
+	timer->ndelay = unimplemented;
+
+	log(SUCCESS, MODULE, "Initialized with: PIT sleep, unimplemented delay");
 }
