@@ -659,7 +659,7 @@ static void freeLargebucket(struct HashmapEntry* entry){
 	Hashmap_delete(&m_heap.allocMap, entry);
 }
 
-// ================ Public interface ================
+// ================ Public API ================
 
 void* Heap_malloc(size_t size){
 	if (size < BIGBUCKET_THRESHOLD)

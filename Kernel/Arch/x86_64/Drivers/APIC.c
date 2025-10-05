@@ -260,7 +260,7 @@ static void configurePins(int acpiProcessorId){
 	}
 }
 
-// ================ Public interface ================
+// ================ Public API ================
 
 void APIC_init(){
 	// Remap the PIC. We need to do it even if we don't use it, as it
