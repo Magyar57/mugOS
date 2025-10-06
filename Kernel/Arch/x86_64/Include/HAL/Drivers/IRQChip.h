@@ -8,7 +8,7 @@
 // Can be either the PIC or the APIC
 
 struct IRQChip {
-	void (*init)(void);
+	void (*init)();
 	void (*sendEOI)(int irq);
 	void (*enableSpecific)(int irq);
 	void (*disableSpecific)(int irq);

@@ -11,50 +11,41 @@
 
 #define BASE_FREQUENCY 3579545 // 3.579545 MHz clock
 
-static uint32_t m_mask;
+static struct SteadyTimer* m_pmTimer;
 static uint16_t m_port;
 
-static uint32_t (*readCounter)(void);
-
-static uint32_t readCounterIoPort(){
+static uint64_t readCounterIoPort(){
 	return inl(m_port);
 }
 
-static uint32_t readCounterMMIO(){
+static uint64_t readCounterMMIO(){
 	log(PANIC, MODULE, "MMIO is currently unsupported for PM Timer !");
 	panic();
 }
 
 static void initIoPort(uint16_t port){
 	m_port = port;
-	readCounter = readCounterIoPort;
-	log(SUCCESS, MODULE, "Initialized PM Timer on port %#hx, with mask %#x", m_port, m_mask);
+	m_pmTimer->read = readCounterIoPort;
+	log(SUCCESS, MODULE, "Initialized PM Timer on port %#hx, with mask %#x", m_port, m_pmTimer->mask);
 }
 
 static void initMMIO(paddr_t){
-	readCounter = readCounterMMIO;
+	m_pmTimer->read = readCounterMMIO;
 	log(PANIC, MODULE, "MMIO is currently unsupported for PM Timer !");
 	panic();
 }
 
-// Temporary stub. We obviously won't support second-scale busy-waiting...
-// Note that it doesn't take loop-back into account, too
-static unused void delay(unsigned long seconds){
-	uint64_t n_ticks = BASE_FREQUENCY*seconds;
-
-	uint32_t t0 = readCounter();
-	while ((readCounter() - t0) < n_ticks){
-		pause();
-	}
-}
-
 // ================ Public API ================
 
-void PMTimer_init(){
+void PMTimer_init(struct SteadyTimer* pmtimer){
 	assert(PMTimer_isPresent());
 
-	// The internal counter is 24 bit by default, and may be extended to 32 bits
-	m_mask = (g_FADT.fixedFeatureFlags.TMR_VAL_EXT == 0) ? 0xffffff : 0xffffffff;
+	m_pmTimer = pmtimer;
+	m_pmTimer->frequency = BASE_FREQUENCY;
+	m_pmTimer->name = "PM Timer";
+
+	// The internal counter is 24 bits by default, and may be extended to 32 bits
+	m_pmTimer->mask = (g_FADT.fixedFeatureFlags.TMR_VAL_EXT == 0) ? 0xffffff : 0xffffffff;
 
 	paddr_t mmio = g_FADT.X_PMTimerBlock.address[1];
 	mmio = (mmio << 32) | g_FADT.X_PMTimerBlock.address[0];

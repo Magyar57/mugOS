@@ -1,11 +1,12 @@
+#include "assert.h"
 #include "Logging.h"
 #include "Panic.h"
+#include "Time/Timers.h"
+#include "CPU.h"
 #include "Drivers/Timers/PIT.h"
 #include "Drivers/Timers/PMTimer.h"
-#include "Time/Timer.h"
-#include "CPU.h"
 
-#include "HAL/Time/ArchTimer.h"
+#include "HAL/Time/ArchTimers.h"
 #define MODULE "ArchTimer"
 
 // Summary of available x86 timers:
@@ -20,39 +21,30 @@
 // TSC           rdtsc   Up              64     CPU clock     No    N/A           Variable frequency, sucks
 // InvariantTSC  rdtsc   Monotonic up    64     To measure    No    N/A           Fucking awesome
 
-void ArchTimer_init(struct Timer* timer){
-	const char* schedulingClock;
-	const char* timekeepingClock;
+void ArchTimers_initEventTimer(struct EventTimer* timer){
+	assert(timer);
 
-	// Scheduling clock, for sleep & the scheduler
 	if (g_CPU.features.bits.APIC && false){
-		schedulingClock = "LAPIC Timer";
+		timer->name = "LAPIC Timer";
 		// LAPIC Timer unsupported yet, but planned
 	}
 	else {
 		// PIT is guaranteed to be present/emulated
-		PIT_init();
-		timer->sleep = PIT_sleep;
-		timer->msleep = PIT_msleep;
-		timer->usleep = PIT_usleep;
-		timer->nsleep = PIT_nsleep;
-		schedulingClock = "PIT";
+		PIT_init(timer);
 	}
+}
 
-	// Timekeeping clock, for busy-wait delay
+void ArchTimers_initSteadyTimer(struct SteadyTimer* timer){
+	assert(timer);
+
 	if (g_CPU.features.bits.TSC && g_CPU.extFeatures.bits.InvariantTSC && false){
-		timekeepingClock = "TSC";
 		// (Invariant) TSC unsupported yet, but planned
 	}
 	else if (PMTimer_isPresent()) {
-		PMTimer_init();
-		timekeepingClock = "PM Timer";
+		PMTimer_init(timer);
 	}
 	else {
 		log(PANIC, MODULE, "No supported dt clock source found !!");
 		panic();
 	}
-
-	log(SUCCESS, MODULE, "Initialized with %s scheduling clock & %s timekeeping clock",
-		schedulingClock, timekeepingClock);
 }

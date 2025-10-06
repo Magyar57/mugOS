@@ -82,7 +82,7 @@ static void sleepMiliseconds(unsigned long ms){
 	} while(waited/1000 <= ms);
 }
 
-void PIT_init(){
+void PIT_init(struct EventTimer* pit){
 	union CommandReg command;
 	command.bits.channel = 0b00;
 	command.bits.accessMode = 0b11;
@@ -94,6 +94,12 @@ void PIT_init(){
 
 	IRQ_installHandler(IRQ_PIT, pitIrq);
 	IRQ_enableSpecific(IRQ_PIT);
+
+	pit->name = "PIT";
+	pit->sleep = PIT_sleep;
+	pit->msleep = PIT_msleep;
+	pit->usleep = PIT_usleep;
+	pit->nsleep = PIT_nsleep;
 
 	log(SUCCESS, MODULE, "Initialized success. Timer period/precision of T=%dus", PRECISION);
 }
