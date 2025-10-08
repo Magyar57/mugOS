@@ -19,6 +19,33 @@ void Time_init(){
 		m_steadyTimer.name, m_eventTimer.name);
 }
 
+void Time_computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, uint32_t to, uint32_t maxSec){
+	// Compute mult and shift so that
+	// ns = (cycles*mult) >> shift
+
+	// Compute the shift factor which is limiting the conversion range
+	uint64_t temp_mult = ((uint64_t)maxSec * from) >> 32;
+	uint32_t shift_accuracy = 32;
+	while (temp_mult > 0) {
+		temp_mult >>= 1;
+		shift_accuracy--;
+	}
+
+	// Find the conversion shift/mult pair which has the best accuracy
+	// while fitting the maxSec conversion range
+	uint32_t temp_shift;
+	for (temp_shift=32 ; temp_shift>0; temp_shift--) {
+		temp_mult = (uint64_t) to << temp_shift;
+		temp_mult += from / 2;
+		temp_mult /= from;
+		if ((temp_mult >> shift_accuracy) == 0)
+			break;
+	}
+
+	*mult = temp_mult;
+	*shift = temp_shift;
+}
+
 void sleep(unsigned long sec){
 	m_eventTimer.sleep(sec);
 }

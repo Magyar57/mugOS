@@ -2,8 +2,9 @@
 #include "IO.h"
 #include "Panic.h"
 #include "Logging.h"
-#include "Drivers/ACPI/ACPI.h"
+#include "Time/Time.h"
 #include "Memory/VMM.h"
+#include "Drivers/ACPI/ACPI.h"
 #include "HAL/Halt.h"
 
 #include "PMTimer.h"
@@ -42,6 +43,7 @@ void PMTimer_init(struct SteadyTimer* pmtimer){
 
 	m_pmTimer = pmtimer;
 	m_pmTimer->frequency = BASE_FREQUENCY;
+	Time_computeConversion(&m_pmTimer->mult, &m_pmTimer->shift, BASE_FREQUENCY, 1000000000, 3600);
 	m_pmTimer->name = "PM Timer";
 
 	// The internal counter is 24 bits by default, and may be extended to 32 bits

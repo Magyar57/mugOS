@@ -16,6 +16,11 @@ struct SteadyTimer {
 	uint64_t mask;
 	// The frequency at which the ticks increments, in Hz
 	uint64_t frequency;
+
+	// The mult and shift conversion operators, so that `(steadyTimer.read() * mult) >> shift`
+	// yields a time interval in nanoseconds. They must be set by the timer's driver,
+	// eventually computed with `Time_computeConversion`.
+	uint32_t mult, shift;
 };
 
 // A timer that is capable of generating events (IRQs).
