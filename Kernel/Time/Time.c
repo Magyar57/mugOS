@@ -63,7 +63,7 @@ void nsleep(unsigned long ns){
 }
 
 void mdelay(unsigned long ms){
-	uint64_t n_ticks = (m_steadyTimer.frequency * ms) / 1000;
+	uint64_t n_ticks = (m_steadyTimer.frequency * ms + 999) / 1000;
 
 	uint64_t t0 = m_steadyTimer.read();
 	while (((m_steadyTimer.read() - t0) & m_steadyTimer.mask) < n_ticks){

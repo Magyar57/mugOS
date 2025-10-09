@@ -1,6 +1,8 @@
 #ifndef __TIME_H__
 #define __TIME_H__
 
+#include <stdint.h>
+
 /// @brief Initialize the Time subsystem
 void Time_init();
 
