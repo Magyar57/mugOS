@@ -1,11 +1,11 @@
 #include "Logging.h"
 #include "assert.h"
-#include "IO.h"
 #include "IRQ.h"
+#include "Time/Time.h"
 #include "Drivers/ACPI/ACPI.h"
+#include "IO.h"
 
 #include "i8042.h"
-
 #define MODULE "i8042"
 
 // Intel 8042 PS/2 controller driver
@@ -64,34 +64,31 @@ static bool m_translation; // Whether port 1 translation is on
 static uint8_t m_configByte; // Bufferized configuration byte (used after initialization)
 
 // TIMEOUT is a counter used when waiting for responses (such as sendCommand)
-// TODO: replace by an actual timer (which does not vary on the CPU speed...)
-#define TIMEOUT 1<<20
+// It is a number of iterations, which is interleaved with busy-wait (*delay)
+#define TIMEOUT 100000
 
 /// @brief Wait until a bit (given by the 'mask' argument) in the status register
 /// evaluates to 'value', or until we hit a timeout
 static inline bool waitUntilBitValueOrTimeout(uint8_t mask, uint8_t value){
 	int timer = 0;
 
-	while (timer < TIMEOUT) {
+	while (timer++ < TIMEOUT) {
 		// Check if bit has the value requested
 		uint8_t status_register = inb(PS2C_PORT_STATUS_REGISTER);
 		if ( (status_register & mask) == value )
 			break;
 
-		// 'Batch' waiting, to avoid reading register consecutively
-		// TODO replace with a 'wait 50 microseconds'
-		for(int i=0 ; i<(1<<16); i++)
-			timer++;
+		udelay(50);
 	}
 
 	return (timer < TIMEOUT);
 }
 
 static void flush(){
-	// Timeout-poll for data in the output buffer,
-	// and discard until there's nothing remaining
+	// Poll the output buffer, and discard data until there's nothing remaining
 
-	while (waitUntilBitValueOrTimeout(PS2C_STATUS_OUTPUT_BUFF, 1)) {
+	while (inb(PS2C_PORT_STATUS_REGISTER) & PS2C_STATUS_OUTPUT_BUFF){
+		udelay(50);
 		inb(PS2C_PORT_DATA);
 	}
 }

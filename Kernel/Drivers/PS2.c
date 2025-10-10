@@ -4,12 +4,12 @@
 #include "assert.h"
 #include "IRQ.h"
 #include "Logging.h"
-#include "HAL/Drivers/PS2Controller.h"
+#include "Time/Time.h"
 #include "Drivers/Keycodes.h"
 #include "Drivers/Keyboard.h"
+#include "HAL/Drivers/PS2Controller.h"
 
 #include "PS2.h"
-
 #define MODULE "PS/2"
 
 // Note: we support only keyboard on port 1 and mouse on port 2 (standard configuration)
@@ -863,15 +863,14 @@ static void mouseIRQ(void*){
 #define RESPONSE_BUFFER_SIZE 5
 static uint8_t m_responseBuffer[RESPONSE_BUFFER_SIZE];
 static int m_inBuffer = 0;
-#define TIMEOUT (1U<<24)
 
 static bool receiveByte(uint8_t* byte_out){
 	// receiveByte is simply popResponseBuffer, with a wait timeout:
 	// we try to wait a certain time for the buffer to be filled
 
 	unsigned int counter = 0;
-	while ((m_inBuffer<1) && (counter<TIMEOUT))
-		counter++;
+	while ((m_inBuffer<1) && (counter++<100000))
+		udelay(50);
 
 	if (m_inBuffer < 1) return false;
 
@@ -1014,7 +1013,11 @@ void PS2_initKeyboard(struct PS2Keyboard* keyboard){
 	keyboard->enabled = false;
 
 	// Disable scanning for initialization
-	sendByteToDeviceHandleResend(1, PS2_CMD_DISABLE_SCANNING);
+	buff1 = sendByteToDeviceHandleResend(1, PS2_CMD_DISABLE_SCANNING);
+	if (buff1 == PS2_RES_RESEND){
+		log(INFO, MODULE, "No PS/2 keyboard connected");
+		return;
+	}
 
 	// Reset the device, and check self-test
 	if (!resetDevice(1)){
@@ -1060,7 +1063,11 @@ void PS2_initMouse(struct PS2Mouse* mouse){
 	mouse->enabled = false;
 
 	// Disable scanning for initialization
-	sendByteToDeviceHandleResend(2, PS2_CMD_DISABLE_SCANNING);
+	uint8_t buff = sendByteToDeviceHandleResend(2, PS2_CMD_DISABLE_SCANNING);
+	if (buff == PS2_RES_RESEND){
+		log(INFO, MODULE, "No PS/2 mouse connected");
+		return;
+	}
 
 	// Reset the device, and check self-test
 	if (!resetDevice(2)){

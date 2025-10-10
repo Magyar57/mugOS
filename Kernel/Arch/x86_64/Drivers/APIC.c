@@ -1,13 +1,14 @@
 #include <stdint.h>
 #include "assert.h"
-#include "IO.h"
 #include "Panic.h"
 #include "Logging.h"
-#include "Memory/VMM.h"
 #include "IRQ.h"
-#include "ISR.h"
+#include "Time/Time.h"
+#include "Memory/VMM.h"
 #include "Drivers/ACPI/ACPI.h"
 #include "HAL/SMP/PerCPU.h"
+#include "IO.h"
+#include "ISR.h"
 #include "Drivers/i8259.h"
 #include "Drivers/IOAPIC.h"
 
@@ -354,8 +355,7 @@ void APIC_wakeCPU(int lapicID, paddr_t entry){
 	icr.bits.destination = lapicID; // INIT CPU#cpu
 	writeRegister64(APIC_REG_ICR, icr.value);
 
-	for (int i=0 ; i<0x10000 ; i++)
-		__asm__ volatile("nop"); // wait a little
+	msleep(10);
 
 	// Then, send SIPI
 	// Destination and triggerMode don't differ from previous call
@@ -364,8 +364,7 @@ void APIC_wakeCPU(int lapicID, paddr_t entry){
 	icr.bits.level = 1;
 	writeRegister64(APIC_REG_ICR, icr.value);
 
-	for (int i=0 ; i<0x10000 ; i++)
-		__asm__ volatile("nop"); // wait a little more
+	msleep(10);
 
 	// Second SIPI, same parameters
 	writeRegister64(APIC_REG_ICR, icr.value);
