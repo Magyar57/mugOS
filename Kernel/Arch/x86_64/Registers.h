@@ -53,52 +53,52 @@ void Registers_writeCR4(uint64_t val);
 union CR0 {
 	uint64_t value;
 	struct {
-		uint64_t PE : 1; // Protection Enable (protected mode)
-		uint64_t MP : 1; // Monitor Coprocessor
-		uint64_t EM : 1; // Emulation (if clear, x87 FPU is present)
-		uint64_t ST : 1; // Task Switched
-		uint64_t ET : 1; // Extension Type
-		uint64_t NE : 1; // Numeric Error
-		uint64_t reserved_0 : 10;
-		uint64_t WP : 1; // Write Protect
-		uint64_t reserved_1 : 1;
-		uint64_t AM : 1; // Alignement Mask
-		uint64_t reserved_2 : 10;
-		uint64_t NW : 1; // Not Write-through
-		uint64_t CD : 1; // Cache Disable
-		uint64_t PG : 1; // Paging
+		uint64_t PE : 1;			// Protection Enable (protected mode)
+		uint64_t MP : 1;			// Monitor Coprocessor
+		uint64_t EM : 1;			// Emulation (if clear, x87 FPU is present)
+		uint64_t ST : 1;			// Task Switched
+		uint64_t ET : 1;			// Extension Type
+		uint64_t NE : 1;			// Numeric Error
+		uint64_t reserved_0 : 10;	//
+		uint64_t WP : 1;			// Write Protect
+		uint64_t reserved_1 : 1;	//
+		uint64_t AM : 1;			// Alignement Mask
+		uint64_t reserved_2 : 10;	//
+		uint64_t NW : 1;			// Not Write-through
+		uint64_t CD : 1;			// Cache Disable
+		uint64_t PG : 1;			// Paging
 	} bits;
 };
 
 union CR4 {
 	uint64_t value;
 	struct {
-		uint64_t VME : 1;
-		uint64_t PVI : 1;
-		uint64_t TSD : 1;
-		uint64_t DE : 1;
-		uint64_t PSE : 1;
-		uint64_t PAE : 1;
-		uint64_t MCE : 1;
-		uint64_t PGE : 1;
-		uint64_t PCE : 1;
-		uint64_t OSFXSR : 1;
-		uint64_t OSXMMEXCPT : 1;
-		uint64_t UMIP : 1;
-		uint64_t LA57 : 1;
-		uint64_t VMXE : 1;
-		uint64_t SMXE : 1;
-		uint64_t reserved_0 : 1;
-		uint64_t FSGSBASE : 1;
-		uint64_t PCIDE : 1;
-		uint64_t OSXSAVE : 1;
-		uint64_t KL : 1;
-		uint64_t SMEP : 1;
-		uint64_t SMAP : 1;
-		uint64_t PKE : 1;
-		uint64_t CET : 1;
-		uint64_t PKS : 1;
-		uint64_t UINTR : 1;
+		uint64_t VME : 1;			// Virtual 8086 Mode Extensions
+		uint64_t PVI : 1;			// Protected-Mode Virtual Interrupts
+		uint64_t TSD : 1;			// Time Stamp Disable
+		uint64_t DE : 1;			// Debugging Extensions
+		uint64_t PSE : 1;			// Page Size Extensions
+		uint64_t PAE : 1;			// Physical Address Extension
+		uint64_t MCE : 1;			// Machine-Check Enable
+		uint64_t PGE : 1;			// Page Global Enable
+		uint64_t PCE : 1;			// Performance-monitoring Counter Enable
+		uint64_t OSFXSR : 1;		// OS support for fxsave and fxrstor instructions
+		uint64_t OSXMMEXCPT : 1;	// OS support for Unmasked simd floating point Exceptions
+		uint64_t UMIP : 1;			// User-Mode Instruction Prevention
+		uint64_t LA57 : 1;			// 57 bits Linear Addresses
+		uint64_t VMXE : 1;			// VMX-Enable bit
+		uint64_t SMXE : 1;			// SMX-Enable bit
+		uint64_t reserved_0 : 1;	//
+		uint64_t FSGSBASE : 1;		// fsgsbase-Enable bit
+		uint64_t PCIDE : 1;			// PCID-Enable bit
+		uint64_t OSXSAVE : 1;		// XSAVE and Processor Extended States-Enable bit
+		uint64_t KL : 1;			// Key-Locker enable bit
+		uint64_t SMEP : 1;			// SMEP enable bit
+		uint64_t SMAP : 1;			// SMAP enable bit
+		uint64_t PKE : 1;			// Protection Key Enable (for user-mode pages)
+		uint64_t CET : 1;			// Control-flow Enforcement Technology
+		uint64_t PKS : 1;			// Enable protection keys for Supervisor-mode pages
+		uint64_t UINTR : 1;			// User Interrupts enable bit
 		// rest is reserved
 	} bits;
 };
