@@ -5,6 +5,7 @@
 #include "CPU.h"
 #include "Drivers/Timers/PIT.h"
 #include "Drivers/Timers/PMTimer.h"
+#include "Drivers/Timers/TSC.h"
 
 #include "HAL/Time/ArchTimers.h"
 #define MODULE "ArchTimer"
@@ -23,6 +24,7 @@
 
 void ArchTimers_initEventTimer(struct EventTimer* timer){
 	assert(timer);
+	timer->name = "no"; // "no event timer"
 
 	if (g_CPU.features.bits.APIC && false){
 		timer->name = "LAPIC Timer";
@@ -36,15 +38,17 @@ void ArchTimers_initEventTimer(struct EventTimer* timer){
 
 void ArchTimers_initSteadyTimer(struct SteadyTimer* timer){
 	assert(timer);
+	timer->name = "no"; // "no steady timer"
 
 	if (g_CPU.features.bits.TSC && g_CPU.extFeatures.bits.InvariantTSC && false){
 		// (Invariant) TSC unsupported yet, but planned
+		TSC_init(timer);
 	}
 	else if (PMTimer_isPresent()) {
 		PMTimer_init(timer);
 	}
 	else {
-		log(PANIC, MODULE, "No supported dt clock source found !!");
+		log(PANIC, MODULE, "No supported SteadyTimer found !!");
 		panic();
 	}
 }

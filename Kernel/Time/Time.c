@@ -15,7 +15,7 @@ void Time_init(){
 	ArchTimers_initSteadyTimer(&m_steadyTimer);
 	ArchTimers_initEventTimer(&m_eventTimer);
 
-	log(SUCCESS, MODULE, "Initialized with %s as steady timer & %s as event timer",
+	log(SUCCESS, MODULE, "Initialized with %s steady timer & %s event timer",
 		m_steadyTimer.name, m_eventTimer.name);
 }
 
