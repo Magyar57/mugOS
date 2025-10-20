@@ -22,9 +22,9 @@ all: kernel
 
 .PHONY: all kernel
 
-kernel: $(BUILD_DIR)/kernel.elf
+kernel: $(KERNEL)
 
-$(BUILD_DIR)/kernel.elf: $(OBJECTS_C) $(ARCH_SOURCES_C) $(ARCH_SOURCES_ASM)
+$(KERNEL): $(OBJECTS_C) $(ARCH_SOURCES_C) $(ARCH_SOURCES_ASM)
 	@$(MAKE) $(MAKE_FLAGS) -C Arch/$(ARCH)
 	@echo "LD $@"
 	@$(TARGET_LD) $(TARGET_LDFLAGS) -T Kernel.ld -Map=$(BUILD_DIR)/kernel.map -o $@ $(OBJECTS_C) $(ARCH_OBJECTS_C) $(ARCH_OBJECTS_ASM) $(TARGET_LIBS)

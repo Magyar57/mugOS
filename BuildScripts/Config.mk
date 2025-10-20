@@ -27,14 +27,16 @@ export TARGET_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding -mno-red-zone
 export TARGET_LD:=ld.lld
 export TARGET_LDFLAGS:=-nostdlib -static
 export TARGET_LIBS:=
-export MAKE_FLAGS:=--no-print-directory ARCH=$(ARCH)
+export MAKE_FLAGS:=--no-print-directory
 
-# Output files & configurations
-LIMINE_CONF:=Bootloader/limine.conf
+# Output files
+export KERNEL=$(BUILD_DIR)/kernel.elf
+RAW_IMAGE:=$(BUILD_DIR)/raw_disk.img
+PARTITION1:=$(BUILD_DIR)/partition1.img
 IMAGE:=$(BUILD_DIR)/disk.img
-IMAGE_FILES:=$(BUILD_DIR)/kernel.elf
-PARTITION1_OFFSET=2048
 
-# Temporary (intermediate) output files
-TEMP_IMAGE:=/tmp/disk.img
-TEMP_PARTITION1:=/tmp/partition1.img
+# Conf files
+LIMINE_CONF:=Bootloader/limine.conf
+
+# Configuration
+PARTITION1_OFFSET=2048
