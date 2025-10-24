@@ -1,7 +1,7 @@
 # mugOS x86_64 architecture makefile
 
 # Includes paths for the architecture
-export CPATH=$(abspath $(TOOLCHAIN_PATH)/include):$(abspath .):$(abspath ./Include):$(abspath ../..):$(abspath ../../Stdlib)
+export CPATH=$(abspath $(TOOLCHAIN_PATH)/include):$(abspath .):$(abspath ./Include):$(abspath ../..):$(abspath ../../../Stdlib)
 
 BUILD_SUBDIR:=$(BUILD_DIR)/kernel/Arch/$(ARCH)
 BUILD_SUBDIRS:=$(patsubst ./%, $(BUILD_SUBDIR)/%, $(shell find . -mindepth 1 -type d))

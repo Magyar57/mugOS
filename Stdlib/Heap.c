@@ -4,11 +4,11 @@
 #include "assert.h"
 #include "string.h"
 #include "stdlib.h"
-#include "mugOS/List.h"
 #include "Preprocessor.h"
-#include "Memory/Memory.h"
+#include "mugOS/List.h"
 
 #ifdef KERNEL
+#include "Memory/Memory.h"
 #include "Memory/PMM.h" // PMM_allocatePages
 #include "Memory/VMM.h" // VMM_Heap_physToVirt / virtToPhys
 #else

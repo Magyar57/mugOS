@@ -7,7 +7,7 @@
             "name": "Kernel",
             "includePath": [
                 "${workspaceFolder}/Kernel",
-                "${workspaceFolder}/Kernel/Stdlib",
+                "${workspaceFolder}/Stdlib",
                 "${workspaceFolder}/Kernel/Arch/${ARCH}/Include",
 				"${workspaceFolder}/toolchain/include",
                 "${workspaceFolder}/Kernel/Arch/${ARCH}" // Included in each arch only

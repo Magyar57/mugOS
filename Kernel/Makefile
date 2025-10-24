@@ -1,20 +1,20 @@
 # mugOS kernel makefile
 
-TARGET_CFLAGS+=-D KERNEL -D $(ARCH)
+TARGET_CFLAGS+=-DKERNEL -D$(ARCH)
 
 # Includes paths for the kernel
-export CPATH=$(abspath $(TOOLCHAIN_PATH)/include):$(abspath .):$(abspath Stdlib):$(abspath Arch/$(ARCH)/Include)
+export CPATH=$(abspath $(TOOLCHAIN_PATH)/include):$(abspath .):$(abspath ../Stdlib):$(abspath Arch/$(ARCH)/Include)
 
 BUILD_SUBDIR:=$(BUILD_DIR)/kernel
 BUILD_SUBDIRS:=$(patsubst ./%, $(BUILD_SUBDIR)/%, $(shell find . -mindepth 1 -type d -and -not -path "./Arch*"))
 
 # Source files: include all sub-directories, excluding Arch
-SOURCES_C=$(shell find . -type f -name "*.c" -and -not -path "./Arch/*")
+SOURCES_C=$(shell find . -type f -name '*.c' -and -not -path './Arch/*')
 OBJECTS_C=$(patsubst ./%, $(BUILD_SUBDIR)/%, $(SOURCES_C:.c=.o))
 
 # Arch files
-ARCH_SOURCES_C=$(shell find ./Arch/$(Arch) -type f -name "*.c")
-ARCH_SOURCES_ASM=$(shell find ./Arch/$(Arch) -type f -name "*.asm")
+ARCH_SOURCES_C=$(shell find ./Arch/$(Arch) -type f -name '*.c')
+ARCH_SOURCES_ASM=$(shell find ./Arch/$(Arch) -type f -name '*.asm')
 ARCH_OBJECTS_C=$(patsubst ./%, $(BUILD_SUBDIR)/%, $(ARCH_SOURCES_C:.c=.o))
 ARCH_OBJECTS_ASM=$(patsubst ./%, $(BUILD_SUBDIR)/%, $(ARCH_SOURCES_ASM:.asm=.obj))
 
@@ -27,7 +27,7 @@ kernel: $(KERNEL)
 $(KERNEL): $(OBJECTS_C) $(ARCH_SOURCES_C) $(ARCH_SOURCES_ASM)
 	@$(MAKE) $(MAKE_FLAGS) -C Arch/$(ARCH)
 	@echo "LD $@"
-	@$(TARGET_LD) $(TARGET_LDFLAGS) -T Kernel.ld -Map=$(BUILD_DIR)/kernel.map -o $@ $(OBJECTS_C) $(ARCH_OBJECTS_C) $(ARCH_OBJECTS_ASM) $(TARGET_LIBS)
+	@$(TARGET_LD) $(TARGET_LDFLAGS) $(TARGET_LDLIBS) -T Kernel.ld -Map=$(BUILD_DIR)/kernel.map -o $@ $(OBJECTS_C) $(ARCH_OBJECTS_C) $(ARCH_OBJECTS_ASM)
 
 # Generic object rules
 
