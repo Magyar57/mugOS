@@ -21,15 +21,15 @@ Build dependencies, for each tested operating system:
 
 - Arch Linux (`pacman -S PACKAGES`):
   - Running: `qemu-full edk2-ovmf`
-  - Building: `make wget git gcc clang nasm lld gptfdisk mtools dosfstools`
+  - Building: `make wget git binutils gcc clang nasm lld gptfdisk mtools dosfstools`
   - Toolchain: `diffutils libmpc mpfr gmp texinfo`
 - Fedora (`dnf install PACKAGES`):
   - Running: `qemu edk2-ovmf`
-  - Building: `make wget git gcc clang nasm lld gdisk mtools dosfstools`
+  - Building: `make wget git binutils gcc clang nasm lld gdisk mtools dosfstools`
   - Toolchain: `libmpc-devel mpfr-devel gmp-devel`
 - macOS (`brew install FORMULAE`):
   - Running: `qemu`
-  - Building: `make wget git gcc nasm lld mtools gptfdisk`
+  - Building: `make wget git binutils gcc nasm lld mtools gptfdisk`
   - Toolchain: `bison flex libmpc mpfr gmp texinfo`
 - Windows: Unsupported.
 
