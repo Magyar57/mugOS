@@ -2,7 +2,7 @@
 #define __ACPI_TABLES_H__
 
 #include <stdint.h>
-#include "Preprocessor.h"
+#include "mugOS/Preprocessor.h"
 
 // The System Descriptor Table header. Common almost all ACPI tables
 struct SDTHeader {

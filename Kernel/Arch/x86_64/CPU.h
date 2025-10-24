@@ -2,7 +2,7 @@
 #define __CPU_H__
 
 #include <stdint.h>
-#include "Preprocessor.h"
+#include "mugOS/Preprocessor.h"
 
 // CPU.h: Architecture related flags & features (CPUID...)
 

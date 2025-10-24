@@ -1,7 +1,7 @@
 #ifndef __IRQ_FLAGS_H__
 #define __IRQ_FLAGS_H__
 
-#include "Preprocessor.h"
+#include "mugOS/Preprocessor.h"
 #include "Arch/x86_64/Registers.h"
 
 #define ISA_IRQ_OFFSET		0x20
