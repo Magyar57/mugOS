@@ -20,6 +20,12 @@ SECTIONS {
 	} : phdr_text
 
 	. = ALIGN(ALIGN_VALUE);
+	.ltext : {
+		__ltext_start = .;
+		*(.ltext)
+	} : phdr_text
+
+	. = ALIGN(ALIGN_VALUE);
 	.ap_entry : {
 		__ap_entry_start = .;
 		KEEP(*(.ap_entry))
@@ -34,15 +40,33 @@ SECTIONS {
 	} : phdr_rodata
 
 	. = ALIGN(ALIGN_VALUE);
+	.lrodata : {
+		__lrodata_start = .;
+		*(.lrodata)
+	} : phdr_rodata
+
+	. = ALIGN(ALIGN_VALUE);
 	.data :	{
 		__data_start = .;
 		*(.data)
 	} : phdr_data
 
 	. = ALIGN(ALIGN_VALUE);
+	.ldata :	{
+		__ldata_start = .;
+		*(.ldata)
+	} : phdr_data
+
+	. = ALIGN(ALIGN_VALUE);
 	.bss : {
 		__bss_start = .;
 		*(.bss)
+	} : phdr_data
+
+	. = ALIGN(ALIGN_VALUE);
+	.lbss : {
+		__lbss_start = .;
+		*(.lbss)
 	} : phdr_data
 
 	__end = .;
