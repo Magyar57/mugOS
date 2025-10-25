@@ -38,8 +38,22 @@ $(IMAGE): $(KERNEL) $(PARTITION1) $(RAW_IMAGE)
 #
 kernel: $(KERNEL)
 
-$(KERNEL): $(shell find . -path "./Kernel/*" -type f) | $(BUILD_DIR)
+$(KERNEL): $(shell find . -path "./Kernel/*" -type f) $(STDLIB_KERNEL) | $(BUILD_DIR)
 	@$(MAKE) -C Kernel $(MAKE_FLAGS)
+
+#
+# Standard library (for kernel & userspace)
+#
+stdlib: $(STDLIB_KERNEL) $(STDLIB_USERSPACE_STATIC) $(STDLIB_USERSPACE_DYNAMIC)
+
+$(STDLIB_KERNEL):
+	@$(MAKE) $@ -C Stdlib $(MAKE_FLAGS)
+
+$(STDLIB_USERSPACE_STATIC):
+	@$(MAKE) $@ -C Stdlib $(MAKE_FLAGS)
+
+$(STDLIB_USERSPACE_DYNAMIC):
+	@$(MAKE) $@ -C Stdlib $(MAKE_FLAGS)
 
 #
 # Run (if needed, add arguments using `make run -e QEMU_ARGS="arg1 arg2"`)
@@ -70,13 +84,16 @@ $(BUILD_DIR):
 	@mkdir -p $@
 
 #
-# Clean (kclean: cleans kernel only, iclean: images only)
+# Clean (kclean: cleans kernel only, sclean: stdlib only, iclean: images only)
 #
 clean:
 	rm -rf $(BUILD_DIR)
 
 kclean:
 	rm -rf $(BUILD_DIR)/kernel $(BUILD_DIR)/kernel.*
+
+sclean:
+	rm -rf $(BUILD_DIR)/stdlib $(STDLIB_KERNEL) $(STDLIB_USERSPACE_STATIC) $(STDLIB_USERSPACE_DYNAMIC)
 
 iclean:
 	rm $(RAW_IMAGE) $(PARTITION1) $(IMAGE)

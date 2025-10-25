@@ -7,15 +7,23 @@
             "name": "Kernel",
             "includePath": [
                 "${workspaceFolder}/Kernel",
-                "${workspaceFolder}/Kernel/Stdlib",
+                "${workspaceFolder}/Stdlib",
                 "${workspaceFolder}/Kernel/Arch/${ARCH}/Include",
 				"${workspaceFolder}/toolchain/include",
                 "${workspaceFolder}/Kernel/Arch/${ARCH}" // Included in each arch only
             ],
-			// Note: we need to tell vscode that true, false and constexpr are defined,
-			// because the c23 parser is buggy.
-			// See https://github.com/microsoft/vscode-cpptools/issues/10696
-            "defines": ["true=1", "false=0", "constexpr=const" ,"KERNEL=", "${ARCH}="],
+            "defines": [
+				// Kernel
+				"KERNEL=",
+				"${ARCH}=",
+				// We need to tell vscode that some keywords (like true, constexpr...)
+				// are defined, because vscode-cpptools' c23 parser is buggy.
+				// See https://github.com/microsoft/vscode-cpptools/issues/10696
+				"true=1",
+				"false=0",
+				"constexpr=const",
+				"_Noreturn="
+			],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c23",
             "cppStandard": "c++23",

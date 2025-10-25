@@ -14,15 +14,18 @@ Note 2: By default, it will build for the x86_64 architecture. If you wish to bu
 
 ## Compilers
 
-- x86_64 Clang (default): `TARGET_CC=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths`
-- x86_64 GCC: `TARGET_CC=x86_64-elf-gcc`
+- x86_64 Clang (default): `CC=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths`
+- x86_64 GCC: `CC=x86_64-elf-gcc`
 
 ## Linkers
 
 Note: Only direct invocation of the linker is supported.
 
-- x86_64 LLD (default): `TARGET_LD=ld.lld` and `TARGET_LIBS=`
-- x86_64 LD: `TARGET_LD=x86_64-elf-ld` and `TARGET_LIBS=-lgcc -L$(TOOLCHAIN_PATH)/lib/gcc/x86_64-elf/[version]`
+- x86_64 LLD (default): `LD=ld.lld` and `K_LDFLAGS=-nostdlib -static -L$(BUILD_DIR)`,
+  `K_LDLIBS=-lkernel`, `U_LDFLAGS=-nostdlib -L$(BUILD_DIR)`, `U_LDLIBS=-lc`
+- x86_64 LD: `LD=x86_64-elf-ld` and
+  `K_LDFLAGS=-nostdlib -static -L$(BUILD_DIR) -L$(TOOLCHAIN_PATH)/lib/gcc/x86_64-elf/[version]`,
+  `K_LDLIBS=-lkernel -lgcc`, `U_LDFLAGS=-nostdlib -L$(BUILD_DIR)`, `U_LDLIBS=-lc -lgcc`
   (replace version with the value in the GCC_URL variable)
 
 ## Building your toolchain

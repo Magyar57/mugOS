@@ -3,7 +3,7 @@ FROM fedora:42
 # Dockerfile for image: mug-os:2.2
 # See the documentation for usage informations
 
-ENV DEPENDENCIES="make wget git clang nasm lld gdisk mtools dosfstools"
+ENV DEPENDENCIES="make wget git binutils gcc clang nasm lld gdisk mtools dosfstools"
 
 # Install dependencies
 RUN dnf update -y
