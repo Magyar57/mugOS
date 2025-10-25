@@ -11,7 +11,7 @@ PHDRS {
 SECTIONS {
 	. = LOAD_ADDRESS;
 
-	/* ======== Code sections ======== */
+	/* ======== Code ======== */
 
 	. = ALIGN(ALIGN_VALUE);
 	.text : {
@@ -31,7 +31,7 @@ SECTIONS {
 		KEEP(*(.ap_entry))
 	} : phdr_text
 
-	/* ======== Data sections ======== */
+	/* ======== Read only data ======== */
 
 	. = ALIGN(ALIGN_VALUE);
 	.rodata : {
@@ -44,6 +44,8 @@ SECTIONS {
 		__lrodata_start = .;
 		*(.lrodata)
 	} : phdr_rodata
+
+	/* ======== Data ======== */
 
 	. = ALIGN(ALIGN_VALUE);
 	.data :	{
@@ -69,5 +71,6 @@ SECTIONS {
 		*(.lbss)
 	} : phdr_data
 
+	. = ALIGN(ALIGN_VALUE);
 	__end = .;
 }

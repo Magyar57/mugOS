@@ -615,17 +615,16 @@ static void initializeFeatures(){
 
 static inline void mapKernel(){
 	extern uint8_t LOAD_ADDRESS;
-	extern uint8_t __text_start, __rodata_start, __data_start;
+	extern uint8_t __text_start, __rodata_start, __data_start, __end;
 	paddr_t kernel_phys = g_memoryMap.kernelAddress;
 	vaddr_t kernel_virt = (vaddr_t) &LOAD_ADDRESS;
 
 	// Compute size (in #pages) of kernel regions to map
-	// Note: since the __end symbol from the linker map points before the actual end of the bss,
-	// we use the size that the bootloader gave us instead to know the bss' size
 	uint64_t text_size = (&__rodata_start - &__text_start) / PAGE_SIZE;
 	uint64_t rodata_size = (&__data_start - &__rodata_start) / PAGE_SIZE;
+	uint64_t data_size = (&__end - &__data_start) / PAGE_SIZE;
 
-	uint64_t data_size = (g_memoryMap.kernelSize/PAGE_SIZE - (rodata_size+text_size));
+	// Compute addresses of sections
 	paddr_t ktext_phys = (paddr_t)&__text_start - kernel_virt + kernel_phys;
 	paddr_t rodata_phys = (paddr_t)&__rodata_start - kernel_virt + kernel_phys;
 	paddr_t data_phys = (paddr_t)&__data_start - kernel_virt + kernel_phys;
