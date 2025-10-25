@@ -21,25 +21,25 @@ all: $(STDLIB_KERNEL) $(STDLIB_USERSPACE)
 
 $(STDLIB_KERNEL): $(OBJECTS_C_KERNEL)
 	@echo "AR $@"
-	@$(TARGET_AR) $(TARGET_ARFLAGS) $@ $^
+	@ar rcs $@ $^
 
 $(STDLIB_USERSPACE_STATIC): $(OBJECTS_C_USERSPACE)
 	@echo "AR $@"
-	@$(TARGET_AR) $(TARGET_ARFLAGS) $@ $^
+	@ar rcs $@ $^
 
 $(STDLIB_USERSPACE_DYNAMIC): $(OBJECTS_C_USERSPACE)
 	@echo "LD $@"
-	@$(TARGET_LD) -nostdlib -shared $^ -o $@
+	@$(LD) $(U_LDFLAGS) -shared $^ -o $@
 
 # Generic object rules
 
 $(BUILD_K_SUBDIR)/%.o: %.c | $(BUILD_K_SUBDIRS)
 	@echo "CC $< => $@"
-	@$(TARGET_CC) $(TARGET_CFLAGS) -fPIC -DKERNEL -I../Kernel -I../Kernel/Arch/$(ARCH)/Include -c $< -o $@
+	@$(CC) $(K_CFLAGS) -DKERNEL -I../Kernel -I../Kernel/Arch/$(ARCH)/Include -c $< -o $@
 
 $(BUILD_U_SUBDIR)/%.o: %.c | $(BUILD_U_SUBDIRS)
 	@echo "CC $< => $@"
-	@$(TARGET_CC) $(TARGET_CFLAGS) -fPIC -c $< -o $@
+	@$(CC) $(U_CFLAGS) -fPIC -c $< -o $@
 
 $(BUILD_K_SUBDIRS):
 	@mkdir -p $@

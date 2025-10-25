@@ -1,6 +1,6 @@
 # mugOS kernel makefile
 
-TARGET_CFLAGS+=-DKERNEL -D$(ARCH)
+K_CFLAGS+=-DKERNEL -D$(ARCH)
 
 # Includes paths for the kernel
 export CPATH=$(abspath $(TOOLCHAIN_PATH)/include):$(abspath .):$(abspath ../Stdlib):$(abspath Arch/$(ARCH)/Include)
@@ -27,13 +27,13 @@ kernel: $(KERNEL)
 $(KERNEL): $(OBJECTS_C) $(ARCH_SOURCES_C) $(ARCH_SOURCES_ASM)
 	@$(MAKE) $(MAKE_FLAGS) -C Arch/$(ARCH)
 	@echo "LD $@"
-	@$(TARGET_LD) $(TARGET_LDFLAGS) $(TARGET_LDLIBS) -T Kernel.ld -Map=$(BUILD_DIR)/kernel.map -o $@ $(OBJECTS_C) $(ARCH_OBJECTS_C) $(ARCH_OBJECTS_ASM)
+	@$(LD) $(K_LDFLAGS) -T Kernel.ld -Map=$(BUILD_DIR)/kernel.map $(OBJECTS_C) $(ARCH_OBJECTS_C) $(ARCH_OBJECTS_ASM) $(K_LDLIBS) -o $@
 
 # Generic object rules
 
 $(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIRS)
 	@echo "CC $< => $@"
-	@$(TARGET_CC) $(TARGET_CFLAGS) -c $< -o $@
+	@$(CC) $(K_CFLAGS) -c $< -o $@
 
 $(BUILD_SUBDIRS):
 	@mkdir -p $@

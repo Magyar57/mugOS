@@ -3,7 +3,8 @@
 # See the docs for more informations.
 
 # This is needed only if these variables are defined in the environment
-CLEAR_ENV:=ASM= ASMFLAGS= CC= CFLAGS= CXX= LD= LDFLAGS= LINKFLAGS= LIBS=
+# Better safe than sorry, we clear everything
+CLEAR_ENV:=ASM= ASMFLAGS= CC= CFLAGS= CXX= CXXFLAGS= LD= LDFLAGS= LINKFLAGS= LIBS= LDLIBS=
 
 all: toolchain
 toolchain: toolchain-firmware toolchain-limine

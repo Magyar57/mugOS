@@ -19,16 +19,21 @@ LIMINE_BRANCH:=v9.x-binary
 BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.45.tar.xz
 GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-15.1.0/gcc-15.1.0.tar.gz
 
-# Compilation options
-export TARGET_ASM:=nasm
-export TARGET_ASMFLAGS:=-f elf64 -g -F dwarf
-export TARGET_CC:=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths
-export TARGET_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding -mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined
-export TARGET_LD:=ld.lld
-export TARGET_LDFLAGS:=-nostdlib -static -L$(BUILD_DIR)
-export TARGET_LDLIBS:=-lkernel
-export TARGET_AR:=ar
-export TARGET_ARFLAGS=rcs
+# Compilation options: assembler, compiler, linker (common)
+export ASM:=nasm
+export CC:=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths
+export LD:=ld.lld
+# Compilation options: Kernel flags
+export K_ASMFLAGS:=-f elf64 -g -F dwarf
+export K_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding -mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined
+export K_LDFLAGS:=-nostdlib -static -L$(BUILD_DIR)
+export K_LDLIBS:=-lkernel
+# Compilation options: Userspace flags
+export U_ASMFLAGS:=-f elf64 -g -F dwarf
+export U_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding
+export U_LDFLAGS:=-nostdlib -L$(BUILD_DIR)
+export U_LDLIBS:=-lc
+# Misc
 export MAKE_FLAGS:=--no-print-directory
 
 # Output files

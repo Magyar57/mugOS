@@ -21,11 +21,11 @@ arch: $(OBJECTS_C) $(OBJECTS_ASM)
 
 $(BUILD_SUBDIR)/%.o: %.c | $(BUILD_SUBDIRS)
 	@echo "CC $< -> $@"
-	@$(TARGET_CC) $(TARGET_CFLAGS) -c $< -o $@
+	@$(CC) $(K_CFLAGS) -c $< -o $@
 
 $(BUILD_SUBDIR)/%.obj: %.asm | $(BUILD_SUBDIRS)
 	@echo "AS $< -> $@"
-	@$(TARGET_ASM) $(TARGET_ASMFLAGS) $< -o $@
+	@$(ASM) $(K_ASMFLAGS) $< -o $@
 
 $(BUILD_SUBDIRS):
 	@mkdir -p $@
