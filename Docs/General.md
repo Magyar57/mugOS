@@ -20,7 +20,7 @@ To this day, the kernel supports the following features:
 - Memory management: memory map, physical and virtual memory managers, paging
 - Kernel heap, implemented through a Slab allocator algorithm
 - Symetric MultiProcessing (SMP) stub
-- Time subsystem: PIT driver
+- Time subsystem: sleep, delay functions, timers: PIT, PM timer
 - I/O subsystem: PS/2 mouse and keyboard
 - Graphics subsystem: VGA, Framebuffer
   ([GOP](https://uefi.org/specs/UEFI/2.10/12_Protocols_Console_Support.html#graphics-output-protocol) and

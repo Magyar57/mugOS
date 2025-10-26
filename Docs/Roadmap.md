@@ -26,8 +26,8 @@
 - [X] Kernel heap (kmalloc, slab allocator)
 - [X] ACPI tables parsing
 - [X] APIC (LAPIC and IOAPIC) drivers
-- [X] Timers: PIT driver
-- [X] Time subsystem
+- [X] Timers: PIT, PM timer
+- [X] Time subsystem (sleep & delay functions)
 - [ ] Virtual filesystem
 - [ ] Kernel FAT driver
 - [ ] ELF binary loading
@@ -39,16 +39,17 @@
 
 ## Possible evolutions
 
-- [X] *(Refactor)* Remove HHDM, in favour of dynamic memory mapping
-- [ ] *(Refactor)* Abstract the Serial ports from the Serial driver
 - [X] *(Fix)* Replace direct memory-mapped I/O (MMIO) access with safe, ordered and fenced calls
+- [X] *(Refactor)* Remove HHDM, in favour of dynamic memory mapping
+- [X] *(Refactor)* Compile the standard library as static library, to be able to link it to the kernel as well as userspace programs
+- [ ] *(Refactor)* Abstract the Serial ports from the Serial driver
+- [ ] *(Refactor)* Change the keyboard callbacks mechanism for something userspace-compatible
+- [X] *(Requires ACPI implemented)* Check whether an i8042 is present on the system before trying to intialize it (step 2 of i8042_init)
 - [ ] *(Requires a timer subsystem)* Set a minimum delay between set LEDs for the PS/2 keyboard, to prevent bricking the device
 - [ ] *(Requires USB implemented)* Initialize and disable USB legacy support BEFORE initializing the PS/2 controller
-- [X] *(Requires ACPI implemented)* Check whether an i8042 is present on the system before trying to intialize it (step 2 of i8042_init)
-- [ ] *(Requires proper executable and lib support)* Remove callbacks from the keyboard driver when its owner exits
 - [ ] *(Requires threads)* Implement threaded interrupts (so that we minimize time with masked interrupts) ; see linux request_threaded_irq kernel/irq/manage.c
 
 Notes:
 - PS/2 Driver purposely does NOT support hot-plug (as the specification PS/2 was designed for)
-- PS/2 Keyboard driver SysRq detection implementation sends spurious (but innocuous) alt presses (see PS2.c in handleScancode for more details)
+- PS/2 Keyboard driver SysRq detection implementation sends spurious (but innocuous) alt presses (see handleScancode in PS2.c for more details)
 - The framebuffer driver only supports 32 bpp framebuffers
