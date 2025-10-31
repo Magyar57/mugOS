@@ -60,9 +60,9 @@ $(STDLIB_USERSPACE_DYNAMIC):
 #
 run:
 	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
-		-accel tcg \
+		-accel kvm \
 		-machine q35 \
-		-cpu qemu64 \
+		-cpu qemu64,+rdtscp,+invtsc \
 		-smp cpus=1,sockets=1,cores=1,threads=1 \
 		-m 128M \
 		-drive if=pflash,file=$(UEFI_FIRMWARE),format=raw,readonly=on \

@@ -1,4 +1,5 @@
 #include "Logging.h"
+#include "Time/Time.h"
 #include "Registers.h"
 
 #include "Drivers/Timers/TSC.h"
@@ -6,6 +7,14 @@
 
 // TSC.asm
 uint64_t readTSC();
+
+static uint64_t getTicksPerMs(){
+	uint64_t begin = readTSC();
+	udelay(500);
+	uint64_t end = readTSC();
+
+	return (end - begin) / 500;
+}
 
 void TSC_init(struct SteadyTimer* tsc){
 	tsc->name = "TSC";
@@ -19,7 +28,12 @@ void TSC_init(struct SteadyTimer* tsc){
 
 	// Now we need to measure the time which is reprensented by one tick of the TSC
 	// TODO
-	uint64_t cur_value = readTSC();
 
-	log(SUCCESS, MODULE, "Initalization (stub) success, current value: %p", cur_value);
+	debug("%ld", getTicksPerMs());
+	debug("%ld", getTicksPerMs());
+	debug("%ld", getTicksPerMs());
+	debug("%ld", getTicksPerMs());
+	debug("%ld", getTicksPerMs());
+
+	log(SUCCESS, MODULE, "Initalization (stub) success");
 }

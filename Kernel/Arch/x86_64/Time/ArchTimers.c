@@ -40,15 +40,18 @@ void ArchTimers_initSteadyTimer(struct SteadyTimer* timer){
 	assert(timer);
 	timer->name = "no"; // "no steady timer"
 
-	if (g_CPU.features.bits.TSC && g_CPU.extFeatures.bits.InvariantTSC && false){
-		// (Invariant) TSC unsupported yet, but planned
-		TSC_init(timer);
-	}
-	else if (PMTimer_isPresent()) {
+	if (PMTimer_isPresent()) {
 		PMTimer_init(timer);
 	}
 	else {
 		log(PANIC, MODULE, "No supported SteadyTimer found !!");
 		panic();
+	}
+
+	// Try to init TSC (temp, we need definitive storage)
+	struct SteadyTimer tsc;
+	if (g_CPU.features.bits.TSC && g_CPU.extFeatures.bits.InvariantTSC){
+		// (Invariant) TSC unsupported yet, but planned
+		TSC_init(&tsc);
 	}
 }
