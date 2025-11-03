@@ -4,14 +4,15 @@
 #include "List.h"
 
 void List_init(list_t* list){
-	if (list == NULL) return;
+	assert(list != NULL);
 
 	list->head = (lnode_t*) list;
 	list->tail = (lnode_t*) list;
 }
 
 void List_pushFront(list_t* list, lnode_t* node){
-	if (list == NULL || node == NULL) return;
+	assert(list != NULL);
+	assert(node != NULL);
 
 	if (List_isEmpty(list)){
 		list->head = node;
@@ -28,7 +29,8 @@ void List_pushFront(list_t* list, lnode_t* node){
 }
 
 void List_pushBack(list_t* list, lnode_t* node){
-	if (list == NULL || node == NULL) return;
+	assert(list != NULL);
+	assert(node != NULL);
 
 	if (List_isEmpty(list)){
 		list->head = node;
@@ -45,7 +47,7 @@ void List_pushBack(list_t* list, lnode_t* node){
 }
 
 void List_empty(list_t* list){
-	if (list == NULL) return;
+	assert(list != NULL);
 
 	list->head = (lnode_t*) list;
 	list->tail = (lnode_t*) list;
@@ -81,7 +83,7 @@ static inline void popBackInternal(list_t* list){
 }
 
 void List_popFront(list_t* list){
-	if (list == NULL) return;
+	assert(list != NULL);
 	if (List_isEmpty(list)) return;
 
 	if (list->head == list->tail)
@@ -91,7 +93,7 @@ void List_popFront(list_t* list){
 }
 
 void List_popBack(list_t* list){
-	if (list == NULL) return;
+	assert(list != NULL);
 	if (List_isEmpty(list)) return;
 
 	if (list->head == list->tail)
@@ -101,7 +103,8 @@ void List_popBack(list_t* list){
 }
 
 void List_pop(list_t* list, lnode_t* node){
-	if (list == NULL || node == NULL) return;
+	assert(list != NULL);
+	assert(node != NULL);
 	if (List_isEmpty(list)) return;
 
 	if (node == list->head && node == list->tail)
