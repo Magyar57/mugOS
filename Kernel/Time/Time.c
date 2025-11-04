@@ -8,15 +8,41 @@
 #include "Time.h"
 #define MODULE "Time"
 
-static struct SteadyTimer m_steadyTimer;
-static struct EventTimer m_eventTimer;
+static list_t m_steadyTimers = LIST_STATIC_INIT(m_steadyTimers);
+static list_t m_eventTimers = LIST_STATIC_INIT(m_eventTimers);
+
+static struct SteadyTimer* m_steadyTimer = NULL;
+static struct EventTimer* m_eventTimer = NULL;
 
 void Time_init(){
-	ArchTimers_initSteadyTimer(&m_steadyTimer);
-	ArchTimers_initEventTimer(&m_eventTimer);
+	ArchTimers_init();
+
+	if (List_isEmpty(&m_steadyTimers)){
+		log(PANIC, MODULE, "No SteadyTimer registered !!");
+		panic();
+	}
+
+	if (List_isEmpty(&m_eventTimers)){
+		log(PANIC, MODULE, "No EventTimer registered !!");
+		panic();
+	}
 
 	log(SUCCESS, MODULE, "Initialized with %s steady timer & %s event timer",
-		m_steadyTimer.name, m_eventTimer.name);
+		m_steadyTimer->name, m_eventTimer->name);
+}
+
+void Time_registerSteadyTimer(struct SteadyTimer* timer){
+	List_pushBack(&m_steadyTimers, &timer->node);
+
+	if (m_steadyTimer == NULL || m_steadyTimer->score < timer->score)
+		m_steadyTimer = timer;
+}
+
+void Time_registerEventTimer(struct EventTimer* timer){
+	List_pushBack(&m_eventTimers, &timer->node);
+
+	if (m_eventTimer == NULL || m_eventTimer->score < timer->score)
+		m_eventTimer = timer;
 }
 
 void Time_computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, uint32_t to, uint32_t maxSec){
@@ -47,44 +73,44 @@ void Time_computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, uint
 }
 
 void sleep(unsigned long sec){
-	m_eventTimer.sleep(sec);
+	m_eventTimer->sleep(sec);
 }
 
 void msleep(unsigned long ms){
-	m_eventTimer.msleep(ms);
+	m_eventTimer->msleep(ms);
 }
 
 void usleep(unsigned long us){
-	m_eventTimer.usleep(us);
+	m_eventTimer->usleep(us);
 }
 
 void nsleep(unsigned long ns){
-	m_eventTimer.nsleep(ns);
+	m_eventTimer->nsleep(ns);
 }
 
 void mdelay(unsigned long ms){
-	uint64_t n_ticks = (m_steadyTimer.frequency * ms + 999) / 1000;
+	uint64_t n_ticks = (m_steadyTimer->frequency * ms + 999) / 1000;
 
-	uint64_t t0 = m_steadyTimer.read();
-	while (((m_steadyTimer.read() - t0) & m_steadyTimer.mask) < n_ticks){
+	uint64_t t0 = m_steadyTimer->read();
+	while (((m_steadyTimer->read() - t0) & m_steadyTimer->mask) < n_ticks){
 		pause();
 	}
 }
 
 void udelay(unsigned long us){
-	uint64_t n_ticks = (m_steadyTimer.frequency * us + 999999) / 1000000;
+	uint64_t n_ticks = (m_steadyTimer->frequency * us + 999999) / 1000000;
 
-	uint64_t t0 = m_steadyTimer.read();
-	while (((m_steadyTimer.read() - t0) & m_steadyTimer.mask) < n_ticks){
+	uint64_t t0 = m_steadyTimer->read();
+	while (((m_steadyTimer->read() - t0) & m_steadyTimer->mask) < n_ticks){
 		pause();
 	}
 }
 
 void ndelay(unsigned long ns){
-	uint64_t n_ticks = (m_steadyTimer.frequency * ns + 999999999) / 1000000000;
+	uint64_t n_ticks = (m_steadyTimer->frequency * ns + 999999999) / 1000000000;
 
-	uint64_t t0 = m_steadyTimer.read();
-	while (((m_steadyTimer.read() - t0) & m_steadyTimer.mask) < n_ticks){
+	uint64_t t0 = m_steadyTimer->read();
+	while (((m_steadyTimer->read() - t0) & m_steadyTimer->mask) < n_ticks){
 		pause();
 	}
 }

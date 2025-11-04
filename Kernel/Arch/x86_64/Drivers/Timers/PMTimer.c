@@ -12,11 +12,23 @@
 
 #define BASE_FREQUENCY 3579545 // 3.579545 MHz clock
 
-static struct SteadyTimer* m_pmTimer;
-static uint16_t m_port;
+struct PmTimer {
+	struct SteadyTimer steadyTimer;
+	uint16_t port;
+};
+
+static struct PmTimer m_pmTimer = {
+	.steadyTimer = {
+		.name = "PM Timer",
+		.score = 50,
+		.read = NULL,
+		.frequency = BASE_FREQUENCY,
+	},
+	.port = 0 // invalid default port
+};
 
 static uint64_t readCounterIoPort(){
-	return inl(m_port);
+	return inl(m_pmTimer.port);
 }
 
 static uint64_t readCounterMMIO(){
@@ -25,29 +37,41 @@ static uint64_t readCounterMMIO(){
 }
 
 static void initIoPort(uint16_t port){
-	m_port = port;
-	m_pmTimer->read = readCounterIoPort;
-	log(SUCCESS, MODULE, "Initialized PM Timer on port %#hx, with mask %#x", m_port, m_pmTimer->mask);
+	m_pmTimer.port = port;
+	m_pmTimer.steadyTimer.read = readCounterIoPort;
+
+	Time_registerSteadyTimer(&m_pmTimer.steadyTimer);
+
+	log(SUCCESS, MODULE, "Initialized PM Timer on port %#hx, with mask %#x",
+		m_pmTimer.port, m_pmTimer.steadyTimer.mask);
 }
 
 static void initMMIO(paddr_t){
-	m_pmTimer->read = readCounterMMIO;
-	log(PANIC, MODULE, "MMIO is currently unsupported for PM Timer !");
-	panic();
+	m_pmTimer.steadyTimer.read = readCounterMMIO;
+
+	// Time_registerSteadyTimer(&m_pmTimer.steadyTimer);
+
+	log(ERROR, MODULE, "MMIO is currently unsupported for PM Timer, aborting");
+}
+
+/// @return Whether a Power Management Timer is present on the system
+static bool isPmTimerPresent(){
+	// PMTimerLength is 4 if PM Timer is present, else 0
+	return (g_FADTPresent && g_FADT.PMTimerLength == 4);
 }
 
 // ================ Public API ================
 
-void PMTimer_init(struct SteadyTimer* pmtimer){
-	assert(PMTimer_isPresent());
-
-	m_pmTimer = pmtimer;
-	m_pmTimer->frequency = BASE_FREQUENCY;
-	Time_computeConversion(&m_pmTimer->mult, &m_pmTimer->shift, BASE_FREQUENCY, 1000000000, 3600);
-	m_pmTimer->name = "PM Timer";
+void PMTimer_init(){
+	if (!isPmTimerPresent()){
+		log(INFO, MODULE, "Chip is not present");
+		return;
+	}
 
 	// The internal counter is 24 bits by default, and may be extended to 32 bits
-	m_pmTimer->mask = (g_FADT.fixedFeatureFlags.TMR_VAL_EXT == 0) ? 0xffffff : 0xffffffff;
+	m_pmTimer.steadyTimer.mask = (g_FADT.fixedFeatureFlags.TMR_VAL_EXT == 0) ? 0xffffff : 0xffffffff;
+
+	Time_computeConversion(&m_pmTimer.steadyTimer.mult, &m_pmTimer.steadyTimer.shift, BASE_FREQUENCY, 1000000000, 3600);
 
 	paddr_t mmio = g_FADT.X_PMTimerBlock.address[1];
 	mmio = (mmio << 32) | g_FADT.X_PMTimerBlock.address[0];
@@ -65,9 +89,9 @@ void PMTimer_init(struct SteadyTimer* pmtimer){
 			break;
 		default:
 			// Should not happen
-			log(PANIC, MODULE, "Got unexpected enum addressSpace value %d",
+			log(ERROR, MODULE, "Got unexpected enum addressSpace value %d",
 				g_FADT.X_PMTimerBlock.addressSpace);
-			panic();
+			return;
 		}
 	}
 	else if (g_FADT.PMTimerBlock != 0) {
@@ -76,12 +100,7 @@ void PMTimer_init(struct SteadyTimer* pmtimer){
 	else {
 		// No field are available. This should not happen, but since both are optional,
 		// we still check for this case
-		log(PANIC, MODULE, "PM Timer is present but the firmware provided no way of accessing it");
-		panic();
+		log(ERROR, MODULE, "PM Timer is present but the firmware provided no way of accessing it");
+		return;
 	}
-}
-
-bool PMTimer_isPresent(){
-	// PMTimerLength is 4 if PM Timer is present, else 0
-	return (g_FADTPresent && g_FADT.PMTimerLength == 4);
 }

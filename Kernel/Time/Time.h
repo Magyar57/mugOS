@@ -2,6 +2,7 @@
 #define __TIME_H__
 
 #include <stdint.h>
+#include "Time/Timers.h"
 
 /// @brief Initialize the Time subsystem
 void Time_init();
@@ -18,6 +19,12 @@ void Time_init();
 /// @param maxSec Minimum range to be supported by the conversion (without overflowing).
 ///        A greater value means greater conversion range, but lower conversion accuracy
 void Time_computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, uint32_t to, uint32_t maxSec);
+
+/// @brief Register an SteadyTimer to the Time subsystem
+void Time_registerSteadyTimer(struct SteadyTimer* timer);
+
+/// @brief Register an EventTimer to the Time subsystem
+void Time_registerEventTimer(struct EventTimer* timer);
 
 /// @brief Sleep for `sec` seconds (IRQ unsafe)
 void sleep(unsigned long sec);

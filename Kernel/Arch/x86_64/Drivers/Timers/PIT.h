@@ -1,10 +1,8 @@
 #ifndef __PIT_H__
 #define __PIT_H__
 
-#include "Time/Timers.h"
-
 /// @brief Initialize the PIT
-void PIT_init(struct EventTimer* timer);
+void PIT_init();
 
 /// @brief Sleep `sec` seconds (IRQ unsafe)
 void PIT_sleep(unsigned long sec);

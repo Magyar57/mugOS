@@ -1,8 +1,8 @@
 #ifndef __TSC_H__
 #define __TSC_H__
 
-#include "Time/Timers.h"
+// TSC.h: Time Stamp Counter driver
 
-void TSC_init(struct SteadyTimer* tsc);
+void TSC_init();
 
 #endif

@@ -2,8 +2,9 @@
 #include <stdatomic.h>
 #include "Logging.h"
 #include "IO.h"
-#include "HAL/Halt.h"
 #include "IRQ.h"
+#include "Time/Time.h"
+#include "HAL/Halt.h"
 
 #include "PIT.h"
 #define MODULE "PIT"
@@ -52,9 +53,24 @@ union CommandReg {
 	} bits;
 };
 
-// Count of the number of ticks since intialization.
-// Has atomicity for beeing thread and IRQ-safe
-atomic_uint_fast64_t m_count = 0;
+struct PIT {
+	struct EventTimer eventTimer;
+	// Count of the number of ticks since intialization.
+	// Has atomicity for beeing thread and IRQ-safe
+	atomic_uint_fast64_t count;
+};
+
+static struct PIT m_pit = {
+	.eventTimer = {
+		.name = "PIT",
+		.score = 1,
+		.sleep = PIT_sleep,
+		.msleep = PIT_msleep,
+		.usleep = PIT_usleep,
+		.nsleep = PIT_nsleep
+	},
+	.count = 0
+};
 
 static void setDivisor(uint16_t div){
 	uint8_t low_byte = div & 0xff;
@@ -67,22 +83,23 @@ static void setDivisor(uint16_t div){
 }
 
 void pitIrq(void*){
-	// IRQs are disabled, no need for atomicity here
-	m_count++;
+	// m_pit.count++
+	atomic_fetch_add(&m_pit.count, 1);
 }
 
 static void sleepMiliseconds(unsigned long ms){
-	uint64_t curCount, initialCount = m_count;
+	uint64_t curCount;
+	uint64_t initialCount = atomic_load(&m_pit.count);
 	unsigned long waited = 0; // µs (same as PRECISION)
 
 	do {
 		halt();
-		curCount = atomic_load(&m_count);
+		curCount = atomic_load(&m_pit.count);
 		waited = (curCount - initialCount) * PRECISION;
 	} while(waited/1000 <= ms);
 }
 
-void PIT_init(struct EventTimer* pit){
+void PIT_init(){
 	union CommandReg command;
 	command.bits.channel = 0b00;
 	command.bits.accessMode = 0b11;
@@ -95,11 +112,7 @@ void PIT_init(struct EventTimer* pit){
 	IRQ_installHandler(IRQ_PIT, pitIrq);
 	IRQ_enableSpecific(IRQ_PIT);
 
-	pit->name = "PIT";
-	pit->sleep = PIT_sleep;
-	pit->msleep = PIT_msleep;
-	pit->usleep = PIT_usleep;
-	pit->nsleep = PIT_nsleep;
+	Time_registerEventTimer(&m_pit.eventTimer);
 
 	log(SUCCESS, MODULE, "Initialized success. Timer period/precision of T=%dus", PRECISION);
 }

@@ -1,8 +1,3 @@
-#include "assert.h"
-#include "Logging.h"
-#include "Panic.h"
-#include "Time/Timers.h"
-#include "CPU.h"
 #include "Drivers/Timers/PIT.h"
 #include "Drivers/Timers/PMTimer.h"
 #include "Drivers/Timers/TSC.h"
@@ -22,33 +17,15 @@
 // TSC           rdtsc   Up              64     CPU clock     No    N/A           Variable frequency, sucks
 // InvariantTSC  rdtsc   Monotonic up    64     To measure    No    N/A           Fucking awesome
 
-void ArchTimers_initEventTimer(struct EventTimer* timer){
-	assert(timer);
-	timer->name = "no"; // "no event timer"
+void ArchTimers_init(){
+	// Try to init all supported timers
+	// If they succeed, they will register themselves to the Time subystem
 
-	if (g_CPU.features.bits.APIC && false){
-		timer->name = "LAPIC Timer";
-		// LAPIC Timer unsupported yet, but planned
-	}
-	else {
-		// PIT is guaranteed to be present/emulated
-		PIT_init(timer);
-	}
-}
+	// EventTimers
+	PIT_init();
+	// LAPIC Timer unsupported yet, but planned (g_CPU.features.bits.APIC)
 
-void ArchTimers_initSteadyTimer(struct SteadyTimer* timer){
-	assert(timer);
-	timer->name = "no"; // "no steady timer"
-
-	if (g_CPU.features.bits.TSC && g_CPU.extFeatures.bits.InvariantTSC && false){
-		// (Invariant) TSC unsupported yet, but planned
-		TSC_init(timer);
-	}
-	else if (PMTimer_isPresent()) {
-		PMTimer_init(timer);
-	}
-	else {
-		log(PANIC, MODULE, "No supported SteadyTimer found !!");
-		panic();
-	}
+	// Steady timers
+	PMTimer_init();
+	TSC_init();
 }
