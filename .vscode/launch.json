@@ -22,6 +22,11 @@
 				"text": "-enable-pretty-printing",
 				"ignoreFailures": true
 			}],
+			// Note: Set hardware breakpoints to true if running KVM accel + host CPU in QEMU
+			"hardwareBreakpoints": {
+				"require": false,
+				"limit": 0
+			}
 		},
 	]
 }
