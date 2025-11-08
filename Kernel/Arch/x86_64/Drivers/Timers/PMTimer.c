@@ -71,8 +71,6 @@ void PMTimer_init(){
 	// The internal counter is 24 bits by default, and may be extended to 32 bits
 	m_pmTimer.steadyTimer.mask = (g_FADT.fixedFeatureFlags.TMR_VAL_EXT == 0) ? 0xffffff : 0xffffffff;
 
-	Time_computeConversion(&m_pmTimer.steadyTimer.mult, &m_pmTimer.steadyTimer.shift, BASE_FREQUENCY, 1000000000, 3600);
-
 	paddr_t mmio = g_FADT.X_PMTimerBlock.address[1];
 	mmio = (mmio << 32) | g_FADT.X_PMTimerBlock.address[0];
 

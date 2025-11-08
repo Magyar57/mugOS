@@ -7,19 +7,6 @@
 /// @brief Initialize the Time subsystem
 void Time_init();
 
-/// @brief Compute mult/shift operators for converting frequencies.
-/// These operators are optimizations to convert timer cycles/ticks to time intervals:
-/// `ns = (cycles * mult) >> shift`
-/// @param mult Output for the computed `mult` factor
-/// @param shift Output for the computed `shift` power
-/// @param from Frequency (Hz) to convert from.
-//         For a SteadyTimer, it is its ticking frequency in Hz.
-/// @param to Frequency (Hz) to convert to.
-///        For a SteadyTimer, it is `1000000000` (1GHz, 1 billion nanoseconds))
-/// @param maxSec Minimum range to be supported by the conversion (without overflowing).
-///        A greater value means greater conversion range, but lower conversion accuracy
-void Time_computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, uint32_t to, uint32_t maxSec);
-
 /// @brief Register an SteadyTimer to the Time subsystem
 void Time_registerSteadyTimer(struct SteadyTimer* timer);
 

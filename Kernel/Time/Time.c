@@ -14,38 +14,26 @@ static list_t m_eventTimers = LIST_STATIC_INIT(m_eventTimers);
 static struct SteadyTimer* m_steadyTimer = NULL;
 static struct EventTimer* m_eventTimer = NULL;
 
-void Time_init(){
-	ArchTimers_init();
+static void delayTicks(unsigned long ticks){
+	uint64_t t0 = m_steadyTimer->read();
 
-	if (List_isEmpty(&m_steadyTimers)){
-		log(PANIC, MODULE, "No SteadyTimer registered !!");
-		panic();
+	while (((m_steadyTimer->read() - t0) & m_steadyTimer->mask) < ticks){
+		pause();
 	}
-
-	if (List_isEmpty(&m_eventTimers)){
-		log(PANIC, MODULE, "No EventTimer registered !!");
-		panic();
-	}
-
-	log(SUCCESS, MODULE, "Initialized with %s steady timer & %s event timer",
-		m_steadyTimer->name, m_eventTimer->name);
 }
 
-void Time_registerSteadyTimer(struct SteadyTimer* timer){
-	List_pushBack(&m_steadyTimers, &timer->node);
-
-	if (m_steadyTimer == NULL || m_steadyTimer->score < timer->score)
-		m_steadyTimer = timer;
-}
-
-void Time_registerEventTimer(struct EventTimer* timer){
-	List_pushBack(&m_eventTimers, &timer->node);
-
-	if (m_eventTimer == NULL || m_eventTimer->score < timer->score)
-		m_eventTimer = timer;
-}
-
-void Time_computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, uint32_t to, uint32_t maxSec){
+/// @brief Compute mult/shift operators for converting frequencies.
+/// These operators are optimizations to convert timer cycles/ticks to time intervals:
+/// `ns = (cycles * mult) >> shift`
+/// @param mult Output for the computed `mult` factor
+/// @param shift Output for the computed `shift` power
+/// @param from Frequency (Hz) to convert from.
+///        For a SteadyTimer, it is its ticking frequency in Hz.
+/// @param to Frequency (Hz) to convert to.
+///        For a SteadyTimer, it is `1000000000` (1GHz, 1 billion nanoseconds))
+/// @param maxSec Minimum range to be supported by the conversion (without overflowing).
+///        A greater value means greater conversion range, but lower conversion accuracy
+static void computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, uint32_t to, uint32_t maxSec){
 	// Compute mult and shift so that
 	// ns = (cycles*mult) >> shift
 
@@ -72,6 +60,41 @@ void Time_computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, uint
 	*shift = temp_shift;
 }
 
+// ================ Public API ================
+
+void Time_init(){
+	ArchTimers_init();
+
+	if (List_isEmpty(&m_steadyTimers)){
+		log(PANIC, MODULE, "No SteadyTimer registered !!");
+		panic();
+	}
+
+	if (List_isEmpty(&m_eventTimers)){
+		log(PANIC, MODULE, "No EventTimer registered !!");
+		panic();
+	}
+
+	log(SUCCESS, MODULE, "Initialized with %s steady timer & %s event timer",
+		m_steadyTimer->name, m_eventTimer->name);
+}
+
+void Time_registerSteadyTimer(struct SteadyTimer* timer){
+	List_pushBack(&m_steadyTimers, &timer->node);
+
+	computeConversion(&timer->mult, &timer->shift, timer->frequency, 1000000000, 3600);
+
+	if (m_steadyTimer == NULL || m_steadyTimer->score < timer->score)
+		m_steadyTimer = timer;
+}
+
+void Time_registerEventTimer(struct EventTimer* timer){
+	List_pushBack(&m_eventTimers, &timer->node);
+
+	if (m_eventTimer == NULL || m_eventTimer->score < timer->score)
+		m_eventTimer = timer;
+}
+
 void sleep(unsigned long sec){
 	m_eventTimer->sleep(sec);
 }
@@ -90,27 +113,15 @@ void nsleep(unsigned long ns){
 
 void mdelay(unsigned long ms){
 	uint64_t n_ticks = (m_steadyTimer->frequency * ms + 999) / 1000;
-
-	uint64_t t0 = m_steadyTimer->read();
-	while (((m_steadyTimer->read() - t0) & m_steadyTimer->mask) < n_ticks){
-		pause();
-	}
+	delayTicks(n_ticks);
 }
 
 void udelay(unsigned long us){
 	uint64_t n_ticks = (m_steadyTimer->frequency * us + 999999) / 1000000;
-
-	uint64_t t0 = m_steadyTimer->read();
-	while (((m_steadyTimer->read() - t0) & m_steadyTimer->mask) < n_ticks){
-		pause();
-	}
+	delayTicks(n_ticks);
 }
 
 void ndelay(unsigned long ns){
 	uint64_t n_ticks = (m_steadyTimer->frequency * ns + 999999999) / 1000000000;
-
-	uint64_t t0 = m_steadyTimer->read();
-	while (((m_steadyTimer->read() - t0) & m_steadyTimer->mask) < n_ticks){
-		pause();
-	}
+	delayTicks(n_ticks);
 }
