@@ -2,10 +2,10 @@ section .note.GNU-stack noalloc noexec nowrite progbits
 
 section .text
 
-global readTSC
+global TSC_read
 
-; uint64_t readTSC();
-readTSC:
+; uint64_t TSC_read();
+TSC_read:
 	rdtsc
 
 	; rdtsc returns the TSC value in edx:eax

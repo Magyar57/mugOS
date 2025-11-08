@@ -10,35 +10,37 @@ struct TSC {
 	struct SteadyTimer steadyTimer;
 };
 
+// TSC.asm
+uint64_t TSC_read();
+
 static struct TSC m_tsc = {
 	.steadyTimer = {
 		.name = "TSC",
-		.score = -100 // this is still a stub
+		.score = 100,
+		.read = TSC_read
 	}
 };
 
-// TSC.asm
-uint64_t readTSC();
+static uint64_t measureFrequency(){
+	// Try to get the TSC's frequency
+	// -> We do not trust cpuid leaf 0x15, as it is particularly unreliable
+	// -> We could use leaf 0x16, but it has to be validated afterwards anyway
+	// => So we just measure it once and for all. Simple, nice and easy
 
-static uint64_t getTicksPerMs(){
-	uint64_t begin = readTSC();
-	udelay(500);
-	uint64_t end = readTSC();
+	uint64_t temp;
+	uint64_t freq = UINT64_MAX;
+	uint64_t begin, end;
 
-	return (end - begin) / 500;
-}
+	for (int i=0 ; i<10 ; i++){
+		begin = TSC_read();
+		mdelay(1);
+		end = TSC_read();
 
-// sigma² = 1/n sum(i=0,n) (xi - mean)²
-uint64_t getVariance(uint64_t* arr, size_t size, uint64_t mean){
-	uint64_t temp, sigma = 0;
-
-	for (size_t i=0 ; i<size ; i++){
-		temp = arr[i] - mean;
-		debug("%ld", temp);
-		sigma += temp*temp;
+		temp = (end - begin) * 1000;
+		freq = min(freq, temp);
 	}
 
-	return sigma / size;
+	return (freq == UINT64_MAX) ? 0 : freq;
 }
 
 void TSC_init(){
@@ -51,6 +53,15 @@ void TSC_init(){
 		return;
 	}
 
+	uint64_t freq = measureFrequency();
+	if (freq == 0){
+		log(INFO, MODULE, "Couldn't measure TSC frequency");
+		return;
+	}
+
+	m_tsc.steadyTimer.frequency = freq;
+	m_tsc.steadyTimer.mask = 0xffffffffffffffff;
+
 	// Enable the rdtsc/rdtscp instructions in usermode, since we have no reason not to.
 	// We still provide higher level interfaces in Time.h
 	union CR4 cr4;
@@ -58,20 +69,8 @@ void TSC_init(){
 	cr4.bits.TSD = 0;
 	Registers_writeCR4(cr4.value);
 
-	// Now we need to measure the time which is reprensented by one tick of the TSC
-	// TODO
-
-	// uint64_t values[10];
-	// uint64_t mean = 0;
-	// for (int i=0 ; i<10 ; i++){
-	// 	values[i] = getTicksPerMs();
-	// 	mean += values[i];
-	// 	debug("got value %ld", values[i]);
-	// }
-	// mean /= 10;
-	// debug("mean: %ld variance=%ld", mean, getVariance(values, 10, mean));
-
 	Time_registerSteadyTimer(&m_tsc.steadyTimer);
 
-	log(SUCCESS, MODULE, "Initalization (stub) success");
+	log(SUCCESS, MODULE, "Initalization success, frequency is %lu.%03lu MHz",
+		freq / 1000000, freq % 1000000 / 1000);
 }
