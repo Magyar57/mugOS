@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include "stdio.h"
-#include "Drivers/Serial.h"
+#include "Drivers/Output/Serial.h"
 
 #include "Logging.h"
 #define MODULE "Logging"

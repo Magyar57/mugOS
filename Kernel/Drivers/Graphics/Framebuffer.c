@@ -3,8 +3,8 @@
 #include "string.h"
 #include "assert.h"
 #include "IO.h"
-#include "IRQ.h"
 #include "Logging.h"
+#include "IRQ/IRQ.h"
 #include "Drivers/Graphics/Font.h"
 
 #include "Drivers/Graphics/Framebuffer.h"

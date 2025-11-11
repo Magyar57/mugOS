@@ -1,8 +1,8 @@
 #include "Drivers/Timers/PIT.h"
-#include "Drivers/Timers/PMTimer.h"
+#include "Drivers/Timers/PmTimer.h"
 #include "Drivers/Timers/TSC.h"
 
-#include "HAL/Time/ArchTimers.h"
+#include "HAL/Drivers/Timers/ArchTimers.h"
 #define MODULE "ArchTimer"
 
 // Summary of available x86 timers:
@@ -26,6 +26,6 @@ void ArchTimers_init(){
 	// LAPIC Timer unsupported yet, but planned (g_CPU.features.bits.APIC)
 
 	// Steady timers
-	PMTimer_init();
+	PmTimer_init();
 	TSC_init();
 }

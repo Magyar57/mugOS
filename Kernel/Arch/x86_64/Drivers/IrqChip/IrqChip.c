@@ -1,13 +1,13 @@
 #include "assert.h"
 #include "Logging.h"
 #include "CPU.h"
-#include "Drivers/i8259.h"
-#include "Drivers/APIC.h"
-#include "Drivers/IOAPIC.h"
-#include "HAL/IRQFlags.h"
+#include "Drivers/IrqChip/i8259.h"
+#include "Drivers/IrqChip/APIC.h"
+#include "Drivers/IrqChip/IOAPIC.h"
+#include "HAL/IRQ/IrqFlags.h"
 #include "ISR.h"
 
-#include "HAL/Drivers/IRQChip.h"
+#include "HAL/Drivers/IrqChip/IrqChip.h"
 #define MODULE "IRQ Chip"
 
 static struct IRQChip m_chip;

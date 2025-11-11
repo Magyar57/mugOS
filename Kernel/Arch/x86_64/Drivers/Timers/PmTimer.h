@@ -5,6 +5,6 @@
 
 /// @brief Intialize the system's PM Timer
 /// @note Chip presence must be checked BEFORE calling this init
-void PMTimer_init();
+void PmTimer_init();
 
 #endif

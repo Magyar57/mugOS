@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include "Logging.h"
-#include "IRQ.h"
+#include "IRQ/IRQ.h"
 #include "HAL/HAL.h"
 #include "HAL/SMP/PerCPU.h"
 #include "Arch/x86_64/CPU.h"

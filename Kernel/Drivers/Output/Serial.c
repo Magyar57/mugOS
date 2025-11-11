@@ -3,7 +3,7 @@
 #include "IO.h"
 #include "assert.h"
 #include "Logging.h"
-#include "IRQ.h"
+#include "IRQ/IRQ.h"
 
 #include "Serial.h"
 #define MODULE "Serial Port"

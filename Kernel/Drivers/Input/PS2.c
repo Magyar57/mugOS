@@ -2,12 +2,12 @@
 #include <stddef.h>
 #include "string.h"
 #include "assert.h"
-#include "IRQ.h"
 #include "Logging.h"
+#include "IRQ/IRQ.h"
 #include "Time/Time.h"
-#include "Drivers/Keycodes.h"
-#include "Drivers/Keyboard.h"
-#include "HAL/Drivers/PS2Controller.h"
+#include "Drivers/Input/Keycodes.h"
+#include "Drivers/Input/Keyboard.h"
+#include "HAL/Drivers/Input/PS2Controller.h"
 
 #include "PS2.h"
 #define MODULE "PS/2"

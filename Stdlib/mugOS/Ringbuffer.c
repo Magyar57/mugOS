@@ -2,7 +2,7 @@
 #include "assert.h"
 #include "Logging.h"
 #include "Panic.h"
-#include "IRQ.h"
+#include "IRQ/IRQ.h"
 
 #include "Ringbuffer.h"
 #define MODULE "Ringbuffer"

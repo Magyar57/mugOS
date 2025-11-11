@@ -7,7 +7,7 @@
 #include "Drivers/ACPI/ACPI.h"
 #include "HAL/Halt.h"
 
-#include "PMTimer.h"
+#include "PmTimer.h"
 #define MODULE "PM Timer"
 
 #define BASE_FREQUENCY 3579545 // 3.579545 MHz clock
@@ -71,7 +71,7 @@ static bool isPmTimerPresent(){
 
 // ================ Public API ================
 
-void PMTimer_init(){
+void PmTimer_init(){
 	if (!isPmTimerPresent()){
 		log(INFO, MODULE, "Chip is not present");
 		return;

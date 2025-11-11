@@ -2,7 +2,7 @@
 #include <stdatomic.h>
 #include "Logging.h"
 #include "IO.h"
-#include "IRQ.h"
+#include "IRQ/IRQ.h"
 #include "Time/Time.h"
 #include "HAL/Halt.h"
 

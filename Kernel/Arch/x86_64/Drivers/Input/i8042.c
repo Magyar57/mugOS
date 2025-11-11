@@ -1,6 +1,6 @@
 #include "Logging.h"
 #include "assert.h"
-#include "IRQ.h"
+#include "IRQ/IRQ.h"
 #include "Time/Time.h"
 #include "Drivers/ACPI/ACPI.h"
 #include "IO.h"

@@ -2,7 +2,7 @@
 #define __IRQ_H__
 
 #include <stdint.h>
-#include "HAL/IRQFlags.h"
+#include "HAL/IRQ/IrqFlags.h"
 
 // irqhandler_t function type
 typedef void (*irqhandler_t)(void* registers);

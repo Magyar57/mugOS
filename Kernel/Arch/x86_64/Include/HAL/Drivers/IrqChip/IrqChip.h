@@ -2,7 +2,7 @@
 #define __IRQ_CHIP_H__
 
 #include <stdint.h>
-#include "IRQ.h"
+#include "IRQ/IRQ.h"
 
 // x86_64 IRQ Chip driver
 // Can be either the PIC or the APIC

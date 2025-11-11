@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include "Logging.h"
-#include "Drivers/Keycodes.h"
+#include "Drivers/Input/Keycodes.h"
 
 #include "Keyboard.h"
 

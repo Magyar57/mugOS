@@ -4,7 +4,7 @@
 #include "Panic.h"
 #include "Time/Timers.h"
 #include "HAL/Halt.h"
-#include "HAL/Time/ArchTimers.h"
+#include "HAL/Drivers/Timers/ArchTimers.h"
 
 #include "Time.h"
 #define MODULE "Time"

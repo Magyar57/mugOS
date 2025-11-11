@@ -3,7 +3,7 @@
 #include "IO.h"
 #include "Panic.h"
 #include "Logging.h"
-#include "IRQ.h"
+#include "IRQ/IRQ.h"
 #include "Memory/VMM.h"
 #include "SMP/SMP.h"
 #include "Drivers/ACPI/ACPI.h"

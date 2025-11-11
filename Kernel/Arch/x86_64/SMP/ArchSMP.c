@@ -7,7 +7,7 @@
 #include "Memory/VMM.h"
 #include "Drivers/ACPI/ACPI.h"
 #include "HAL/SMP/PerCPU.h"
-#include "Drivers/APIC.h"
+#include "Drivers/IrqChip/APIC.h"
 
 #include "HAL/SMP/ArchSMP.h"
 #define MODULE "Arch SMP"
