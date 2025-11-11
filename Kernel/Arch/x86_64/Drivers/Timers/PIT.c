@@ -12,125 +12,109 @@
 // Programmable Interrupt Timer driver
 // Note: only channel 0 is supported
 
-#define PORT_CHANNEL0		0x40 // Channel 0 data port (r/w)
-#define PORT_CHANNEL1		0x41 // Channel 1 data port (r/w)
-#define PORT_CHANNEL2		0x42 // Channel 2 data port (r/w)
+#define PORT_CHANNEL0		0x40 // Channel 0 counter register port (r/w)
+#define PORT_CHANNEL1		0x41 // Channel 1 counter register port (r/w)
+#define PORT_CHANNEL2		0x42 // Channel 2 counter register port (r/w)
 #define PORT_COMMAND_REG	0x43 // Mode/command register (w)
 
-// Given a PIT base frequency f0 = 1.193181 MHz
-// To choose a divisor d = f0/f
-// T = 1/f = d/f0
-// To have a precision p, we need T <= p <=> d <= f0*p
-
 #define BASE_FREQUENCY	1193181 // Hz (1.1931816666 MHz)
-#define DIVISOR			1193
-#define PRECISION		DIVISOR*1000000 / BASE_FREQUENCY // µs
 
 union CommandReg {
 	uint8_t value;
 	struct {
 		// true: BCD mode, false: 16-bit binary mode
 		uint8_t bcdMode : 1;
-		// 0b000: Mode 0 - Interrupt on terminal count
-		// 0b001: Mode 1 - Hardware re-triggerable one-shot
-		// 0b010: Mode 2 - Rate generator
-		// 0b011: Mode 3 - Square wave generator
-		// 0b100: Mode 4 - Software triggered strobe
-		// 0b101: Mode 5 - Hardware triggered strobe
-		// 0b110: Mode 2
-		// 0b111: Mode 3
+		// `0b000` Mode 0 - Interrupt on terminal count
+		// `0b001` Mode 1 - Hardware re-triggerable one-shot
+		// `0b010` Mode 2 - Rate generator
+		// `0b011` Mode 3 - Square wave generator
+		// `0b100` Mode 4 - Software triggered strobe
+		// `0b101` Mode 5 - Hardware triggered strobe
+		// `0b110` Mode 2
+		// `0b111` Mode 3
 		uint8_t operatingMode : 3;
-		// 0b00: Latch count value command
-		// 0b01: Access mode: low byte only
-		// 0b10: Access mode: high byte only
-		// 0b11: Access mode: low byte/high byte
+		// `0b00` Latch count value command
+		// `0b01` Access mode: low byte only
+		// `0b10` Access mode: high byte only
+		// `0b11` Access mode: low byte/high byte
 		uint8_t accessMode : 2;
-		// 0b00: Channel 0
-		// 0b01: Channel 1
-		// 0b10: Channel 2
-		// 0b11: Read-back command (8254 only)
+		// `0b00` Channel 0: PIC IRQ 0
+		// `0b01` Channel 1: DRAM refresh (legacy)
+		// `0b10` Channel 2: IBM-PC speaker
+		// `0b11` Read-back command (8254 only)
 		uint8_t channel : 2;
 	} bits;
 };
 
-struct PIT {
-	struct EventTimer eventTimer;
-	// Count of the number of ticks since intialization.
-	// Has atomicity for beeing thread and IRQ-safe
-	atomic_uint_fast64_t count;
+static void scheduleEvent(unsigned long ticks);
+
+static struct EventTimer m_pit = {
+	.name = "PIT",
+	.score = 1,
+	.frequency = BASE_FREQUENCY,
+	.scheduleEvent = scheduleEvent,
+	.minTick = 1,
+	.maxTick = UINT16_MAX
 };
 
-static struct PIT m_pit = {
-	.eventTimer = {
-		.name = "PIT",
-		.score = 1,
-		.sleep = PIT_sleep,
-		.msleep = PIT_msleep,
-		.usleep = PIT_usleep,
-		.nsleep = PIT_nsleep
-	},
-	.count = 0
-};
+static atomic_bool m_initIrqReceived = false;
 
-static void setDivisor(uint16_t div){
-	uint8_t low_byte = div & 0xff;
-	uint8_t high_byte = (div >> 8) & 0xff;
+static void writeCounterRegister(uint16_t channel, uint16_t value){
+	uint8_t low_byte = value & 0xff;
+	uint8_t high_byte = (value >> 8) & 0xff;
 
-	IRQ_disable();
-	outb(PORT_CHANNEL0, low_byte);
-	outb(PORT_CHANNEL0, high_byte);
-	IRQ_enable();
+	unsigned long flags;
+	IRQ_disableSave(flags);
+
+	outb(channel, low_byte);
+	outb(channel, high_byte);
+
+	IRQ_restore(flags);
 }
 
-void pitIrq(void*){
-	// m_pit.count++
-	atomic_fetch_add(&m_pit.count, 1);
+static void pitIrq(void*){
+	m_pit.eventHandler();
 }
 
-static void sleepMiliseconds(unsigned long ms){
-	uint64_t curCount;
-	uint64_t initialCount = atomic_load(&m_pit.count);
-	unsigned long waited = 0; // µs (same as PRECISION)
+static void pitInitIrq(void*){
+	atomic_store(&m_initIrqReceived, true);
+}
 
-	do {
-		halt();
-		curCount = atomic_load(&m_pit.count);
-		waited = (curCount - initialCount) * PRECISION;
-	} while(waited/1000 <= ms);
+/// @brief Schedule an event (IRQ) to fire in `tick` PIT ticks
+static void scheduleEvent(unsigned long ticks){
+	writeCounterRegister(PORT_CHANNEL0, ticks);
 }
 
 void PIT_init(){
+	IRQ_disable();
+
+	// Setup channel 0 to one-shot mode
+	// In this mode, writing the counter register will make the PIC start decreeasing it,
+	// and trigger a single IRQ when it reaches 0. Hence scheduleEvent()'s implementation
 	union CommandReg command;
 	command.bits.channel = 0b00;
 	command.bits.accessMode = 0b11;
-	command.bits.operatingMode = 0b010;
+	command.bits.operatingMode = 0b000;
 	command.bits.bcdMode = false;
 	outb(PORT_COMMAND_REG, command.value);
 
-	setDivisor(DIVISOR);
+	// We need to set the counter so that the PIT actually changes mode,
+	// which triggers a one-shot IRQ
+	IRQ_installHandler(IRQ_PIT, pitInitIrq);
+	IRQ_enableSpecific(IRQ_PIT);
+	IRQ_enable();
+	writeCounterRegister(PORT_CHANNEL0, 1);
 
+	// Wait for the IRQ
+	while(!atomic_load(&m_initIrqReceived))
+		halt();
+
+	// Now we can install our actual IRQ handler
 	IRQ_installHandler(IRQ_PIT, pitIrq);
 	IRQ_enableSpecific(IRQ_PIT);
 
-	Time_registerEventTimer(&m_pit.eventTimer);
+	Time_registerEventTimer(&m_pit);
 
-	log(SUCCESS, MODULE, "Initialized success. Timer period/precision of T=%dus", PRECISION);
-}
-
-void PIT_sleep(unsigned long sec){
-	sleepMiliseconds(1000*sec);
-}
-
-void PIT_msleep(unsigned long ms){
-	sleepMiliseconds(ms);
-}
-
-void PIT_usleep(unsigned long us){
-	unsigned long ms = max(us / 1000, 1);
-	sleepMiliseconds(ms);
-}
-
-void PIT_nsleep(unsigned long ns){
-	unsigned long ms = max(ns / 1000000, 1);
-	sleepMiliseconds(ms);
+	log(SUCCESS, MODULE, "Initialized success, frequency is %lu.%06lu MHz",
+		BASE_FREQUENCY / 1000000, BASE_FREQUENCY % 1000000);
 }

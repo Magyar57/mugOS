@@ -11,16 +11,16 @@
 struct SteadyTimer {
 	const char* name;
 	int score;
-	lnode_t node;
 	// Read the clock's counter
 	uint64_t (*read)();
 	// Mask for the value returned by the clock
 	uint64_t mask;
-	// The frequency at which the ticks increments, in Hz
+	// The frequency at which the timer's ticks increments, in Hz
 	uint64_t frequency;
+
+	lnode_t node;
 	// The mult and shift conversion operators, so that `(steadyTimer.read() * mult) >> shift`
-	// yields a time interval in nanoseconds. They must be set by the timer's driver,
-	// eventually computed with `Time_computeConversion`.
+	// yields a time interval in nanoseconds
 	uint32_t mult, shift;
 };
 
@@ -29,14 +29,20 @@ struct SteadyTimer {
 struct EventTimer {
 	const char* name;
 	int score;
+	// The frequency at which the timer's ticks increments, in Hz
+	uint64_t frequency;
+	// Schedule an IRQ to fire in `tick` timer ticks
+	void (*scheduleEvent)(unsigned long tick);
+	// The min/max input that the scheduleEvent function supports
+	unsigned long minTick, maxTick;
+
+	// Handler that the timer MUST call when the event (aka IRQ) fires
+	void (*eventHandler)();
+
 	lnode_t node;
-	// Sleep family of functions, relaxes CPU, IRQ unsafe
-	// Note that this interface will have to change when we want to support multiple
-	// sleep at a time, as well as scheduling
-	void (*sleep)(unsigned long sec);
-	void (*msleep)(unsigned long ms);
-	void (*usleep)(unsigned long us);
-	void (*nsleep)(unsigned long ns);
+	// The mult and shift conversion operators, so that `(time_in_nanoseconds * mult) >> shift`
+	// yields a number of ticks of the clock
+	uint32_t mult, shift;
 };
 
 #endif
