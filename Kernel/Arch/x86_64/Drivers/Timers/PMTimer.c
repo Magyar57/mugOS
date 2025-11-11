@@ -15,6 +15,7 @@
 struct PmTimer {
 	struct SteadyTimer steadyTimer;
 	uint16_t port;
+	uint32_t* counter; // Counter register (memory-mapped)
 };
 
 static struct PmTimer m_pmTimer = {
@@ -24,7 +25,8 @@ static struct PmTimer m_pmTimer = {
 		.read = NULL,
 		.frequency = BASE_FREQUENCY,
 	},
-	.port = 0 // invalid default port
+	.port = 0,
+	.counter = NULL
 };
 
 static uint64_t readCounterIoPort(){
@@ -32,8 +34,9 @@ static uint64_t readCounterIoPort(){
 }
 
 static uint64_t readCounterMMIO(){
-	log(PANIC, MODULE, "MMIO is currently unsupported for PM Timer !");
-	panic();
+	// The 24 or 32 bits mask doesn't matter here, as the ACPI specification states that
+	// this MMIO register's high 8 bits are always 0 if the register' size is 24 bits
+	return *m_pmTimer.counter;
 }
 
 static void initIoPort(uint16_t port){
@@ -46,12 +49,18 @@ static void initIoPort(uint16_t port){
 		m_pmTimer.port, m_pmTimer.steadyTimer.mask);
 }
 
-static void initMMIO(paddr_t){
+static void initMMIO(paddr_t physMmioAddr){
+	// Map the register's page in kernel virtual memory
+	vaddr_t virtMmioAddr = physMmioAddr | VMM_KERNEL_MEMORY;
+	VMM_map(physMmioAddr, virtMmioAddr, 1, PAGE_READ|PAGE_WRITE|PAGE_KERNEL);
+
+	m_pmTimer.counter = (uint32_t*) virtMmioAddr;
 	m_pmTimer.steadyTimer.read = readCounterMMIO;
 
-	// Time_registerSteadyTimer(&m_pmTimer.steadyTimer);
+	Time_registerSteadyTimer(&m_pmTimer.steadyTimer);
 
-	log(ERROR, MODULE, "MMIO is currently unsupported for PM Timer, aborting");
+	log(SUCCESS, MODULE, "Initialized PM Timer with register at address %p, with mask %#x",
+		m_pmTimer.counter, m_pmTimer.steadyTimer.mask);
 }
 
 /// @return Whether a Power Management Timer is present on the system
@@ -69,21 +78,23 @@ void PMTimer_init(){
 	}
 
 	// The internal counter is 24 bits by default, and may be extended to 32 bits
-	m_pmTimer.steadyTimer.mask = (g_FADT.fixedFeatureFlags.TMR_VAL_EXT == 0) ? 0xffffff : 0xffffffff;
+	m_pmTimer.steadyTimer.mask =
+		(g_FADT.fixedFeatureFlags.TMR_VAL_EXT == 0) ? 0xffffff : 0xffffffff;
 
-	paddr_t mmio = g_FADT.X_PMTimerBlock.address[1];
-	mmio = (mmio << 32) | g_FADT.X_PMTimerBlock.address[0];
+	// Parse the (ACPI) address. Note that an ACPI address can be a MMIO address, a port, or more
+	paddr_t acpiAddress = g_FADT.X_PMTimerBlock.address[1];
+	acpiAddress = (acpiAddress << 32) | g_FADT.X_PMTimerBlock.address[0];
 
-	// According to the ACPI spec, if X_PM_TMR_BLK is present (mmio != 0),
+	// According to the ACPI spec, if X_PM_TMR_BLK is present (acpiAddress != 0),
 	// we shall use it over PM_TMR_BLK ; else we use PM_TMR_BLK
 
-	if (mmio != 0){
+	if (acpiAddress != 0){
 		switch (g_FADT.X_PMTimerBlock.addressSpace){
 		case 0:
-			initMMIO(mmio);
+			initMMIO(acpiAddress);
 			break;
 		case 1:
-			initIoPort((uint16_t) mmio);
+			initIoPort((uint16_t) acpiAddress);
 			break;
 		default:
 			// Should not happen
@@ -93,10 +104,10 @@ void PMTimer_init(){
 		}
 	}
 	else if (g_FADT.PMTimerBlock != 0) {
-		initIoPort(g_FADT.PMTimerBlock);
+		initIoPort((uint16_t) g_FADT.PMTimerBlock);
 	}
 	else {
-		// No field are available. This should not happen, but since both are optional,
+		// No field available. This should not happen, but since both are optional,
 		// we still check for this case
 		log(ERROR, MODULE, "PM Timer is present but the firmware provided no way of accessing it");
 		return;
