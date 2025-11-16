@@ -21,26 +21,66 @@ static struct TSC m_tsc = {
 	}
 };
 
+// Fallback frequency calibration method, measures the TSC with the help of other timers
 static uint64_t measureFrequency(){
-	// Try to get the TSC's frequency
-	// -> We do not trust cpuid leaf 0x15, as it is particularly unreliable
-	// -> We could use leaf 0x16, but it has to be validated afterwards anyway
-	// => So we just measure it once and for all. Simple, nice and easy
+	// freq1 measures frequency from the mdelay() function, freq2 from the Time_get() function
+	uint64_t freq1 = UINT64_MAX, freq2 = UINT64_MAX;
+	uint64_t freq_temp1, freq_temp2;
+	uint64_t tscTicks_t0, tscTicks_tf, tscTicks_delta;
+	ktime_t t0, tf;
 
-	uint64_t temp;
-	uint64_t freq = UINT64_MAX;
-	uint64_t begin, end;
+	for (int i=0 ; i<5 ; i++){
+		t0 = Time_get();
+		tscTicks_t0 = TSC_read();
+		mdelay(50);
+		tscTicks_tf = TSC_read();
+		tf = Time_get();
 
-	for (int i=0 ; i<10 ; i++){
-		begin = TSC_read();
-		mdelay(1);
-		end = TSC_read();
+		tscTicks_delta = tscTicks_tf - tscTicks_t0;
 
-		temp = (end - begin) * 1000;
-		freq = min(freq, temp);
+		freq_temp1 = tscTicks_delta * (1000 / 50);
+		freq_temp2 = tscTicks_delta * 1000000000 / (tf - t0);
+
+		freq1 = min(freq1, freq_temp1);
+		freq2 = min(freq2, freq_temp2);
 	}
 
+	uint64_t freq = min(freq1, freq2);
 	return (freq == UINT64_MAX) ? 0 : freq;
+}
+
+// Try to get the TSC frequency from CPUID
+static uint64_t getCpuidFrequency(){
+	if (g_CPU.features.bits.TscClockRatioNumerator == 0)
+		return 0;
+	if (g_CPU.features.bits.TscClockRatioDenominator == 0)
+		return 0;
+	if (g_CPU.features.bits.TscCrystalClockFrequency == 0)
+		return 0;
+
+	// TSC frequency = TSC crystal clock frequency * TSC core crystal clock ratio
+	uint64_t freq = g_CPU.features.bits.TscCrystalClockFrequency;
+	freq *= g_CPU.features.bits.TscClockRatioNumerator;
+	freq /= g_CPU.features.bits.TscClockRatioDenominator;
+
+	return freq;
+}
+
+static uint64_t getFrequency(){
+	uint64_t freq;
+
+	// Prioritize getting the frequency from CPUID
+	freq = getCpuidFrequency();
+	if (freq != 0){
+		log(INFO, MODULE, "TSC frequency provided by CPUID");
+		return freq;
+	}
+
+	// Fallback: measure it
+	log(INFO, MODULE, "Fell back to manual TSC frequency calibration");
+	freq = measureFrequency();
+
+	return freq;
 }
 
 void TSC_init(){
@@ -53,9 +93,9 @@ void TSC_init(){
 		return;
 	}
 
-	uint64_t freq = measureFrequency();
+	uint64_t freq = getFrequency();
 	if (freq == 0){
-		log(INFO, MODULE, "Couldn't measure TSC frequency");
+		log(ERROR, MODULE, "Couldn't find the TSC's frequency");
 		return;
 	}
 
