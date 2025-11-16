@@ -20,7 +20,8 @@ struct SteadyTimer {
 
 	lnode_t node;
 	// The mult and shift conversion operators, so that `(steadyTimer.read() * mult) >> shift`
-	// yields a time interval in nanoseconds
+	// yields a time interval in nanoseconds. Note that there are handy wrapper functions
+	// to be used for conversions instead of doing it manually
 	uint32_t mult, shift;
 };
 

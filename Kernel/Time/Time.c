@@ -90,6 +90,11 @@ static void computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, ui
 	*shift = temp_shift;
 }
 
+/// @brief Convert a timers's `ticks` number of ticks to a time interval
+static ktime_t ticksToNs(const struct SteadyTimer* timer, uint64_t ticks){
+	return (timer->mult * ticks) >> timer->shift;
+}
+
 // ================ Public API ================
 
 void Time_init(){
@@ -126,6 +131,11 @@ void Time_registerEventTimer(struct EventTimer* timer){
 
 	if (m_eventTimer == NULL || m_eventTimer->score < timer->score)
 		m_eventTimer = timer;
+}
+
+ktime_t Time_get(){
+	uint64_t ticks = m_steadyTimer->read();
+	return ticksToNs(m_steadyTimer, ticks);
 }
 
 void sleep(unsigned long sec){

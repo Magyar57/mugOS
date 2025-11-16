@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include "Time/Timers.h"
 
+/// @brief Kernel time type: a signed number of nanoseconds
+typedef int64_t ktime_t;
+
 /// @brief Initialize the Time subsystem
 void Time_init();
 
@@ -12,6 +15,9 @@ void Time_registerSteadyTimer(struct SteadyTimer* timer);
 
 /// @brief Register an EventTimer to the Time subsystem
 void Time_registerEventTimer(struct EventTimer* timer);
+
+/// @brief Return a read of the current time
+ktime_t Time_get();
 
 /// @brief Sleep for `sec` seconds (IRQ unsafe)
 void sleep(unsigned long sec);
