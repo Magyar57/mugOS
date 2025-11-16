@@ -240,7 +240,7 @@ union Features {
 		// EBX values for CPUID EAX=0x15
 		uint32_t TscClockRatioNumerator : 32;
 		// ECX values for CPUID EAX=0x15
-		uint32_t TscFrequency : 32;
+		uint32_t TscCrystalClockFrequency : 32;
 		// EDX values for CPUID EAX=0x15
 		uint32_t reserved_0x15_0 : 32;
 

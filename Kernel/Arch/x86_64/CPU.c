@@ -500,10 +500,10 @@ void CPU_print(struct CPU* cpu){
 		HRESET,INVD_DISABLE_POST_BIOS_DONE,IA32_PPIN,CET_SSS,PSFD,IPRED_CTRL,RRSBA_CTRL,DDPD_U,
 		BHI_CTRL,MCDT_NO,MONITOR_MITG_NO);
 
-	if (cpu->features.bits.TscFrequency != 0){
-		log(INFO, MODULE, "TSC Clock frequency: %d MHz (ratio denominator=%d numerator=%d)",
-		cpu->features.bits.TscClockRatioDenominator, cpu->features.bits.TscClockRatioNumerator,
-		cpu->features.bits.TscFrequency);
+	if (cpu->features.bits.TscCrystalClockFrequency != 0){
+		log(INFO, MODULE, "TSC crystal clock ratio: %lu/%lu & crystal frequency: %d MHz",
+			cpu->features.bits.TscClockRatioNumerator, cpu->features.bits.TscClockRatioDenominator,
+			cpu->features.bits.TscCrystalClockFrequency);
 	}
 
 	if (cpu->features.bits.BaseFrequency != 0){
