@@ -23,11 +23,11 @@ static struct TSC m_tsc = {
 
 // Fallback frequency calibration method, measures the TSC with the help of other timers
 static uint64_t measureFrequency(){
-	// freq1 measures frequency from the mdelay() function, freq2 from the Time_get() function
-	uint64_t freq1 = UINT64_MAX, freq2 = UINT64_MAX;
-	uint64_t freq_temp1, freq_temp2;
+	// The calibration is two-fold: we measure using both the system's Event timer (mdelay: freq1)
+	// and Steady timer (Time_get: freq2, t0, tf, dt)
+	uint64_t freq_temp1, freq_temp2, freq1 = UINT64_MAX, freq2 = UINT64_MAX;
 	uint64_t tscTicks_t0, tscTicks_tf, tscTicks_delta;
-	ktime_t t0, tf;
+	ktime_t t0, tf, dt;
 
 	for (int i=0 ; i<5 ; i++){
 		t0 = Time_get();
@@ -37,9 +37,10 @@ static uint64_t measureFrequency(){
 		tf = Time_get();
 
 		tscTicks_delta = tscTicks_tf - tscTicks_t0;
+		dt = tf - t0;
 
 		freq_temp1 = tscTicks_delta * (1000 / 50);
-		freq_temp2 = tscTicks_delta * 1000000000 / (tf - t0);
+		freq_temp2 = tscTicks_delta * 1000000000 + dt-1 / dt;
 
 		freq1 = min(freq1, freq_temp1);
 		freq2 = min(freq2, freq_temp2);
