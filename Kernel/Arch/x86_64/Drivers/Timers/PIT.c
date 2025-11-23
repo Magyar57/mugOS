@@ -107,7 +107,7 @@ void PIT_init(){
 
 	// Wait for the IRQ
 	while(!atomic_load(&m_initIrqReceived))
-		halt();
+		pause();
 
 	// Now we can install our actual IRQ handler
 	IRQ_installHandler(IRQ_PIT, pitIrq);
