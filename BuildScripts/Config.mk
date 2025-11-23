@@ -24,12 +24,12 @@ export ASM:=nasm
 export CC:=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths
 export LD:=ld.lld
 # Compilation options: Kernel flags
-export K_ASMFLAGS:=-f elf64 -g -F dwarf
+export K_ASMFLAGS:=-f elf64 -g3 -F dwarf
 export K_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding -mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined
 export K_LDFLAGS:=-nostdlib -static -L$(BUILD_DIR)
 export K_LDLIBS:=-lkernel
 # Compilation options: Userspace flags
-export U_ASMFLAGS:=-f elf64 -g -F dwarf
+export U_ASMFLAGS:=-f elf64 -g3 -F dwarf
 export U_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding
 export U_LDFLAGS:=-nostdlib -L$(BUILD_DIR)
 export U_LDLIBS:=-lc
