@@ -6,19 +6,10 @@
 #include "Drivers/Timers/TSC.h"
 #define MODULE "TSC"
 
-struct TSC {
-	struct SteadyTimer steadyTimer;
-};
-
-// TSC.asm
-uint64_t TSC_read();
-
-static struct TSC m_tsc = {
-	.steadyTimer = {
-		.name = "TSC",
-		.score = 100,
-		.read = TSC_read
-	}
+static struct SteadyTimer m_tsc = {
+	.name = "TSC",
+	.score = 100,
+	.read = TSC_read
 };
 
 // Fallback frequency calibration method, measures the TSC with the help of other timers
@@ -51,7 +42,7 @@ static uint64_t measureFrequency(){
 }
 
 // Try to get the TSC frequency from CPUID
-static uint64_t getCpuidFrequency(){
+static uint64_t findCpuidFrequency(){
 	if (g_CPU.features.bits.TscClockRatioNumerator == 0)
 		return 0;
 	if (g_CPU.features.bits.TscClockRatioDenominator == 0)
@@ -67,11 +58,11 @@ static uint64_t getCpuidFrequency(){
 	return freq;
 }
 
-static uint64_t getFrequency(){
+static uint64_t findFrequency(){
 	uint64_t freq;
 
 	// Prioritize getting the frequency from CPUID
-	freq = getCpuidFrequency();
+	freq = findCpuidFrequency();
 	if (freq != 0){
 		log(INFO, MODULE, "TSC frequency provided by CPUID");
 		return freq;
@@ -94,14 +85,14 @@ void TSC_init(){
 		return;
 	}
 
-	uint64_t freq = getFrequency();
+	uint64_t freq = findFrequency();
 	if (freq == 0){
 		log(ERROR, MODULE, "Couldn't find the TSC's frequency");
 		return;
 	}
 
-	m_tsc.steadyTimer.frequency = freq;
-	m_tsc.steadyTimer.mask = 0xffffffffffffffff;
+	m_tsc.frequency = freq;
+	m_tsc.mask = 0xffffffffffffffff;
 
 	// Enable the rdtsc/rdtscp instructions in usermode, since we have no reason not to.
 	// We still provide higher level interfaces in Time.h
@@ -110,8 +101,12 @@ void TSC_init(){
 	cr4.bits.TSD = 0;
 	Registers_writeCR4(cr4.value);
 
-	Time_registerSteadyTimer(&m_tsc.steadyTimer);
+	Time_registerSteadyTimer(&m_tsc);
 
 	log(SUCCESS, MODULE, "Initalization success, frequency is %lu.%03lu MHz",
 		freq / 1000000, freq % 1000000 / 1000);
+}
+
+uint64_t TSC_getFrequency(){
+	return m_tsc.frequency;
 }
