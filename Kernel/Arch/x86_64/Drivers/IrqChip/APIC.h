@@ -13,6 +13,10 @@ void APIC_init();
 /// @note It is NOT necessary to call it for the BSP's, this is done by `APIC_init`
 void APIC_initLAPIC();
 
+/// @brief Initialize all CPU's APIC timers
+/// @note SMP must have been initialized beforehand
+void APIC_initTimers();
+
 /// @brief Send EOI (end of interrupt) to the local APIC
 void APIC_sendEIO(int irq);
 

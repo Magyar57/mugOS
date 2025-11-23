@@ -8,9 +8,11 @@
 #include "Drivers/ACPI/ACPI.h"
 #include "HAL/SMP/PerCPU.h"
 #include "IO.h"
+#include "CPU.h"
 #include "ISR.h"
 #include "Drivers/IrqChip/i8259.h"
 #include "Drivers/IrqChip/IOAPIC.h"
+#include "Drivers/Timers/TSC.h"
 
 #include "APIC.h"
 #define MODULE_APIC "APIC"
@@ -32,13 +34,13 @@ static volatile void* m_apicRegs;
 #define APIC_REG_TMR					0x180 // Trigger Mode Register (256 bits)
 #define APIC_REG_IRR					0x200 // Interrupt Request Register (256 bits)
 #define APIC_REG_ICR					0x300 // Interrupt Command Register (64 bits)
-#define APIC_REG_TIMER					0x320
+#define APIC_REG_TIMER					0x320 // LVT: Local APIC Timer register
 #define APIC_REG_LINT0					0x350
 #define APIC_REG_LINT1					0x360
 #define APIC_REG_ERROR					0x370
 #define APIC_REG_TIMER_INITIAL_COUNT	0x380
 #define APIC_REG_TIMER_COUNT			0x390
-#define APIC_REG_TIMER_DIVIDE			0x3e0
+#define APIC_REG_TIMER_DIVIDE			0x3e0 // Possible register values: APIC_TIMER_DIVISOR_*
 
 // APIC Timer available modes
 #define APIC_TIMER_MODE_ONESHOT			0b00
@@ -126,11 +128,17 @@ union InterruptCommandRegister {
 union TimerRegister {
 	uint32_t value;
 	struct {
+		// Programmable IRQ delivery vector
 		uint32_t vector : 8;
 		uint32_t reserved_0 : 4;
+		// Whether an IRQ is pending
 		uint32_t pending : 1;
 		uint32_t reserved_1 : 3;
+		// Whether the IRQ is masked
 		uint32_t masked : 1;
+		// `APIC_TIMER_MODE_ONESHOT = 0b00`: one-shot mode
+		// `APIC_TIMER_MODE_PERIODIC = 0b01`: periodic IRQ mode
+		// `APIC_TIMER_MODE_TSCDEADLINE = 0b10`: one-shot, TSC value mode
 		uint32_t timerMode : 2;
 		uint32_t reserved_2 : 13;
 	} bits;
@@ -150,9 +158,6 @@ union LINTRegister {
 	} bits;
 };
 
-// We cache some registers
-static union TimerRegister m_timerReg;
-
 static inline uint32_t readRegister32(int offset){
 	return read32(m_apicRegs+offset);
 }
@@ -171,17 +176,6 @@ static unused inline uint64_t readRegister64(int offset){
 static inline void writeRegister64(int offset, uint64_t val){
 	write32(m_apicRegs+offset+0x10,	val >> 32);
 	write32(m_apicRegs+offset, val);
-}
-
-// Temporary: blinking rectangle on the bottom right of the screen
-#include "Drivers/Graphics/Framebuffer.h"
-static void timerIRQ(void*){
-	extern Framebuffer m_framebuffer;
-	static bool clock = false;
-	const int rect_size = 4;
-	color_t color = (clock) ? COLOR_32BPP(0,128,0) : COLOR_32BPP(31,31,31);
-	Framebuffer_fillRectangle(&m_framebuffer, m_framebuffer.width-2*rect_size-2, m_framebuffer.height-rect_size-1, rect_size, rect_size, color);
-	clock = !clock;
 }
 
 static void handleSpuriousIRQ(struct ISR_Params* params){
@@ -261,6 +255,61 @@ static void configurePins(int acpiProcessorId){
 	}
 }
 
+// ================ APIC Timer ================
+
+static void scheduleEvent(unsigned long ticks);
+
+static struct EventTimer m_apicTimer = {
+	.name = "APIC Timer",
+	.score = 100,
+	.frequency = 0,
+	.scheduleEvent = NULL
+};
+
+static bool m_tscDeadlineMode;
+
+static void timerIrq(void*){
+	m_apicTimer.eventHandler();
+}
+
+static void scheduleEvent(unsigned long ticks){
+	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, ticks);
+}
+
+static void scheduleEventTsc(unsigned long ticks){
+	Registers_writeMSR(MSR_ADDR_IA32_TSC_DEADLINE, TSC_read() + ticks);
+}
+
+static void initTimerNoTsc(){
+	// Setup the timer
+	union TimerRegister timerReg = { 0 };
+	timerReg.bits.vector = IRQ_APIC_TIMER;
+	timerReg.bits.timerMode = APIC_TIMER_MODE_ONESHOT;
+	timerReg.bits.masked = false;
+	writeRegister32(APIC_REG_TIMER, timerReg.value);
+
+	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
+
+	m_apicTimer.frequency = 1000000000; // TODO temp
+	m_apicTimer.minTick = 1;
+	m_apicTimer.maxTick = UINT32_MAX;
+	m_apicTimer.scheduleEvent = scheduleEvent;
+}
+
+static void initTimerTsc(){
+	// Setup the timer
+	union TimerRegister timerReg = { 0 };
+	timerReg.bits.vector = IRQ_APIC_TIMER;
+	timerReg.bits.timerMode = APIC_TIMER_MODE_TSCDEADLINE;
+	timerReg.bits.masked = false;
+	writeRegister32(APIC_REG_TIMER, timerReg.value);
+
+	m_apicTimer.frequency = TSC_getFrequency();
+	m_apicTimer.minTick = 1;
+	m_apicTimer.maxTick = UINT64_MAX;
+	m_apicTimer.scheduleEvent = scheduleEventTsc;
+}
+
 // ================ Public API ================
 
 void APIC_init(){
@@ -269,9 +318,8 @@ void APIC_init(){
 	i8259_init();
 	i8259_disableAllIRQ();
 
-	// Install our necessary handlers
+	// Install the APIC spurious IRQ handler (directly as an ISR)
 	ISR_installHandler(IRQ_APIC_SPURIOUS, handleSpuriousIRQ);
-	IRQ_installHandler(IRQ_APIC_TIMER, timerIRQ);
 
 	// Setup the APIC in its MSR
 	union MSR_IA32_APIC_BASE apic_base;
@@ -325,16 +373,36 @@ void APIC_initLAPIC(){
 	spur.bits.APICEnabled = true;
 	writeRegister32(APIC_REG_SPURIOUS_INTERRUPT, spur.value);
 
-	// Setup the timer
-	m_timerReg.bits.vector = IRQ_APIC_TIMER;
-	m_timerReg.bits.timerMode = APIC_TIMER_MODE_PERIODIC;
-	m_timerReg.bits.masked = false;
-	writeRegister32(APIC_REG_TIMER, m_timerReg.value);
-
-	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
-	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 1000000000); // 1GHz bus speed => 1s
+	// Mask the APIC timer IRQ (until we initialize the timer)
+	union TimerRegister timerReg = { 0 };
+	timerReg.bits.vector = IRQ_APIC_TIMER;
+	timerReg.bits.masked = true;
+	writeRegister32(APIC_REG_TIMER, timerReg.value);
 
 	log(SUCCESS, MODULE_APIC, "Initalized local APIC (ID=%d)", lapicId);
+}
+
+void APIC_initTimers(){
+	if (!g_CPU.features.bits.APIC){
+		log(INFO, MODULE_APIC, "APIC not present, aborting timer initialization");
+		return;
+	}
+
+	// If the CPU supports it, we use TSC deadline mode
+	m_tscDeadlineMode = g_CPU.features.bits.TSC_Deadline;
+
+	// Call the appropriate initialization function
+	// Note: for now, multiple CPU is NOT supported. We only initialize the BSP
+	m_tscDeadlineMode ? initTimerTsc() : initTimerNoTsc();
+
+	IRQ_installHandler(IRQ_APIC_TIMER, timerIrq);
+	// Note: no need to call IRQ_enableSpecific, this IRQ does not go through the I/O APIC
+
+	Time_registerEventTimer(&m_apicTimer);
+
+	log(SUCCESS, MODULE_APIC, "Initialized APIC Timer%s, frequency is %lu.%03lu MHz",
+		m_tscDeadlineMode ? " (with TSC deadline mode)" : "",
+		m_apicTimer.frequency / 1000000, m_apicTimer.frequency % 1000000 / 1000);
 }
 
 void APIC_sendEIO(int){
