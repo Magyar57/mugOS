@@ -276,6 +276,58 @@ static void scheduleEvent(unsigned long ticks){
 	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, ticks);
 }
 
+static uint64_t measureFrequency(){
+	// The calibration is two-fold: we measure using both the system's Event timer (mdelay: freq1)
+	// and Steady timer (Time_get: freq2, t0, tf, dt)
+	uint64_t freq_temp1, freq_temp2, freq1 = UINT64_MAX, freq2 = UINT64_MAX;
+	uint64_t ticks_final, ticks_delta;
+	const uint64_t ticks_intial = 0xffffffff;
+	ktime_t t0, tf, dt;
+
+	// Calibration setup: IRQ masked (already done), one-shot mode
+	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
+
+	for (int i=0 ; i<5 ; i++){
+		t0 = Time_get();
+		writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, ticks_intial);
+		mdelay(50);
+		ticks_final = readRegister32(APIC_REG_TIMER_COUNT);
+		tf = Time_get();
+
+		ticks_delta = ticks_intial - ticks_final;
+		dt = tf - t0;
+
+		freq_temp1 = ticks_delta * (1000 / 50);
+		freq_temp2 = ticks_delta * 1000000000 + dt-1 / dt;
+
+		freq1 = min(freq1, freq_temp1);
+		freq2 = min(freq2, freq_temp2);
+	}
+
+	uint64_t freq = min(freq1, freq2);
+	return (freq == UINT64_MAX) ? 0 : freq;
+}
+
+static uint64_t findFrequency(){
+	uint64_t freq;
+
+	// According to the Intel SDM:
+	// The APIC timer frequency will be the processor’s bus clock or core crystal clock frequency
+	// (when TSC/core crystal clock ratio is enumerated in CPUID leaf 0x15) divided by the value
+	// specified in the divide configuration register.
+	if (g_CPU.features.bits.BusFrequency != 0){
+		freq = g_CPU.features.bits.BusFrequency;
+		log(INFO, MODULE_APIC, "APIC frequency based on bus frequency: %lu.%03lu MHz",
+			freq / 1000000, freq % 1000000 / 1000);
+		return g_CPU.features.bits.BusFrequency;
+	}
+
+	freq = measureFrequency();
+	log(INFO, MODULE_APIC, "Fell back to manual APIC frequency calibration: measured %lu.%03lu MHz",
+		freq / 1000000, freq % 1000000 / 1000);
+	return freq;
+}
+
 static void scheduleEventTsc(unsigned long ticks){
 	Registers_writeMSR(MSR_ADDR_IA32_TSC_DEADLINE, TSC_read() + ticks);
 }
@@ -285,12 +337,19 @@ static void initTimerNoTsc(){
 	union TimerRegister timerReg = { 0 };
 	timerReg.bits.vector = IRQ_APIC_TIMER;
 	timerReg.bits.timerMode = APIC_TIMER_MODE_ONESHOT;
+	timerReg.bits.masked = true;
+	writeRegister32(APIC_REG_TIMER, timerReg.value);
+
+	uint64_t freq = findFrequency();
+
+	// After frequency calibration, we can enable IRQs
 	timerReg.bits.masked = false;
 	writeRegister32(APIC_REG_TIMER, timerReg.value);
 
-	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_1);
-
-	m_apicTimer.frequency = 1000000000; // TODO temp
+	// As the initial count register is 32 bits, we divide the frequency a little
+	// to allow for longer periodic intervals
+	writeRegister32(APIC_REG_TIMER_DIVIDE, APIC_TIMER_DIVISOR_16);
+	m_apicTimer.frequency = freq / 16;
 	m_apicTimer.minTick = 1;
 	m_apicTimer.maxTick = UINT32_MAX;
 	m_apicTimer.scheduleEvent = scheduleEvent;
@@ -400,8 +459,8 @@ void APIC_initTimers(){
 
 	Time_registerEventTimer(&m_apicTimer);
 
-	log(SUCCESS, MODULE_APIC, "Initialized APIC Timer%s, frequency is %lu.%03lu MHz",
-		m_tscDeadlineMode ? " (with TSC deadline mode)" : "",
+	log(SUCCESS, MODULE_APIC, "Initialized APIC Timer%s with a frequency of %lu.%03lu MHz",
+		m_tscDeadlineMode ? " in TSC deadline mode," : "",
 		m_apicTimer.frequency / 1000000, m_apicTimer.frequency % 1000000 / 1000);
 }
 
