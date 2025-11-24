@@ -15,7 +15,7 @@
 #include "Drivers/Timers/TSC.h"
 
 #include "APIC.h"
-#define MODULE_APIC "APIC"
+#define MODULE "APIC"
 
 // ================ APIC ================
 
@@ -185,7 +185,7 @@ static void handleSpuriousIRQ(struct ISR_Params* params){
 	n_spurious_irqs++;
 
 	if (vector == IRQ_APIC_SPURIOUS){
-		log(ERROR, MODULE_APIC, "Spurious APIC interrupt, should not happen. Wtf ?");
+		log(ERROR, MODULE, "Spurious APIC interrupt, should not happen. Wtf ?");
 		return;
 	}
 
@@ -195,12 +195,12 @@ static void handleSpuriousIRQ(struct ISR_Params* params){
 
 	// Ack the interrupt only if it's actually pending
 	if (bit_present){
-		log(WARNING, MODULE_APIC, "Got spurious interrupt %d, acked (count is now %d)",
+		log(WARNING, MODULE, "Got spurious interrupt %d, acked (count is now %d)",
 			vector, n_spurious_irqs);
 		APIC_sendEIO(0);
 	}
 	else {
-		log(WARNING, MODULE_APIC, "Got spurious interrupt %d, not pending (count is now %d)",
+		log(WARNING, MODULE, "Got spurious interrupt %d, not pending (count is now %d)",
 			vector, n_spurious_irqs);
 	}
 }
@@ -213,9 +213,9 @@ static paddr_t getAPICAddress(){
 		return (paddr_t) g_MADT.localApicAddress;
 
 	if (g_MADT.nLAPIC_ADDR_OVERRIDE > 1)
-		log(WARNING, MODULE_APIC, "Found several APIC address overrides, should not happen !!");
+		log(WARNING, MODULE, "Found several APIC address overrides, should not happen !!");
 
-	log(INFO, MODULE_APIC, "Found APIC address override, using its address");
+	log(INFO, MODULE, "Found APIC address override, using its address");
 	return (paddr_t) g_MADT.LAPIC_ADDR_OVERRIDEs[0].address;
 }
 
@@ -226,7 +226,7 @@ static uint32_t getAcpiProcessorId(uint32_t lapicId){
 	}
 
 	// Shouldn't happen, but better safe than sorry
-	log(PANIC, MODULE_APIC, "No ACPI processor ID corresponding to LAPIC %d !!",
+	log(PANIC, MODULE, "No ACPI processor ID corresponding to LAPIC %d !!",
 		lapicId);
 	panic();
 }
@@ -256,8 +256,6 @@ static void configurePins(int acpiProcessorId){
 }
 
 // ================ APIC Timer ================
-
-static void scheduleEvent(unsigned long ticks);
 
 static struct EventTimer m_apicTimer = {
 	.name = "APIC Timer",
@@ -317,13 +315,13 @@ static uint64_t findFrequency(){
 	// specified in the divide configuration register.
 	if (g_CPU.features.bits.BusFrequency != 0){
 		freq = g_CPU.features.bits.BusFrequency;
-		log(INFO, MODULE_APIC, "APIC frequency based on bus frequency: %lu.%03lu MHz",
+		log(INFO, MODULE, "APIC frequency based on bus frequency: %lu.%03lu MHz",
 			freq / 1000000, freq % 1000000 / 1000);
 		return g_CPU.features.bits.BusFrequency;
 	}
 
 	freq = measureFrequency();
-	log(INFO, MODULE_APIC, "Fell back to manual APIC frequency calibration: measured %lu.%03lu MHz",
+	log(INFO, MODULE, "Fell back to manual APIC frequency calibration: measured %lu.%03lu MHz",
 		freq / 1000000, freq % 1000000 / 1000);
 	return freq;
 }
@@ -438,12 +436,12 @@ void APIC_initLAPIC(){
 	timerReg.bits.masked = true;
 	writeRegister32(APIC_REG_TIMER, timerReg.value);
 
-	log(SUCCESS, MODULE_APIC, "Initalized local APIC (ID=%d)", lapicId);
+	log(SUCCESS, MODULE, "Initalized local APIC (ID=%d)", lapicId);
 }
 
 void APIC_initTimers(){
 	if (!g_CPU.features.bits.APIC){
-		log(INFO, MODULE_APIC, "APIC not present, aborting timer initialization");
+		log(INFO, MODULE, "APIC not present, aborting timer initialization");
 		return;
 	}
 
@@ -459,7 +457,7 @@ void APIC_initTimers(){
 
 	Time_registerEventTimer(&m_apicTimer);
 
-	log(SUCCESS, MODULE_APIC, "Initialized APIC Timer%s with a frequency of %lu.%03lu MHz",
+	log(SUCCESS, MODULE, "Initialized APIC Timer%s with a frequency of %lu.%03lu MHz",
 		m_tscDeadlineMode ? " in TSC deadline mode," : "",
 		m_apicTimer.frequency / 1000000, m_apicTimer.frequency % 1000000 / 1000);
 }
