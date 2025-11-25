@@ -142,10 +142,11 @@ void i8042_init(){
 	// 1. Disable Legacy USB (see USB driver, if present)
 
 	// 2. Determine if this PS/2 controller is present on the system
-	if (!g_FADT.bootArchitectureFlags.i8042){
-		log(INFO, MODULE, "No i8042 or equivalent PS/2 controller present");
-		m_enabled = false;
-		return;
+	if (g_FADT.bootArchitectureFlags.i8042 == 0){
+		// Note: we do not stop initialization, as on systems with emulated chips, the firmware
+		// might signal a non-present i8042 chip, but we still want to support PS/2 in this case
+		// But emulation might be shitty, so we send a warning for it
+		log(WARNING, MODULE, "No i8042 detected, but might be (poorly) emulated, carrying on");
 	}
 
 	// 3. Disable devices (note: these have no responses)
@@ -166,10 +167,9 @@ void i8042_init(){
 	flush();
 
 	// 6. Perform self-test
-	// However, according to: https://forum.osdev.org/viewtopic.php?t=57546
-	// we shouldn't use the PS/2 controller's self-test command, as it can have
-	// unrecoverable side effects, and doesn't work correctly on hardware that
-	// is emulating a PS/2 controller in SMM. So we skip this part
+	// However, according to https://forum.osdev.org/viewtopic.php?t=57546 we shouldn't use the
+	// PS/2 controller's self-test command, as it can have unrecoverable side effects, and doesn't
+	// work correctly on hardware that is emulating a PS/2 controller in SMM. So we skip this part
 
 	// 7. Determine presence of port 2
 	// The port 2 is present if the clock is enabled (bit clear) by an 'enable' command
