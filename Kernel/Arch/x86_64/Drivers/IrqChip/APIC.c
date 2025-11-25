@@ -302,6 +302,9 @@ static uint64_t measureFrequency(){
 		freq2 = min(freq2, freq_temp2);
 	}
 
+	// Calibration is done, cancel the pending event since it (very probably) didn't fire
+	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, 0);
+
 	uint64_t freq = min(freq1, freq2);
 	return (freq == UINT64_MAX) ? 0 : freq;
 }
