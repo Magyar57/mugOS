@@ -103,7 +103,7 @@ void PmTimer_init(){
 			return;
 		}
 	}
-	else if (g_FADT.PMTimerBlock != 0) {
+	else if (g_FADT.PMTimerBlock != 0){
 		initIoPort((uint16_t) g_FADT.PMTimerBlock);
 	}
 	else {

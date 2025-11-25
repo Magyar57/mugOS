@@ -167,8 +167,8 @@ struct FADT {
 
 	struct GenericAddressStructure resetReg;
 
-	uint8_t  resetValue;
-	uint8_t  reserved_2[3];
+	uint8_t resetValue;
+	uint8_t reserved_2[3];
 
 	uint64_t X_firmwareControl; // since ACPI 2.0+
 	uint64_t X_DSDT; // since ACPI 2.0+

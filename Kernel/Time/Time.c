@@ -70,7 +70,7 @@ static void computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, ui
 	// Compute the shift factor which is limiting the conversion range
 	uint64_t temp_mult = ((uint64_t)maxSec * from) >> 32;
 	uint32_t shift_accuracy = 32;
-	while (temp_mult > 0) {
+	while (temp_mult > 0){
 		temp_mult >>= 1;
 		shift_accuracy--;
 	}
@@ -78,7 +78,7 @@ static void computeConversion(uint32_t* mult, uint32_t* shift, uint32_t from, ui
 	// Find the conversion shift/mult pair which has the best accuracy
 	// while fitting the maxSec conversion range
 	uint32_t temp_shift;
-	for (temp_shift=32 ; temp_shift>0; temp_shift--) {
+	for (temp_shift=32 ; temp_shift>0; temp_shift--){
 		temp_mult = (uint64_t) to << temp_shift;
 		temp_mult += from / 2;
 		temp_mult /= from;

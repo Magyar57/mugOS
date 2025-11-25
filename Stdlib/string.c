@@ -8,7 +8,7 @@
 char* strchr(const char* str, int chr){
 	if (str==NULL) return NULL;
 
-	while(*str){
+	while (*str){
 		if (*str == chr) return (char*) str;
 		str++;
 	}
@@ -18,14 +18,14 @@ char* strchr(const char* str, int chr){
 
 char* strcpy(char* dst, const char* src){
 	if (dst == NULL) return NULL;
-	if (src == NULL) {
+	if (src == NULL){
 		*dst = '\0';
 		return dst;
 	}
 
 	char* dst_begin = dst;
 
-	while(*src){
+	while (*src){
 		*dst = *src;
 		src++;
 		dst++;
@@ -37,7 +37,7 @@ char* strcpy(char* dst, const char* src){
 
 char* strncpy(char* dst, const char* src, size_t len){
 	if (dst == NULL) return NULL;
-	if (src == NULL) {
+	if (src == NULL){
 		*dst = '\0';
 		return dst;
 	}
@@ -56,7 +56,7 @@ size_t strlen(const char* str){
 	if (str == NULL) return 0;
 
 	unsigned int res = 0;
-	while(*str){
+	while (*str){
 		str++;
 		res++;
 	}
@@ -100,7 +100,7 @@ void* memcpy(void* dst, const void* src, size_t size){
 	uint8_t* u8dst = (uint8_t*) dst;
 	const uint8_t* u8src = (const uint8_t*) src;
 
-	for(size_t i = 0 ; i<size ; i++){
+	for (size_t i = 0 ; i<size ; i++){
 		u8dst[i] = u8src[i];
 	}
 
@@ -111,7 +111,7 @@ void* memset(void* ptr, int value, size_t size){
 	if (ptr == NULL) return NULL;
 	uint8_t* u8ptdr = (uint8_t*) ptr;
 
-	for(size_t i = 0 ; i<size ; i++){
+	for (size_t i = 0 ; i<size ; i++){
 		u8ptdr[i] = (uint8_t) value;
 	}
 
@@ -122,12 +122,12 @@ void* memmove(void* dest, const void* src, size_t size){
 	uint8_t* pdest = (uint8_t*) dest;
 	const uint8_t* psrc = (const uint8_t*) src;
 
-	if (src > dest) {
-		for (size_t i = 0; i < size; i++) {
+	if (src > dest){
+		for (size_t i = 0; i < size; i++){
 			pdest[i] = psrc[i];
 		}
-	} else if (src < dest) {
-		for (size_t i = size; i > 0; i--) {
+	} else if (src < dest){
+		for (size_t i = size; i > 0; i--){
 			pdest[i-1] = psrc[i-1];
 		}
 	}
@@ -139,7 +139,7 @@ int memcmp(const void* ptr1, const void* ptr2, size_t size){
 	uint8_t* u8ptdr1 = (uint8_t*) ptr1;
 	uint8_t* u8ptdr2 = (uint8_t*) ptr2;
 
-	for(size_t i = 0 ; i<size ; i++){
+	for (size_t i = 0 ; i<size ; i++){
 		if (u8ptdr1[i] != u8ptdr2[i]) return 1;
 	}
 

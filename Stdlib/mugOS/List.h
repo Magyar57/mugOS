@@ -44,7 +44,7 @@ typedef struct List {
 /// @brief Iterate over a list (node is updated at each iteration). Usage:
 /// ```c
 /// lnode_t* node;
-/// List_foreach(list, node) {
+/// List_foreach(list, node){
 //      ; // use node here, for example with List_getObject
 /// }
 /// ```

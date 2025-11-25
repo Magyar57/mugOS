@@ -106,7 +106,7 @@ void PIT_init(){
 	writeCounterRegister(PORT_CHANNEL0, 1);
 
 	// Wait for the IRQ
-	while(!atomic_load(&m_initIrqReceived))
+	while (!atomic_load(&m_initIrqReceived))
 		pause();
 
 	// Now we can install our actual IRQ handler

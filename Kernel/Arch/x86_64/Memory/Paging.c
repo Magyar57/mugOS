@@ -424,7 +424,7 @@ void Paging_map(paddr_t phys, vaddr_t virt, uint64_t n_pages, int flags){
 	uint64_t mappable;
 	uint64_t pages_remaining = n_pages; // in 4KB pages
 
-	while(pages_remaining > 0){
+	while (pages_remaining > 0){
 		uint64_t pml4_index = getIndexPML4(virt_cur);
 		uint64_t pdp_index = getIndexPageDirectoryPointerTable(virt_cur);
 		uint64_t pd_index = getIndexPageDirectory(virt_cur);
@@ -506,7 +506,7 @@ void Paging_unmap(vaddr_t virt, uint64_t n_pages){
 	uint64_t removable;
 	uint64_t pages_remaining = n_pages; // in 4KB pages
 
-	while(pages_remaining > 0){
+	while (pages_remaining > 0){
 		uint64_t pml4_index = getIndexPML4(virt_cur);
 		uint64_t pdp_index = getIndexPageDirectoryPointerTable(virt_cur);
 		uint64_t pd_index = getIndexPageDirectory(virt_cur);
@@ -669,7 +669,7 @@ void Paging_initTables(){
 	mapDynamicTables();
 
 	// Map the HHDM & framebuffer
-	for(int i=0 ; i<g_memoryMap.size ; i++){
+	for (int i=0 ; i<g_memoryMap.size ; i++){
 		struct MemoryMapEntry* cur = g_memoryMap.entries + i;
 		uint64_t n_pages = (cur->length + PAGE_SIZE-1) / PAGE_SIZE; // round up
 		switch (cur->type){

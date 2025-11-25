@@ -82,8 +82,8 @@ static inline char getColor_xy(int x, int y){
 }
 
 static void scrollDown(int n){
-	for(int y=n ; y<SCREEN_HEIGHT ; y++){
-		for(int x=0 ; x<SCREEN_WIDTH ; x++){
+	for (int y=n ; y<SCREEN_HEIGHT ; y++){
+		for (int x=0 ; x<SCREEN_WIDTH ; x++){
 			char c = getc_xy(x, y);
 			char color = getColor_xy(x, y);
 			putchar_xy(x, y-n, c);
@@ -91,7 +91,7 @@ static void scrollDown(int n){
 		}
 	}
 
-	for(int y=SCREEN_HEIGHT-n ; y<SCREEN_HEIGHT ; y++){
+	for (int y=SCREEN_HEIGHT-n ; y<SCREEN_HEIGHT ; y++){
 		for (int x=0; x<SCREEN_WIDTH ; x++){
 			putchar_xy(x, y, '\0');
 			putColor_xy(x, y, DEFAULT_COLOR);
@@ -134,7 +134,7 @@ void VGA_putchar(char c){
 		do {
 			putchar_xy(m_screenX, m_screenY, ' ');
 			m_screenX++;
-		} while(m_screenX % TAB_SIZE != 0 && m_screenX<SCREEN_WIDTH);
+		} while (m_screenX % TAB_SIZE != 0 && m_screenX<SCREEN_WIDTH);
 		goto end_putc;
 	}
 
@@ -149,8 +149,8 @@ void VGA_putchar(char c){
 }
 
 void VGA_clearScreen(){
-	for(int y=0 ; y<SCREEN_HEIGHT ; y++){
-		for(int x=0 ; x<SCREEN_WIDTH ; x++){
+	for (int y=0 ; y<SCREEN_HEIGHT ; y++){
+		for (int x=0 ; x<SCREEN_WIDTH ; x++){
 			putchar_xy(x, y, ' ');
 			putColor_xy(x, y, DEFAULT_COLOR);
 		}

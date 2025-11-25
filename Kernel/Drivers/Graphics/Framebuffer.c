@@ -54,7 +54,7 @@ void Framebuffer_clearScreen(Framebuffer* this){
 	assert(this);
 	const int one_line_offset = getLineOffset();
 
-	for(uint64_t j=0 ; j<this->height ; j++){
+	for (uint64_t j=0 ; j<this->height ; j++){
 		size_t lineOffset = j*one_line_offset;
 		for (uint64_t i=0 ; i<this->width ; i++){
 			writeRelaxed32(this->address + lineOffset + i, this->clearColor);
@@ -197,7 +197,7 @@ void Framebuffer_putchar(Framebuffer* this, const char c){
 		Framebuffer_drawLetter(this, c, this->fontColor, x, y);
 
 		this->cursorX = (this->cursorX+1) % this->textWidth;
-		if (this->cursorX == 0) {
+		if (this->cursorX == 0){
 			this->cursorY++;
 			endline_pos = 0;
 		}
@@ -217,7 +217,7 @@ void Framebuffer_puts_noLF(Framebuffer* this, const char* str){
 	assert(this);
 	if (str==NULL) return;
 
-	while(*str){
+	while (*str){
 		Framebuffer_putchar(this, *str);
 		str++;
 	}
@@ -280,9 +280,9 @@ void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y
 	const int offset = getLineOffset();
 	int line_cache;
 
-	for (unsigned int j=y ; j<final_y ; j++) {
+	for (unsigned int j=y ; j<final_y ; j++){
 		line_cache = offset*j;
-		for (unsigned int i=x ; i<final_x ; i++) {
+		for (unsigned int i=x ; i<final_x ; i++){
 			write32(this->address + line_cache + i, c);
 		}
 	}

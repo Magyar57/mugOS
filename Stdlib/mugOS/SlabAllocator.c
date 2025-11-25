@@ -162,7 +162,7 @@ static bool Hashmap_grow(hashmap_t* map){
 			continue;
 		uint64_t j = hash(p) & mask;
 		// Insert
-		while(new_values[j].key != NULL){
+		while (new_values[j].key != NULL){
 			j = (j-1) & mask; // j--;
 		}
 		new_values[j] = map->entries[i]; // memcpy the value_t
@@ -194,7 +194,7 @@ static bool Hashmap_insert(hashmap_t* map, key_t ptr, value_t value){
 	ptr = (void*) getPage(ptr);
 	uint64_t i = hash(ptr) & mask;
 
-	while(map->entries[i].key != NULL){
+	while (map->entries[i].key != NULL){
 		i = (i-1) & mask; // i--;
 	}
 
@@ -214,7 +214,7 @@ static entry_t* Hashmap_find(hashmap_t* map, key_t ptr){
 	i = hash(ptr) & mask;
 
 	// Iterate over 'collisions' bucket
-	while(map->entries[i].key != NULL){
+	while (map->entries[i].key != NULL){
 		if (map->entries[i].key == ptr)
 			return map->entries + i;
 

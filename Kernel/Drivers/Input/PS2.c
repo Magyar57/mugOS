@@ -277,7 +277,7 @@ static inline void handleScancodeSet1(uint8_t scancode){
 
 	// 1. Check for sequences progression
 	// Check for print screen pressed sequence : 0xe0, 0x2a, 0xe0, 0x37
-	switch (print_screen_sequence_pressed) {
+	switch (print_screen_sequence_pressed){
 	case 0:
 		break;
 	case 1:
@@ -297,7 +297,7 @@ static inline void handleScancodeSet1(uint8_t scancode){
 		break;
 	}
 	// Check for print screen released sequence : 0xe0, 0xb7, 0xe0, 0xaa
-	switch (print_screen_sequence_released) {
+	switch (print_screen_sequence_released){
 	case 0:
 		break;
 	case 1:
@@ -911,7 +911,7 @@ static void initIRQ(void*){
 static uint8_t sendByteToDeviceHandleResend(int device, uint8_t byte){
 	uint8_t response;
 
-	for(int i=0 ; i<3 ; i++){
+	for (int i=0 ; i<3 ; i++){
 		bool success;
 		success = PS2Controller_sendByteToDevice(device, byte);
 		if (!success) return PS2_RES_RESEND;
@@ -1158,14 +1158,14 @@ void PS2_init(){
 
 	// After initialization, we can enable scanning for functionning device
 	// and install the final, scancodes-capable IRQ handlers
-	if (m_PS2Keyboard.enabled) {
+	if (m_PS2Keyboard.enabled){
 		sendByteToDeviceHandleResend(1, PS2_CMD_ENABLE_SCANNING);
 		IRQ_installHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
 	} else {
 		IRQ_removeHandler(IRQ_PS2_KEYBOARD);
 	}
 
-	if (m_PS2Mouse.enabled) {
+	if (m_PS2Mouse.enabled){
 		sendByteToDeviceHandleResend(2, PS2_CMD_ENABLE_SCANNING);
 		IRQ_installHandler(IRQ_PS2_MOUSE, mouseIRQ);
 	} else {

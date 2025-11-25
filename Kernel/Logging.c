@@ -104,7 +104,7 @@ void hexdump(int logLevel, const char* moduleName, void* addr , int n){
 			data[i], data[i+1], data[i+2], data[i+3], data[i+4], data[i+5], data[i+6], data[i+7],
 			data[i+8], data[i+9], data[i+10], data[i+11], data[i+12], data[i+13], data[i+14], data[i+15]
 		);
-		if (printed < 0) {
+		if (printed < 0){
 			log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
 			return;
 		}
@@ -117,7 +117,7 @@ void hexdump(int logLevel, const char* moduleName, void* addr , int n){
 		return;
 
 	printed = snprintf(buff, sizeof(buff), "Hexdump: %#.8llx - ", i);
-	if (printed < 0) {
+	if (printed < 0){
 		log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
 		return;
 	}

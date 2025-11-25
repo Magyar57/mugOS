@@ -2,7 +2,7 @@
 #define __ARCH_IO_H__
 
 #define MMIO_defineRead(name, size, type, reg, barrier) \
-static inline type name(const volatile void *addr) { \
+static inline type name(const volatile void *addr){ \
 	type res; \
 	__asm__ volatile("mov" size " %1, %0" \
 		: reg (res) \
@@ -11,7 +11,7 @@ static inline type name(const volatile void *addr) { \
 }
 
 #define MMIO_defineWrite(name, size, type, reg, barrier) \
-static inline void name(volatile void *addr, type val) { \
+static inline void name(volatile void *addr, type val){ \
 	__asm__ volatile("mov" size " %0,%1" \
 		: \
 		: reg (val), "m" (*(volatile type*)addr) barrier); \

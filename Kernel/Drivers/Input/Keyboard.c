@@ -463,7 +463,7 @@ static char getChar_AZERTY(keycode_t k){
 // ================ Public API ================
 
 static inline int findAvailableCallbackIndex(){
-	for(int i=0 ; i<MAX_CALLBACKS ; i++){
+	for (int i=0 ; i<MAX_CALLBACKS ; i++){
 		if (m_callbacks[i] == NULL){
 			return i;
 		}
@@ -472,7 +472,7 @@ static inline int findAvailableCallbackIndex(){
 }
 
 static inline void executeCallbacks(keycode_t keycode, int character, enum KeypressMode mode, uint8_t modifierKeys){
-	for(int i=0 ; i<MAX_CALLBACKS ; i++){
+	for (int i=0 ; i<MAX_CALLBACKS ; i++){
 		if (m_callbacks[i] == NULL) continue;
 		m_callbacks[i](keycode, character, mode, modifierKeys);
 	}
@@ -608,7 +608,7 @@ void Keyboard_init(){
 		m_numlockKeyWasFunction[i] = false;
 	}
 
-	for(int i=0 ; i<MAX_CALLBACKS ; i++){
+	for (int i=0 ; i<MAX_CALLBACKS ; i++){
 		m_callbacks[i] = NULL;
 	}
 

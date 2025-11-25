@@ -67,7 +67,7 @@ static void parseMADT(struct rawMADT* madt_ptr){
 	// - Parse and set our arrays
 
 	uint32_t cur_offset = sizeof(struct rawMADT);
-	while(cur_offset < madt_ptr->header.length) {
+	while (cur_offset < madt_ptr->header.length){
 		curHdr = (void*)madt_ptr + cur_offset;
 
 		switch (curHdr->entryType){
@@ -137,7 +137,7 @@ static void parseMADT(struct rawMADT* madt_ptr){
 	g_MADT.nX2APIC_NMI = 0;
 
 	cur_offset = sizeof(struct rawMADT);
-	while(cur_offset < madt_ptr->header.length) {
+	while (cur_offset < madt_ptr->header.length){
 		curHdr = (void*)madt_ptr + cur_offset;
 
 		switch (curHdr->entryType){

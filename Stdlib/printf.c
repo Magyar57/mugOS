@@ -142,7 +142,7 @@ static int dputs(const char* restrict s, int fd){
 	int res;
 	if (s == NULL) return EOF;
 
-	while(*s){
+	while (*s){
 		res = dputc(*s, fd);
 		if (res == EOF) return EOF;
 		s++;
@@ -197,7 +197,7 @@ static int printf_uint(int fd, unsigned long long number, struct specifierState*
 		number /= spec->radix;
 
 		buffer[pos++] = hexChars[rem];
-	} while(number > 0 && pos<128);
+	} while (number > 0 && pos<128);
 
 	// padding_spaces = width - max(pos, precision) - prefix - sign
 	int64_t padding_spaces = spec->width;
@@ -247,7 +247,7 @@ static int printf_uint(int fd, unsigned long long number, struct specifierState*
 	printed += res;
 
 	// Print the parsed number to the screen
-	while (--pos >= 0) {
+	while (--pos >= 0){
 		res = dputc(buffer[pos], fd);
 		if (res == EOF) return printed;
 		printed++;
@@ -424,7 +424,7 @@ static int sprintf_uint(char* str, unsigned long long number, struct specifierSt
 		number /= spec->radix;
 
 		buffer[pos++] = hexChars[rem];
-	} while(number > 0 && pos<128);
+	} while (number > 0 && pos<128);
 
 	// padding_spaces = width - max(pos, precision) - prefix - sign
 	int64_t padding_spaces = spec->width;
@@ -467,7 +467,7 @@ static int sprintf_uint(char* str, unsigned long long number, struct specifierSt
 	printed += sprintf_uint_putPadding(str+printed, padding_zeros, '0');
 
 	// Print the parsed number into the string
-	while (--pos >= 0) {
+	while (--pos >= 0){
 		str[printed++] = buffer[pos];
 	}
 
@@ -510,7 +510,7 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 	if (format == NULL) return -1;
 	if (fd < 0) return -2;
 
-	while(*format){
+	while (*format){
 		switch(state){
 
 		case PRINTF_STATE_NORMAL:
@@ -662,7 +662,7 @@ static int vdprintf_internal(int fd, const char* restrict format, va_list args){
 					break;
 				case 's':
 					s = va_arg(args, const char*);
-					if (s == NULL) {
+					if (s == NULL){
 						dputs("(null)", fd);
 						printed += 6;
 					}
@@ -752,7 +752,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 	if (fmtStr == NULL) return -2;
 	if (format == NULL) return -3;
 
-	while(*format){
+	while (*format){
 		switch(state){
 
 		case PRINTF_STATE_NORMAL:
@@ -905,7 +905,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 				break;
 			case 's':
 				s = va_arg(args, const char*);
-				if (s == NULL) {
+				if (s == NULL){
 					vsnprintf_internal_checkBoundaries(size, printed+6, checkSize);
 					fmtStr[printed++] = '(';
 					fmtStr[printed++] = 'n';
@@ -915,7 +915,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 					fmtStr[printed++] = ')';
 				}
 				else {
-					while(*s){
+					while (*s){
 						vsnprintf_internal_checkBoundaries(size, printed+1, checkSize);
 						fmtStr[printed++] = *s;
 						s++;
@@ -962,7 +962,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 			case PRINTF_LENGTH_DEFAULT:
 			case PRINTF_LENGTH_SHORT_SHORT:
 			case PRINTF_LENGTH_SHORT:
-				if (spec_state.numberSigned) {
+				if (spec_state.numberSigned){
 					int numberToPrint = va_arg(args, int);
 					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, &spec_state), checkSize);
 					printed += sprintf_int(fmtStr+printed, numberToPrint, &spec_state);
@@ -974,7 +974,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 				}
 				break;
 			case PRINTF_LENGTH_LONG:
-				if (spec_state.numberSigned) {
+				if (spec_state.numberSigned){
 					long numberToPrint = va_arg(args, long);
 					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, &spec_state), checkSize);
 					printed += sprintf_int(fmtStr+printed, numberToPrint, &spec_state);
@@ -986,7 +986,7 @@ static int vsnprintf_internal(char* restrict fmtStr, size_t size, bool checkSize
 				}
 				break;
 			case PRINTF_LENGTH_LONG_LONG:
-				if (spec_state.numberSigned) {
+				if (spec_state.numberSigned){
 					long long numberToPrint = va_arg(args, long long);
 					vsnprintf_internal_checkBoundaries(size, printed+getSizeOfNumberToPrint_signed(numberToPrint, &spec_state), checkSize);
 					printed += sprintf_int(fmtStr+printed, numberToPrint, &spec_state);

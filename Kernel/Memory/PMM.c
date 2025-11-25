@@ -65,7 +65,7 @@ static void clearBits(struct BitmapAllocator* allocator, uint64_t start_bit, uin
 	}
 
 	allocator->bitmap[start_index] &= start_mask;
-	for(uint64_t i=start_index+1 ; i<end_index ; i++)
+	for (uint64_t i=start_index+1 ; i<end_index ; i++)
 		allocator->bitmap[i] = 0x0000000000000000;
 	if (index_in_last_uint64 != 0)
 		allocator->bitmap[end_index] &= end_mask;
@@ -110,7 +110,7 @@ static void setBits(struct BitmapAllocator* allocator, uint64_t start_bit, uint6
 	}
 
 	allocator->bitmap[start_index] |= start_mask;
-	for(uint64_t i=start_index+1 ; i<end_index ; i++)
+	for (uint64_t i=start_index+1 ; i<end_index ; i++)
 		allocator->bitmap[i] = 0xffffffffffffffff;
 	if (index_in_last_uint64 != 0)
 		allocator->bitmap[end_index] |= end_mask;

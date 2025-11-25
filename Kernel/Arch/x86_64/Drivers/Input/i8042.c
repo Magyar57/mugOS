@@ -72,7 +72,7 @@ static uint8_t m_configByte; // Bufferized configuration byte (used after initia
 static inline bool waitUntilBitValueOrTimeout(uint8_t mask, uint8_t value){
 	int timer = 0;
 
-	while (timer++ < TIMEOUT) {
+	while (timer++ < TIMEOUT){
 		// Check if bit has the value requested
 		uint8_t status_register = inb(PS2C_PORT_STATUS_REGISTER);
 		if ( (status_register & mask) == value )
@@ -190,7 +190,7 @@ void i8042_init(){
 	pollByte(&buff);
 	m_isPort1Valid = (buff == PS2C_RES_PORT1_TEST_SUCCESS);
 	// Port 2
-	if (m_isPort2Valid) {
+	if (m_isPort2Valid){
 		sendCommand(PS2C_CMD_TEST_PORT2);
 		pollByte(&buff);
 		m_isPort2Valid = (buff == PS2C_RES_PORT2_TEST_SUCCESS);

@@ -131,7 +131,7 @@ static bool pushBackWriteBuffer(struct UARTDevice* dev, const uint8_t* str){
 	IRQ_disableSave(flags);
 
 	size_t i = 0;
-	while(str[i]){
+	while (str[i]){
 		if (!Ringbuffer_pushBack(&dev->externalWriteBuff, str[i])){
 			IRQ_restore(flags);
 			return false;
@@ -186,7 +186,7 @@ static bool pushBackReadBuffer(struct UARTDevice* dev, const uint8_t* str){
 	if (n==0) return true;
 
 	size_t i = 0;
-	while(str[i]){
+	while (str[i]){
 		if (!Ringbuffer_pushBack(&dev->externalReadBuff, str[i]))
 			return false;
 		i++;
@@ -226,7 +226,7 @@ static void processAvailableData(struct UARTDevice* dev){
 	memset(temp, 0, sizeof(temp));
 
 	// Read the available data
-	for(int i=0 ; i<dev->internalBufferSize ; i++){
+	for (int i=0 ; i<dev->internalBufferSize ; i++){
 		// ONLY read while DR (Data Ready) set
 		uint8_t lsr = inb(dev->port+SERIAL_OFFSET_LSR);
 		if (!(lsr & SERIAL_LSR_DR))
@@ -257,7 +257,7 @@ static void processTHRE(struct UARTDevice* dev){
 	// write it to the controller's internal buffer
 
 	int i = 0;
-	while(i<dev->internalBufferSize && Ringbuffer_getDataSize(&dev->externalWriteBuff)>0){
+	while (i<dev->internalBufferSize && Ringbuffer_getDataSize(&dev->externalWriteBuff)>0){
 		char toSend = popFrontWriteBuffer(dev);
 		outb(dev->port+SERIAL_OFFSET_BUFFER, toSend);
 		i++;
@@ -348,7 +348,7 @@ static void handleInterrupt(void*){
 
 	// For all present devices, trigger IRQ handling
 	// If no IRQ to be reported, the handler just returns
-	for(int i=0 ; i<N_PORTS ; i++){
+	for (int i=0 ; i<N_PORTS ; i++){
 		if (m_devices[i].present){
 			handleDeviceInterrupt(&m_devices[i]);
 		}
@@ -435,7 +435,7 @@ void Serial_init(){
 	int nDevices = 0;
 
 	// Initialize UART Controllers, Serial Devices (if present), and set m_devices accordingly
-	for(int i=0 ; i<N_PORTS ; i++){
+	for (int i=0 ; i<N_PORTS ; i++){
 		struct UARTDevice* curDev = m_devices+i;
 
 		curDev->identifier = i+1;
@@ -469,7 +469,7 @@ void Serial_init(){
 	IRQ_installHandler(IRQ_COM1, handleInterrupt); // ISA IRQ 4: COM1 or COM3 port
 	IRQ_enableSpecific(IRQ_COM1);
 	IRQ_enableSpecific(IRQ_COM2);
-	for(int i=0 ; i<N_PORTS ; i++){
+	for (int i=0 ; i<N_PORTS ; i++){
 		if (m_devices[i].present){
 			enableDeviceInterrupts(m_devices[i].port);
 		}

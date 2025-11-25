@@ -150,7 +150,7 @@ static void copyIntoMemoryMap(struct MemoryMap* mmap, struct limine_memmap_respo
 	}
 
 	// Copy the entries
-	for(uint64_t i=0 ; i<limine_mmap->entry_count ; i++){
+	for (uint64_t i=0 ; i<limine_mmap->entry_count ; i++){
 		struct limine_memmap_entry* cur = limine_mmap->entries[i];
 
 		if (limine_mmap->entries[i]->type == REMOVED_ENTRY_LIMINE)
