@@ -74,7 +74,7 @@ static inline void writeRegister32(struct IOAPIC* ioapic, uint8_t reg, uint32_t 
 	write32(ioapic->windowReg, val);
 }
 
-static unused inline uint64_t readRegister64(struct IOAPIC* ioapic, uint8_t reg){
+static inline uint64_t readRegister64(struct IOAPIC* ioapic, uint8_t reg){
 	return (uint64_t)readRegister32(ioapic, reg+1) << 32 | readRegister32(ioapic, reg);
 }
 
@@ -99,6 +99,13 @@ static void initIOAPIC(struct IOAPIC* ioapic){
 	union RedirectionReg redirection;
 	redirection.value = 0;
 
+	// We use the 'masked' bit to know if the pin has been initialized already or not
+	// masked=false => un-initialized, masked=true => initialized
+	for (int i=0 ; i<ioapic->pins ; i++){
+		redirection.bits.masked = false;
+		writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(i), redirection.value);
+	}
+
 	// First, apply ISA IRQ overrides
 	for (int i=0 ; i<g_MADT.nIOAPIC_ISO ; i++){
 		struct MADTEntry_IOAPIC_ISO* override = g_MADT.IOAPIC_ISOs + i;
@@ -120,7 +127,7 @@ static void initIOAPIC(struct IOAPIC* ioapic){
 		redirection.bits.destinationMode = 0; // physical
 		redirection.bits.pinPolarity = override->flags.bits.pinPolarity;
 		redirection.bits.triggerMode = override->flags.bits.triggerMode;
-		redirection.bits.masked = false;
+		redirection.bits.masked = true;
 		redirection.bits.destination = SMP_getCpuId(); // Send IRQs to boostrap CPU
 		writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(pin), redirection.value);
 
@@ -132,7 +139,7 @@ static void initIOAPIC(struct IOAPIC* ioapic){
 	for (int i=0 ; i<ioapic->pins ; i++){
 		redirection.value = readRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(i));
 		// Only setup the interrupts that were not in the overrides
-		if (!redirection.bits.masked)
+		if (redirection.bits.masked)
 			continue;
 
 		int GSI = ioapic->GSIBase + i;
@@ -143,7 +150,7 @@ static void initIOAPIC(struct IOAPIC* ioapic){
 		redirection.bits.destinationMode = 0; // physical
 		redirection.bits.pinPolarity = 0;
 		redirection.bits.triggerMode = 0;
-		redirection.bits.masked = false;
+		redirection.bits.masked = true;
 		redirection.bits.destination = SMP_getCpuId();
 		writeRegister64(ioapic, IOAPIC_REG_REDIR_TABLE(i), redirection.value);
 
@@ -190,12 +197,16 @@ void IOAPIC_init(){
 	}
 
 	if (g_MADT.nIOAPIC == 0){
-		log(PANIC, MODULE, "Found local APIC but no IOAPIC on the system !!");
+		log(PANIC, MODULE, "Found local APIC but no I/O APIC on the system !!");
 		panic();
 	}
 
 	m_nIOAPIC = g_MADT.nIOAPIC;
 	m_IOAPICs = (struct IOAPIC*) kmalloc(m_nIOAPIC * sizeof(struct IOAPIC));
+	if (m_IOAPICs == NULL){
+		log(ERROR, MODULE, "Cannot initialize, out of memory");
+		return;
+	}
 
 	for (int i=0 ; i<m_nIOAPIC ; i++){
 		m_IOAPICs[i].address = (void*) (uintptr_t) (g_MADT.IOAPICs[i].address);

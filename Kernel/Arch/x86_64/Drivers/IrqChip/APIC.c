@@ -270,10 +270,6 @@ static void timerIrq(void*){
 	m_apicTimer.eventHandler();
 }
 
-static void scheduleEvent(unsigned long ticks){
-	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, ticks);
-}
-
 static uint64_t measureFrequency(){
 	// The calibration is two-fold: we measure using both the system's Event timer (mdelay: freq1)
 	// and Steady timer (Time_get: freq2, t0, tf, dt)
@@ -327,6 +323,10 @@ static uint64_t findFrequency(){
 	log(INFO, MODULE, "Fell back to manual APIC frequency calibration: measured %lu.%03lu MHz",
 		freq / 1000000, freq % 1000000 / 1000);
 	return freq;
+}
+
+static void scheduleEvent(unsigned long ticks){
+	writeRegister32(APIC_REG_TIMER_INITIAL_COUNT, ticks);
 }
 
 static void scheduleEventTsc(unsigned long ticks){
