@@ -2,7 +2,7 @@
 #define __IRQ_FLAGS_H__
 
 #include "mugOS/Preprocessor.h"
-#include "Arch/x86_64/Registers.h"
+#include "Arch/x86_64/CPU/Registers.h"
 
 #define ISA_IRQ_OFFSET		0x20
 
@@ -15,7 +15,7 @@
 #define IRQ_PS2_MOUSE		0x0c + ISA_IRQ_OFFSET
 #define IRQ_ATA2			0x0f + ISA_IRQ_OFFSET // Secondary ATA hard disk or spurious IRQ
 
-// Programmed IRQs (we can chose those)
+// Programmed IRQs (we can choose those)
 #define IRQ_APIC_TIMER		0x30
 #define IRQ_APIC_SPURIOUS	0xff
 

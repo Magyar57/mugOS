@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include "string.h"
-#include "CPU.h"
+#include "CPU/CPU.h"
 
-#include "GDT.h"
+#include "Platform/GDT.h"
 
 // ================ GDT Entries ================
 

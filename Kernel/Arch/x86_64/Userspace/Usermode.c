@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "GDT.h"
+#include "Platform/GDT.h"
 
 #include "HAL/Userspace/Usermode.h"
 

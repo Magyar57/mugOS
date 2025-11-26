@@ -2,8 +2,8 @@
 #define __IO_H__
 
 #include <stdint.h>
-#include "HAL/ArchIO.h"
 
-// Note: the functions are meant to be implemented by the specific architecture
+// The functions are meant to be implemented by the specific architecture
+#include "HAL/ArchIO.h"
 
 #endif

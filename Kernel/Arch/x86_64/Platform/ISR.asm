@@ -43,7 +43,7 @@ ISR_%1:
 %endmacro
 
 ; Contains the actual macro calls, that implements all 256 ISRs
-%include "ISR_defs.s"
+%include "Platform/ISR_defs.s"
 
 ISR_asmPrehandler:
 	; CPU pushed SS:RSP, RFLAGS, cs, rip

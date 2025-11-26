@@ -6,9 +6,9 @@
 #include "Memory/MemoryMap.h"
 #include "Memory/PMM.h"
 #include "Memory/VMM.h"
-#include "CPU.h"
-#include "GDT.h"
-#include "Registers.h"
+#include "CPU/CPU.h"
+#include "CPU/Registers.h"
+#include "Platform/GDT.h"
 
 #include "HAL/Memory/Paging.h"
 #define MODULE "Paging"

@@ -1,7 +1,7 @@
 #include "Logging.h"
 #include "Time/Time.h"
-#include "CPU.h"
-#include "Registers.h"
+#include "CPU/CPU.h"
+#include "CPU/Registers.h"
 
 #include "Drivers/Timers/TSC.h"
 #define MODULE "TSC"

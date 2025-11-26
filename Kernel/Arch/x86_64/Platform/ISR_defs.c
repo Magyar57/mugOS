@@ -1,9 +1,9 @@
 #include <stdint.h>
-#include "CPU.h"
-#include "GDT.h"
-#include "IDT.h"
+#include "CPU/CPU.h"
+#include "Platform/GDT.h"
+#include "Platform/IDT.h"
 
-#include "ISR.h"
+#include "Platform/ISR.h"
 
 // Define the ISR function (for the C code),
 // as well as the ISR_init function

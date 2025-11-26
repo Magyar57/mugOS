@@ -1,16 +1,13 @@
 #include <stddef.h>
 #include "Logging.h"
-#include "IRQ/IRQ.h"
 #include "HAL/HAL.h"
 #include "HAL/SMP/PerCPU.h"
-#include "Arch/x86_64/CPU.h"
-#include "Arch/x86_64/GDT.h"
-#include "Arch/x86_64/IDT.h"
-#include "Arch/x86_64/ISR.h"
+#include "Arch/x86_64/CPU/CPU.h"
+#include "Arch/x86_64/Platform/GDT.h"
+#include "Arch/x86_64/Platform/IDT.h"
+#include "Arch/x86_64/Platform/ISR.h"
 
 void HAL_init(){
-	IRQ_disable();
-
 	CPU_init(&g_CPU);
 
 	GDT_init();

@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "mugOS/Preprocessor.h"
 
-#include "IDT.h"
+#include "Platform/IDT.h"
 
 // ================ IDT Entries ================
 

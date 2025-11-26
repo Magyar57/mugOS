@@ -5,7 +5,7 @@
 #include "Logging.h"
 #include "IDT.h"
 
-#include "ISR.h"
+#include "Platform/ISR.h"
 #define MODULE "ISR"
 
 #define ISR_DIVIDE_BY_ZERO_ERROR	0x00

@@ -5,7 +5,7 @@
 #include "Logging.h"
 #include "IRQ/IRQ.h"
 #include "HAL/IRQ/IrqFlags.h"
-#include "ISR.h"
+#include "Platform/ISR.h"
 
 #include "i8259.h"
 #define MODULE "i8259 PIC"

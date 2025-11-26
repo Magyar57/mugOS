@@ -3,7 +3,7 @@
 #include "assert.h"
 #include "Panic.h"
 #include "Logging.h"
-#include "Registers.h"
+#include "CPU/Registers.h"
 
 #include "HAL/SMP/PerCPU.h"
 #define MODULE "Per-CPU data"
