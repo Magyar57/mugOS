@@ -30,7 +30,7 @@ enum KeypressMode {
 typedef void(*keycallback_t)(keycode_t keycode, int chr, enum KeypressMode mode, uint8_t modifierKeys);
 
 /// @brief Adds a keycallback_t `callback` function as callback (see keycallback_t for parameters description)
-/// @returns True on success, false on error (callback array full)
+/// @return True on success, false on error (callback array full)
 bool Keyboard_registerKeyCallback(keycallback_t callback);
 
 /// @brief Removes a keycallback_t @p callback function from the internal array

@@ -41,8 +41,9 @@ static char getNumpadKey_NoNumluck(keycode_t k){
 	}
 }
 
-/// @returns Whether the keycode_t `k` is a numpad key THAT DO CHANGE depending on the NumLock state
-///          e.g. KEY_NUMPAD_ENTER returns false !
+/// @return Whether the keycode_t `k` is a numpad key that DO change
+/// depending on the NumLock state.
+/// E.g. `KEY_NUMPAD_0` returns true, but `KEY_NUMPAD_ENTER` returns false
 static inline bool isNumpadKey(keycode_t k){
 	switch (k){
 		case KEY_NUMPAD_7: return true;

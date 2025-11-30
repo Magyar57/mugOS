@@ -74,7 +74,7 @@ void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y
 /// @brief Initialize the Framebuffer driver (from a GOP or Bios obtained memory-mapped framebuffer)
 /// @param this Framebuffer object to initialize. Note: it HAS to be pre-initialized with
 ///        fields `framebuffer`, `width`, `height`, `pitch` and `bpp` set
-/// @returns A boolean indicating initialization success
+/// @return A boolean indicating initialization success
 /// @note This method and its object are meant to be used and abstracted by the Graphics subsystem
 bool Framebuffer_init(Framebuffer* this);
 

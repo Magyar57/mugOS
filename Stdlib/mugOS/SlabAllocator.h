@@ -36,7 +36,7 @@ void Cache_free(cache_t* cache, void* ptr);
 #ifdef KERNEL
 
 /// @brief Allocate an object of size `size` (up to `KMALLOC_MAX_CACHE_SIZE`)
-/// @returns A pointer to valid heap memory, or `NULL` on error
+/// @return A pointer to valid heap memory, or `NULL` on error
 void* kmalloc(size_t size);
 
 /// @brief Free an object (allocated by kmalloc)

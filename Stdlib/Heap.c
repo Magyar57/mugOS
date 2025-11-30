@@ -431,7 +431,7 @@ static struct ChunkInfo* findFreeChunk_chungusList(list_t* chunguses){
 }
 
 /// @brief Searches a free chunk from the `chunguses`, allocating a new chungus if needed
-/// @returns Address of the initialized chunk, NULL on failure
+/// @return Address of the initialized chunk, NULL on failure
 static struct ChunkInfo* getFreeChunk(list_t* chunguses){
 	struct ChunkInfo* chunk;
 	struct Chungus* chungus;

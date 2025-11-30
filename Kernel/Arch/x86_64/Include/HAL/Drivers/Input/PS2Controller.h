@@ -8,7 +8,7 @@ static always_inline void PS2Controller_init(){
 	i8042_init();
 }
 
-/// @returns Returns whether the controller/driver is initialized and enabled,
+/// @return Returns whether the controller/driver is initialized and enabled,
 /// and which ports are enabled
 static always_inline void PS2Controller_getStatus(bool *enabled, bool *port1Valid,
 												  bool *port2Valid, bool *translation){
@@ -16,14 +16,14 @@ static always_inline void PS2Controller_getStatus(bool *enabled, bool *port1Vali
 }
 
 /// @brief Send a byte to the PS/2 device 1
-/// @returns `true` on success, `false` on failure
+/// @return `true` on success, `false` on failure
 static always_inline bool PS2Controller_sendByteToDevice(int device, uint8_t byte){
 	return i8042_sendByteToDevice(device, byte);
 }
 
 /// @brief Receive a byte from a previously sent command
 /// @param byte_out Received byte is written here
-/// @returns `true` on success, `false` if no response was received (timeout).
+/// @return `true` on success, `false` if no response was received (timeout).
 static always_inline uint8_t PS2Controller_receiveByte(){
 	return i8042_receiveByte();
 }

@@ -85,7 +85,7 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 }
 
 /// @brief Process Limine's memory map by squashing sequential entries of same type
-/// @returns The number of entries in the processed memory map
+/// @return The number of entries in the processed memory map
 static int processLimineMemoryMap(struct limine_memmap_response* limine_memap){
 	if (limine_memap->entry_count == 0) return 0;
 

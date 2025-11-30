@@ -114,7 +114,7 @@ static void processTHRE(struct UARTDevice* dev);
 // ================ External buffers handling ================
 
 /// @brief Add (push back) the null-terminated string str to be written the device write buffer
-/// @returns `true` on success, `false` on error
+/// @return `true` on success, `false` on error
 /// @note IRQ-safe
 static bool pushBackWriteBuffer(struct UARTDevice* dev, const uint8_t* str){
 	if (dev==NULL) return false;

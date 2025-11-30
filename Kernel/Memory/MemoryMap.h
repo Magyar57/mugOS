@@ -47,7 +47,7 @@ static const char* SIZE_UNITS[] = {
 };
 
 /// @brief Returns a magnitude in order to print sizes
-/// @returns n so that `1024^(n+1) >= byte_number > 1024^n`.
+/// @return n so that `1024^(n+1) >= byte_number > 1024^n`.
 /// Example: `512 B` => `0`, `1023 B` => `0`, `1024 B` => `1`, `1025 B` => `1`, `1048576` => `3`...
 /// @note Use with SIZE_UNITS to print sizes:
 /// ```

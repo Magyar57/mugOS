@@ -12,7 +12,7 @@ typedef long ssize_t; // size_t or negative value if error (From POSIX <sys/type
 /// @param fd file descriptor to writeto
 /// @param buff string to write
 /// @param count size of buff
-/// @returns number of bytes written (-1 on error)
+/// @return number of bytes written (-1 on error)
 ssize_t write(int fd, const void* buff, size_t count);
 
 #endif

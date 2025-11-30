@@ -907,7 +907,7 @@ static void initIRQ(void*){
 }
 
 /// @brief Send a byte to a device, and resends (max 3 times) if response is Resend
-/// @returns Response on success, `PS2_KB_RES_RESEND` on failure (timed out)
+/// @return Response on success, `PS2_KB_RES_RESEND` on failure (timed out)
 static uint8_t sendByteToDeviceHandleResend(int device, uint8_t byte){
 	uint8_t response;
 
@@ -927,7 +927,7 @@ static uint8_t sendByteToDeviceHandleResend(int device, uint8_t byte){
 }
 
 /// @brief Get a keyboard name/type (scanning must be disabled !!)
-/// @returns Keyboard name, or `NULL` if unrecognized or device is a mouse
+/// @return Keyboard name, or `NULL` if unrecognized or device is a mouse
 static const char* getKeyboardName(){
 	uint8_t buff, byte1, byte2;
 	bool res;

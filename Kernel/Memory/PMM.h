@@ -8,7 +8,7 @@
 void PMM_init();
 
 /// @brief Allocate `n_pages` contiguous physical pages
-/// @returns The start address of the allocated block
+/// @return The start address of the allocated block
 paddr_t PMM_allocatePages(uint64_t n_pages);
 
 /// @brief Free pages allocated by `PMM_allocatePages`

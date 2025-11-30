@@ -30,15 +30,15 @@ size_t Ringbuffer_getDataSize(Ringbuffer* this);
 bool Ringbuffer_isBufferFull(Ringbuffer* this);
 
 /// @brief Pops a value out of the ringbuffer
-/// @returns Whether it could pop a value (ring buffer wasn't empty)
+/// @return Whether it could pop a value (ring buffer wasn't empty)
 bool Ringbuffer_pop(Ringbuffer* this, int* valueOut);
 
 /// @brief Pushes the provided value to the Ringbuffer, discard if buffer is full
-/// @returns true if could push, false if not (discarded)
+/// @return true if could push, false if not (discarded)
 bool Ringbuffer_pushBack(Ringbuffer* this, int value);
 
 /// @brief Pushes the provided value to the Ringbuffer, overwrittes first value if buffer is full
-/// @returns true if could push, false if not (overwrote the buffer)
+/// @return true if could push, false if not (overwrote the buffer)
 bool Ringbuffer_pushBackOverwrite(Ringbuffer* this, int value);
 
 #endif
