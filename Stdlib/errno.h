@@ -1,28 +1,35 @@
 #ifndef __ERRNO_H__
 #define __ERRNO_H__
 
+// errno.h: the 'errno' variable & error numbers definitions (as macros)
+// We define the POSIX erros, as well as the kernel errors.
+// Note that the kernel uses special names, and makes kernel_error = -POSIX_error
+
 // errno is not used in the kernel
 #ifndef KERNEL
 extern int errno;
 #endif
 
-// ================ Error numbers (kernel) ================
+// ================ POSIX/userspace error numbers ================
 
-// Error code for success
+/// @brief Error: No such file or directory
+#define ENOENT			2
+/// @brief Error: Out of memory error
+#define ENOMEM			12
+/// @brief Error: Invalid argument
+#define EINVAL			22
+
+// ================ Kernel error numbers ================
+
+#ifdef KERNEL
+
+/// @brief Code for success
 #define E_SUCCESS		0
 
-// Out of memory error
-#define E_NOMEM			-1
-// Invalid input value error
-#define E_INVAL			-2
+#define E_NOENT			-ENOENT
+#define E_NOMEM			-ENOMEM
+#define E_INVAL			-EINVAL
 
-// ================ Error numbers (userspace, POSIX) ================
-
-#ifndef KERNEL
-
-#define ENOMEM			E_NOMEM
-#define EINVAL			E_INVAL
-
-#endif // ndef KERNEL
+#endif // def KERNEL
 
 #endif
