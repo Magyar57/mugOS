@@ -8,13 +8,6 @@ volatile LIMINE_REQUESTS_START_MARKER;
 // Use protocol version 3
 volatile LIMINE_BASE_REVISION(3)
 
-// Ask for Limine version
-volatile struct limine_bootloader_info_request g_infoReq = {
-	.id = LIMINE_BOOTLOADER_INFO_REQUEST,
-	.revision = 0,
-	.response = NULL,
-};
-
 // Ask for the system's memory map
 volatile struct limine_memmap_request g_memmapReq = {
 	.id = LIMINE_MEMMAP_REQUEST,

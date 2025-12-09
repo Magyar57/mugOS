@@ -25,10 +25,10 @@ void kmain(){
 	memset(&__bss_start, 0, (&__end) - (&__bss_start));
 
 	// Early graphics setup (for logging)
-	Graphics_init(GRAPHICS_LIMINE_FRAMEBUFFER, (void *)g_framebufferReq.response->framebuffers[0]);
+	Graphics_init(GRAPHICS_LIMINE_FRAMEBUFFER, (void*)g_framebufferReq.response->framebuffers[0]);
 	Graphics_clearScreen();
 	log(INFO, NULL, "Supposons que je sois dans votre kernel !");
-	log(INFO, "mugOS", "Loaded by: %s v%s", g_infoReq.response->name, g_infoReq.response->version);
+	log(INFO, NULL, "Welcome to mugOS v%d.%d !", MUGOS_MAJOR, MUGOS_MINOR);
 
 	// Hardware-specific initialization
 	HAL_init();
