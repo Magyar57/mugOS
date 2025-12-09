@@ -1,6 +1,10 @@
 # Config.mk: configurations variables
 # Note: the paths are relative to the root folder (mugOS)
 
+# This is mugOS v0.5
+export MUGOS_MAJOR=0
+export MUGOS_MINOR=5
+
 # Output folders
 export BUILD_DIR:=$(abspath build)
 export TOOLCHAIN_PATH:=$(abspath toolchain)
@@ -25,7 +29,9 @@ export CC:=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths
 export LD:=ld.lld
 # Compilation options: Kernel flags
 export K_ASMFLAGS:=-f elf64 -g3 -F dwarf
-export K_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding -mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined
+export K_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding \
+	-mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined \
+	-DMUGOS_MAJOR=$(MUGOS_MAJOR) -DMUGOS_MINOR=$(MUGOS_MINOR)
 export K_LDFLAGS:=-nostdlib -static -L$(BUILD_DIR)
 export K_LDLIBS:=-lkernel
 # Compilation options: Userspace flags
