@@ -6,25 +6,33 @@
 #include "Logging.h"
 #define MODULE "Logging"
 
-static const char* LOG_LEVEL_PREFIX[] = {
-	"[#DEBUG] ",
-	"[  OK  ] ",
-	"[ INFO ] ",
-	"[ WARN ] ",
-	"[ERROR!] ",
-	">>PANIC!<< "
+static const char* LOG_LEVEL_PREFIXES[] = {
+	"[#DEBUG] ",	// DEBUG
+	"[ INFO ] ",	// INFO
+	"[  OK  ] ",	// SUCCESS
+	"[ WARN ] ",	// WARNING
+	"[ERROR!] ",	// ERROR
+	">>PANIC!<< "	// PANIC
 };
 
-/// @brief Format str of size n to the string to log (specified by logLevel, moduleName, logFmtStr and args)
-static inline bool formatLogString(char* str, size_t n, int logLevel, const char* moduleName, const char* logFmtStr, va_list args){
+/// @brief Format a logging string
+/// @param str Output buffer to write to
+/// @param n Size of the output buffer
+/// @param logLevel Logging loglevel macros
+/// @param moduleName Nullable module name prefix
+/// @param logFmtStr The formatted string
+/// @param args Varidiac argument list of the formatted string
+/// @return Whether formatting succeeded
+static inline bool formatLogString(char* str, size_t n, int logLevel, const char* moduleName,
+	const char* logFmtStr, va_list args){
 	int written1, written2, written3;
 
 	// Insert log level and module into 'str'
 
 	if (moduleName == NULL)
-		written1 = snprintf(str, n, "%s-> ", LOG_LEVEL_PREFIX[logLevel]);
+		written1 = snprintf(str, n, "%s", LOG_LEVEL_PREFIXES[logLevel]);
 	else
-		written1 = snprintf(str, n, "%s%s -> ", LOG_LEVEL_PREFIX[logLevel], moduleName);
+		written1 = snprintf(str, n, "%s%s -> ", LOG_LEVEL_PREFIXES[logLevel], moduleName);
 
 	if (written1 < 0)
 		return false; // buffer too small
@@ -56,19 +64,19 @@ void log(int logLevel, const char* moduleName, const char* logFmtStr, ...){
 	}
 
 	va_list args;
-	va_start(args, logFmtStr);
-
 	char buff[4096]; // 4 KB log string length limit
+
+	va_start(args, logFmtStr);
 	bool success = formatLogString(buff, sizeof(buff), logLevel, moduleName, logFmtStr, args);
+	va_end(args);
+
 	if (!success){
 		log(ERROR, MODULE, "Message is too long, cannot log !!");
 		return;
 	}
 
-	va_end(args);
-
 	// During booting: log to stdout (screen)
-	fputs(buff, (logLevel >= ERROR) ? stdout : stderr);
+	fputs(buff, stdout);
 
 	// Log to Serial
 	// sendStringDefault returns false if the Serial is uninitialized AND on error
@@ -101,8 +109,10 @@ void hexdump(int logLevel, const char* moduleName, void* addr , int n){
 			"%.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx  "
 			"%.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx",
 			i,
-			data[i], data[i+1], data[i+2], data[i+3], data[i+4], data[i+5], data[i+6], data[i+7],
-			data[i+8], data[i+9], data[i+10], data[i+11], data[i+12], data[i+13], data[i+14], data[i+15]
+			data[i], data[i+1], data[i+2], data[i+3],
+			data[i+4], data[i+5], data[i+6], data[i+7],
+			data[i+8], data[i+9], data[i+10], data[i+11],
+			data[i+12], data[i+13], data[i+14], data[i+15]
 		);
 		if (printed < 0){
 			log(ERROR, MODULE, "snprintf failure, couldn't dump memory");

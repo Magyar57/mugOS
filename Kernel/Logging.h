@@ -4,8 +4,8 @@
 #include <stddef.h>
 
 #define DEBUG		0
-#define SUCCESS		1
-#define INFO		2
+#define INFO		1
+#define SUCCESS		2
 #define WARNING		3
 #define ERROR		4
 #define PANIC		5
