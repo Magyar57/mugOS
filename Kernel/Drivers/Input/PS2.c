@@ -394,7 +394,7 @@ static inline void handleScancodeSet1(uint8_t scancode){
 	// 4. Handle keycode
 	switch (keycode){
 	case KEY_RESERVED: // Driver did not recognize the scancode
-		log(ERROR, MODULE, "Unrecognized scancode %p", scancode);
+		log(ERROR, MODULE, "Unrecognized scancode %#hhx", scancode);
 		goto reset_state;
 	case KEY_NUMLOCK:
 		if (released) { numlock_was_set = false; break; } // when released, unlock flip
@@ -732,7 +732,7 @@ static inline void handleScancodeSet2(uint8_t scancode){
 
 	switch (keycode){
 		case KEY_RESERVED: // Driver did not recognize the scancode
-			log(ERROR, MODULE, "Unrecognized scancode %p", scancode);
+			log(ERROR, MODULE, "Unrecognized scancode %#hhx", scancode);
 			goto reset_state;
 		case KEY_NUMLOCK:
 			if (breaked_state) { numlock_was_set = false; break; }

@@ -115,6 +115,6 @@ void PIT_init(){
 
 	Time_registerEventTimer(&m_pit);
 
-	log(SUCCESS, MODULE, "Initialized success, frequency is %lu.%06lu MHz",
+	log(SUCCESS, MODULE, "Initialized success, frequency is %d.%06d MHz",
 		BASE_FREQUENCY / 1000000, BASE_FREQUENCY % 1000000);
 }

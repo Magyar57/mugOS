@@ -54,13 +54,19 @@ static const char* const EXCEPTION_TYPES[] = {
 };
 
 static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
-	log(logLevel, NULL, "vector=%#.2hhx rflags=%#.16llx err=%p", params->vector, params->rflags, params->err);
-	log(logLevel, NULL, "\trip=%#.16llx rsp=%#.16llx rbp=%#.16llx", params->rip, params->rsp, params->rbp);
-	log(logLevel, NULL, "\trax=%#.16llx rbx=%#.16llx rcx=%#.16llx rdx=%#.16llx", params->rax, params->rbx, params->rcx, params->rdx);
-	log(logLevel, NULL, "\trsi=%#.16llx rdi=%#.16llx", params->rsi, params->rdi);
-	log(logLevel, NULL, "\t r8=%#.16llx  r9=%#.16llx r10=%#.16llx r11=%#.16llx", params->r8, params->r9, params->r10, params->r11);
-	log(logLevel, NULL, "\tr12=%#.16llx r13=%#.16llx r14=%#.16llx r15=%#.16llx", params->r12, params->r13, params->r14, params->r15);
-	log(logLevel, NULL, "\tcs=%#.2hhx ds=%#.2hhx ss=%#.2hhx", params->cs, params->ds, params->ss);
+	log(logLevel, NULL, "vector=%#.2lx rflags=%#.16lx err=%#lx",
+		params->vector, params->rflags, params->err);
+	log(logLevel, NULL, "\trip=%#.16lx rsp=%#.16lx rbp=%#.16lx",
+		params->rip, params->rsp, params->rbp);
+	log(logLevel, NULL, "\trax=%#.16lx rbx=%#.16lx rcx=%#.16lx rdx=%#.16lx",
+		params->rax, params->rbx, params->rcx, params->rdx);
+	log(logLevel, NULL, "\trsi=%#.16lx rdi=%#.16lx", params->rsi, params->rdi);
+	log(logLevel, NULL, "\t r8=%#.16lx  r9=%#.16lx r10=%#.16lx r11=%#.16lx",
+		params->r8, params->r9, params->r10, params->r11);
+	log(logLevel, NULL, "\tr12=%#.16lx r13=%#.16lx r14=%#.16lx r15=%#.16lx",
+		params->r12, params->r13, params->r14, params->r15);
+	log(logLevel, NULL, "\tcs=%#.2lx ds=%#.2lx ss=%#.2lx",
+		params->cs, params->ds, params->ss);
 }
 
 // ================ ISR Handlers ================
@@ -68,7 +74,7 @@ static inline void dumpRegisters(int logLevel, struct ISR_Params* params){
 // This function is ran by the assembly stub when there is no handler to call
 void ISR_noHandler(struct ISR_Params* params){
 	if (params->vector >= 32){
-		log(WARNING, MODULE, "Unhandled IRQ %d !", params->vector);
+		log(WARNING, MODULE, "Unhandled IRQ %lu !", params->vector);
 		return;
 	}
 
@@ -110,7 +116,7 @@ void ISR_segmentNotPresent(struct ISR_Params* params){
 	}
 
 	log(PANIC, MODULE, "%s", EXCEPTION_TYPES[params->vector]);
-	log(PANIC, MODULE, "%s Exception in %s at descriptor=%p", origin, tableName, descriptor);
+	log(PANIC, MODULE, "%s Exception in %s at descriptor=%#hx", origin, tableName, descriptor);
 	if (!IDT_isInterruptHandlerEnabled(descriptor))
 		log(PANIC, MODULE, "This was triggered because the IDT entry is disabled");
 	panic();
@@ -129,8 +135,11 @@ void ISR_pageFault(struct ISR_Params* params){
 	bool shadow_stack = (params->err & 0b01000000);
 	bool sgx_violation = (params->err & 0b10000000);
 
-	log(PANIC, MODULE, "Page fault (error=%#llx) ! Access to %p from code at %p", params->err, cr2, params->rip);
-	log(PANIC, MODULE, "Cause: %s, from a %s, with CPU in %s mode", cause, type, cpu_mode);
+	log(PANIC, MODULE, "Page fault (error=%#lx) ! Access to %#lx from code at %#lx",
+		params->err, cr2, params->rip);
+	log(PANIC, MODULE, "Cause: %s, from a %s, with CPU in %s mode",
+		cause, type, cpu_mode);
+
 	if (reserved) log(PANIC, MODULE, "Reserved bits are set in some entries that were accessed !");
 	if (instruction_fetch) log(PANIC, MODULE, "Source: instruction fetch");
 	if (protection_key_violation) log(PANIC, MODULE, "Source: protection key violation");

@@ -45,7 +45,7 @@ static void initIoPort(uint16_t port){
 
 	Time_registerSteadyTimer(&m_pmTimer.steadyTimer);
 
-	log(SUCCESS, MODULE, "Initialized PM Timer on port %#hx, with mask %#x",
+	log(SUCCESS, MODULE, "Initialized PM Timer on port %#hx, with mask %#lx",
 		m_pmTimer.port, m_pmTimer.steadyTimer.mask);
 }
 
@@ -59,7 +59,7 @@ static void initMMIO(paddr_t physMmioAddr){
 
 	Time_registerSteadyTimer(&m_pmTimer.steadyTimer);
 
-	log(SUCCESS, MODULE, "Initialized PM Timer with register at address %p, with mask %#x",
+	log(SUCCESS, MODULE, "Initialized PM Timer with register at address %p, with mask %#lx",
 		m_pmTimer.counter, m_pmTimer.steadyTimer.mask);
 }
 

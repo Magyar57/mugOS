@@ -410,7 +410,9 @@ static void initBitmap(struct BitmapAllocator* allocator, struct MemoryMap* memm
 	start_bit = (bitmap_addr_phys - allocator->start) / PAGE_SIZE;
 	end_bit = start_bit + nPages;
 	setBits(allocator, start_bit, end_bit);
-	assert(freeBlocks - nPages == countFreeBlocks(allocator)); // check that we removed 'nPages' bits
+
+	// Verify that we removed 'nPages' bits
+	assert(freeBlocks - nPages == countFreeBlocks(allocator));
 }
 
 void PMM_init(){
@@ -423,7 +425,8 @@ void PMM_init(){
 	// Note: we add 1 because from @start to the n-th page, there is n-1 pages
 	m_bitmapAllocator.start = getBitmapStart();
 	m_bitmapAllocator.allocatableBlocks = getAllocatableBlocks();
-	m_bitmapAllocator.nBlocks = ((g_memoryMap.lastUsablePage - m_bitmapAllocator.start) / PAGE_SIZE) + 1;
+	m_bitmapAllocator.nBlocks =
+		((g_memoryMap.lastUsablePage - m_bitmapAllocator.start) / PAGE_SIZE) + 1;
 
 	// Allocate memory for the bitmap
 	size_t bitmapSize = (m_bitmapAllocator.nBlocks + 7) / 8; // Note: +7 rounds the division up
@@ -436,6 +439,6 @@ void PMM_init(){
 	initBitmap(&m_bitmapAllocator, &g_memoryMap, allocated, n_pages);
 
 	PMM_printMemoryUsage();
-	log(SUCCESS, MODULE, "Initialization success (managing %d pages, %d allocatable)",
+	log(SUCCESS, MODULE, "Initialization success (managing %lu pages, %lu allocatable)",
 		m_bitmapAllocator.nBlocks, m_bitmapAllocator.allocatableBlocks);
 }

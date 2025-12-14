@@ -72,8 +72,8 @@ vaddr_t VMM_mapInHHDM(paddr_t addr){
 
 vaddr_t VMM_mapInHeap(paddr_t addr, uint64_t n_pages, int flags){
 	if (addr >= m_hsdmSize){
-		log(PANIC, MODULE,
-			"Heap structure at %p is higher the maximum supported (%p)", addr, toCanonical(m_hsdmSize));
+		log(PANIC, MODULE,"Heap structure at %#lx is higher the maximum supported (%#lx)",
+			addr, toCanonical(m_hsdmSize));
 		panic();
 	}
 

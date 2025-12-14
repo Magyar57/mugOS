@@ -12,7 +12,7 @@ struct CPU g_CPU;
 bool supportsCpuid();
 void cpuidWrapper(int leaf, uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
 void cpuidWrapperWithSubleaf(int leaf, int subleaf,
-							 uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
+	uint32_t* eaxOut, uint32_t* ebxOut, uint32_t* ecxOut, uint32_t* edxOut);
 
 // CPUID.EAX = 0x00: Max input value for basic cpuid informations & vendor string
 static void parseCpuid_0x00(struct CPU* cpu){
@@ -195,7 +195,8 @@ void CPU_init(struct CPU* cpu){
 
 	// Leaves above 1 are enabled if both:
 	// - maxInformation > 1
-	// - on Intel manufactured CPUs, in the IA32_MISC_ENABLE MSR, LimitCPUIDMaxval (bit) is 0 by default
+	// - on Intel manufactured CPUs, in the IA32_MISC_ENABLE MSR,
+	//   LimitCPUIDMaxval (bit) is 0 by default
 	bool leaf_condition_met = (cpu->maxInformation >= 7);
 	if (cpu->vendor == VENDOR_INTEL){
 		union MSR_IA32_MISC_ENABLE misc_enable;
@@ -435,7 +436,8 @@ void CPU_print(struct CPU* cpu){
 	const char* Hybrid = (cpu->features.bits.Hybrid) ? "Hybrid " : "";
 	const char* TSXLDTRK = (cpu->features.bits.TSXLDTRK) ? "TSXLDTRK " : "";
 	const char* PCONFIG = (cpu->features.bits.PCONFIG) ? "PCONFIG " : "";
-	const char* ArchitecturalLBRs = (cpu->features.bits.ArchitecturalLBRs) ? "ArchitecturalLBRs " : "";
+	const char* ArchitecturalLBRs = (cpu->features.bits.ArchitecturalLBRs) ?
+		"ArchitecturalLBRs " : "";
 	const char* CET_IBT = (cpu->features.bits.CET_IBT) ? "CET_IBT " : "";
 	const char* AMX_BF16 = (cpu->features.bits.AMX_BF16) ? "AMX_BF16 " : "";
 	const char* AVX512_FP16 = (cpu->features.bits.AVX512_FP16) ? "AVX512_FP16 " : "";
@@ -475,24 +477,27 @@ void CPU_print(struct CPU* cpu){
 	// Note: TSC handled directly later in the log
 
 	log(INFO, MODULE, "Features 1: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
-		SSE3,PCLMULQDQ,DTES64,MONITOR,DS_CPL,VMX,SMX,EIST,TM2,SSSE3,CNXT_ID,SDBG,FMA,CMPXCHG16B,xTPR,
-		PDCM,PCID,DCA,SSE4_1,SSE4_2,x2APIC,MOVBE,POPCNT,TSC_Deadline,AES,XSAVE,OSXSAVE,AVX,F16C,RDRAND);
+		SSE3,PCLMULQDQ,DTES64,MONITOR,DS_CPL,VMX,SMX,EIST,TM2,SSSE3,CNXT_ID,SDBG,FMA,CMPXCHG16B,
+		xTPR,PDCM,PCID,DCA,SSE4_1,SSE4_2,x2APIC,MOVBE,POPCNT,TSC_Deadline,AES,XSAVE,OSXSAVE,AVX,
+		F16C,RDRAND);
 	log(INFO, MODULE, "Features 2: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
-		FPU,VME,DE,PSE,TSC,MSR_RDMSR,PAE,MCE,CX8,APIC,SEP,MTRR,PGE,MCA,CMOV,PAT,PSE_36,PSN,CLFSH,DS,ACPI,
-		MMX,FXSR,SSE,SSE2,SS,HTT,TM,PBE);
+		FPU,VME,DE,PSE,TSC,MSR_RDMSR,PAE,MCE,CX8,APIC,SEP,MTRR,PGE,MCA,CMOV,PAT,PSE_36,PSN,CLFSH,
+		DS,ACPI,MMX,FXSR,SSE,SSE2,SS,HTT,TM,PBE);
 
-	log(INFO, MODULE, "Features 7-0-ebx: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
-		FSGSBASE,IA32_TSC_ADJUST,SGX,BMI1,HLE,AVX2,FDP_EXCPTN_ONLY,SMEP,BMI2,Enhanced_MOVSB_STOSB,INVPCID,
-		RTM,RDT_M,Deprecated_FPU_CS_DS,MPX,RDT_A,AVX512F,AVX512DQ,RDSEED,ADX,SMAP,AVX512_IFMA,CLFLUSHOPT,
-		CLWB,IntelProcessorTrace,AVX512PF,AVX512ER,AVX512CD,SHA,AVX512BW,AVX512VL);
+	log(INFO, MODULE,
+		"Features 7-0-ebx: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+		FSGSBASE,IA32_TSC_ADJUST,SGX,BMI1,HLE,AVX2,FDP_EXCPTN_ONLY,SMEP,BMI2,Enhanced_MOVSB_STOSB,
+		INVPCID,RTM,RDT_M,Deprecated_FPU_CS_DS,MPX,RDT_A,AVX512F,AVX512DQ,RDSEED,ADX,SMAP,
+		AVX512_IFMA,CLFLUSHOPT,CLWB,IntelProcessorTrace,AVX512PF,AVX512ER,AVX512CD,SHA,AVX512BW,
+		AVX512VL);
 	log(INFO, MODULE, "Features 7-0-ecx: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
-		PREFETCHWT1,AVX512_VBMI,UMIP,PKU,OSPKE,WAITPKG,AVX512_VBMI2,CET_SS,GFNI,VAES,VPCLMULQDQ,AVX512_VNNI,
-		AVX512_BITALG,TME_EN,AVX512_VPOPCNTDQ,LA57,MAWAU_value,RDPID,KL,BUS_LOCK_DETECT,CLDEMOTE,MOVDIRI,
-		MOVDIR64B,ENQCMD,SGX_LC,PKS);
-	log(INFO, MODULE, "Features 7-0-edx: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+		PREFETCHWT1,AVX512_VBMI,UMIP,PKU,OSPKE,WAITPKG,AVX512_VBMI2,CET_SS,GFNI,VAES,VPCLMULQDQ,
+		AVX512_VNNI,AVX512_BITALG,TME_EN,AVX512_VPOPCNTDQ,LA57,MAWAU_value,RDPID,KL,
+		BUS_LOCK_DETECT,CLDEMOTE,MOVDIRI,MOVDIR64B,ENQCMD,SGX_LC,PKS);
+	log(INFO, MODULE, "Features 7-0-edx: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
 		SGX_KEYS,AVX512_4VNNIW,AVX512_4FMAPS,FastShortREP_MOV,UINTR,AVX512_VP2INTERSECT,SRBDS_CTRL,
-		MD_CLEAR,RTM_ALWAYS_ABORT,RTM_FORCE_ABORT,SERIALIZE,Hybrid,TSXLDTRK,PCONFIG,ArchitecturalLBRs,
-		CET_IBT,AMX_BF16,AVX512_FP16,AMX_TILE,AMX_INT8,IBRS_IBPB,STIBP,L1D_FLUSH,
+		MD_CLEAR,RTM_ALWAYS_ABORT,RTM_FORCE_ABORT,SERIALIZE,Hybrid,TSXLDTRK,PCONFIG,
+		ArchitecturalLBRs,CET_IBT,AMX_BF16,AVX512_FP16,AMX_TILE,AMX_INT8,IBRS_IBPB,STIBP,L1D_FLUSH,
 		IA32_ARCH_CAPABILITIES,IA32_CORE_CAPABILITIES,SSBD);
 
 	log(INFO, MODULE, "Features 7-1: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
@@ -501,7 +506,7 @@ void CPU_print(struct CPU* cpu){
 		BHI_CTRL,MCDT_NO,MONITOR_MITG_NO);
 
 	if (cpu->features.bits.TscCrystalClockFrequency != 0){
-		log(INFO, MODULE, "TSC crystal clock ratio: %lu/%lu & crystal frequency: %d MHz",
+		log(INFO, MODULE, "TSC crystal clock ratio: %u/%u & crystal frequency: %d MHz",
 			cpu->features.bits.TscClockRatioNumerator, cpu->features.bits.TscClockRatioDenominator,
 			cpu->features.bits.TscCrystalClockFrequency);
 	}

@@ -10,12 +10,18 @@
 #define ERROR		4
 #define PANIC		5
 
+/// @brief Gcc/clang attribute for the logging function. It enables warnings for formatted
+/// strings (following the printf convention) with variadic functions
+#define formatted __attribute__((format(printf, 3, 4)))
+
 /// @brief Log a formatted string
 /// @param logLevel SUCCESS, INFO, WARNING, ERROR... See `Logging.h` for values
 /// @param moduleName Nullable string of the module from which log is emitted
 /// @param logFmtStr Formatted string to log
 /// @param ... formatting arguments (printf syntax)
-void log(int logLevel, const char* moduleName, const char* logFmtStr, ...);
+formatted void log(int logLevel, const char* moduleName, const char* logFmtStr, ...);
+
+#undef formatted
 
 /// @brief Dump the memory (in hexadecimal) to the console
 /// @param logLevel SUCCESS, INFO, WARNING, ERROR... See `Logging.h` for values

@@ -701,13 +701,13 @@ void Paging_initTables(){
 
 void Paging_enable(){
 	extern uint8_t LOAD_ADDRESS;
-	paddr_t kernel_phys = g_memoryMap.kernelAddress;
-	vaddr_t kernel_virt = (vaddr_t) &LOAD_ADDRESS;
+	paddr_t kphys = g_memoryMap.kernelAddress;
+	vaddr_t kvirt = (vaddr_t) &LOAD_ADDRESS;
 
 	// Now load our page table
 	// Note: g_pml4 is not in the HHDM region, so we cannot use VMM_hhdm_virtualToPhysical
 	// It is in the kernel data section, so we use the kernel code offset
-	paddr_t pml4_phys = kernel_phys + ((uint64_t)m_pml4 - kernel_virt);
+	paddr_t pml4_phys = kphys + ((uint64_t)m_pml4 - kvirt);
 	bool res = setPML4(pml4_phys);
 	if (!res){
 		log(PANIC, MODULE, "Could not set page table !!");
@@ -716,5 +716,5 @@ void Paging_enable(){
 
 	m_enabled = true;
 
-	log(SUCCESS, MODULE, "Kernel page table set successfully ! Kernel starts at %p", kernel_virt);
+	log(SUCCESS, MODULE, "Kernel page table set successfully ! Kernel starts at %#lx", kvirt);
 }

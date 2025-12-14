@@ -105,7 +105,7 @@ void hexdump(int logLevel, const char* moduleName, void* addr , int n){
 	// Dump 16 bytes per line
 	for (i=0 ; i < n-15 ; i+=16){
 		printed = snprintf(buff, sizeof(buff),
-			"Hexdump: %#.8llx - "
+			"Hexdump: %#.8x - "
 			"%.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx  "
 			"%.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx %.2hhx",
 			i,
@@ -118,7 +118,7 @@ void hexdump(int logLevel, const char* moduleName, void* addr , int n){
 			log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
 			return;
 		}
-		log(logLevel, moduleName, buff);
+		log(logLevel, moduleName, "%s", buff);
 	}
 
 	// Final, partial line
@@ -126,7 +126,7 @@ void hexdump(int logLevel, const char* moduleName, void* addr , int n){
 	if (n % 16 == 0)
 		return;
 
-	printed = snprintf(buff, sizeof(buff), "Hexdump: %#.8llx - ", i);
+	printed = snprintf(buff, sizeof(buff), "Hexdump: %#.8x - ", i);
 	if (printed < 0){
 		log(ERROR, MODULE, "snprintf failure, couldn't dump memory");
 		return;
@@ -152,5 +152,5 @@ void hexdump(int logLevel, const char* moduleName, void* addr , int n){
 			offset += printed;
 		}
 	}
-	log(logLevel, moduleName, buff);
+	log(logLevel, moduleName, "%s", buff);
 }

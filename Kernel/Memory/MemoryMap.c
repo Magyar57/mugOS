@@ -78,7 +78,7 @@ static void parseLimineMemoryMap(struct MemoryMap* mmap, struct limine_memmap_re
 		case REMOVED_ENTRY_LIMINE:
 			break;
 		default:
-			log(PANIC, MODULE, "Unsupported Limine memory type %d", cur->type);
+			log(PANIC, MODULE, "Unsupported Limine memory type %lu", cur->type);
 			panic();
 		}
 	}
@@ -130,7 +130,7 @@ static inline enum MemoryType getMemoryType(uint64_t limineMemoryType){
 	case LIMINE_MEMMAP_FRAMEBUFFER:
 		return MEMORY_FRAMEBUFFER;
 	default:
-		log(PANIC, MODULE, "Unsupported limine memory type %d !!", limineMemoryType);
+		log(PANIC, MODULE, "Unsupported limine memory type %lu !!", limineMemoryType);
 		panic();
 	}
 }
@@ -182,7 +182,7 @@ static void printMemoryMap(struct MemoryMap* memmap){
 		magnitude = (magnitude > 6) ? 6 : magnitude; // clamp magnitude to the max prefix available on 64 bits
 		uint64_t divisor = (1llu << (10*magnitude)); // 1024**magnitude = 2**(10*magnitude)
 
-		log(INFO, MODULE, "%#.16llx %#.16llx (%4d %s) - %s",
+		log(INFO, MODULE, "%#.16lx %#.16lx (%4lu %s) - %s",
 			cur->address, cur->address + cur->length - 1, cur->length/divisor, SIZE_UNITS[magnitude],
 			memoryTypeNames[cur->type]);
 	}

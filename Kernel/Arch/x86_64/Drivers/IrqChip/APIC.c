@@ -195,12 +195,12 @@ static void handleSpuriousIRQ(struct ISR_Params* params){
 
 	// Ack the interrupt only if it's actually pending
 	if (bit_present){
-		log(WARNING, MODULE, "Got spurious interrupt %d, acked (count is now %d)",
+		log(WARNING, MODULE, "Got spurious interrupt %lu, acked (count is now %d)",
 			vector, n_spurious_irqs);
 		APIC_sendEIO(0);
 	}
 	else {
-		log(WARNING, MODULE, "Got spurious interrupt %d, not pending (count is now %d)",
+		log(WARNING, MODULE, "Got spurious interrupt %lu, not pending (count is now %d)",
 			vector, n_spurious_irqs);
 	}
 }
