@@ -23,20 +23,32 @@ int fileno(FILE* stream);
 
 /// @brief Writes the char c, cast to an unsigned char, to stream
 int fputc(int c, FILE* stream);
+
 /// @brief Equivalent to fputc
 int putc(int c, FILE* stream);
+
 /// @brief Equivalent to `fputc(c, stdout)`
 int putchar(int c);
 
 /// @brief Writes s to the stream, without its terminating null byte '\0'
 int fputs(const char* restrict s, FILE* restrict stream);
+
 /// @brief Writes s to stdout, with a trailing newline
 int puts(const char *s);
 
+__attribute__((format(printf, 1, 2)))
 int printf(const char* restrict format, ...);
+
+__attribute__((format(printf, 2, 3)))
 int fprintf(FILE* restrict stream, const char* restrict format, ...);
+
+__attribute__((format(printf, 2, 3)))
 int dprintf(int fd, const char* restrict format, ...);
+
+__attribute__((format(printf, 2, 3)))
 int sprintf(char* restrict str, const char* restrict format, ...);
+
+__attribute__((format(printf, 3, 4)))
 int snprintf(char* restrict str, size_t size, const char* restrict format, ...);
 
 int vprintf(const char* restrict format, va_list args);
