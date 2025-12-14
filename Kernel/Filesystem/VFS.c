@@ -21,6 +21,7 @@ static struct Entry m_rootEntry = {
 };
 
 static cache_t* m_entriesCache;
+static cache_t* m_filesCache;
 static cache_t* m_mountsCache;
 
 static list_t m_entries = LIST_STATIC_INIT(m_entries);
@@ -79,6 +80,7 @@ static struct Entry* resolve(const char* path){
 void VFS_init(){
 	m_entriesCache = Cache_create("fs-entries", sizeof(struct Entry), NULL);
 	m_mountsCache = Cache_create("mountpoints", sizeof(struct Mount), NULL);
+	m_filesCache = Cache_create("files", sizeof(struct File), NULL);
 	if (m_entriesCache == NULL || m_mountsCache == NULL){
 		log(PANIC, MODULE, "Could not initialize caches allocators");
 		panic();
@@ -126,3 +128,12 @@ int VFS_mount(struct Filesystem* fs, const char* path){
 
 	return E_SUCCESS;
 }
+
+int VFS_stat(const char* path, struct stat* statbuff);
+struct File* VFS_open(const char* path, int flags);
+void VFS_close(struct File* node);
+ssize_t VFS_read(struct File* f, void* buff, size_t count);
+ssize_t VFS_write(struct File* f, void* buff, size_t count);
+int VFS_rename(const char* oldpath, const char* newpath);
+void VFS_mkdir(const char* path);
+void VFS_rmdir(const char* path);
