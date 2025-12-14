@@ -3,22 +3,26 @@
 
 #include "mugOS/List.h"
 
+struct Node;
+struct Entry;
+struct File;
+
 // ================ Functional interfaces ================
 
 struct FilesystemFunctions {
-	struct FsNode* (*allocNode)();
-	void (*freeNode)(struct FsNode* node);
+	struct Node* (*allocNode)();
+	void (*freeNode)(struct Node* node);
 };
 
-struct FsNodeFunctions {
+struct NodeFunctions {
 	/// @brief Create a file (in a directory)
-	void (*create)(struct FsNode* dir, const char* name);
+	void (*create)(struct Node* dir, const char* name);
 	/// @brief Remove/delete a file (in a directory)
-	void (*remove)(struct FsNode* dir);
+	void (*remove)(struct Node* dir);
 	/// @brief Create a directory (in a directory)
-	void (*createDir)(struct FsNode* dir);
+	void (*createDir)(struct Node* dir);
 	/// @brief Remove/delete a directory (in a directory)
-	void (*deleteDir)(struct FsNode* dir);
+	void (*deleteDir)(struct Node* dir);
 };
 
 struct FileFunctions {
@@ -41,11 +45,11 @@ struct Filesystem {
 };
 
 /// @brief A mountpoint in the VFS
-struct FsMount {
+struct Mount {
 	// A mount is a filesystem...
 	struct Filesystem* fs;
 	// ... that has an entry in the VFS
-	struct FsEntry* root;
+	struct Entry* root;
 
 	lnode_t lnode;
 };
@@ -53,7 +57,7 @@ struct FsMount {
 // ================ Filesystem components ================
 
 /// @brief Base node on the VFS. This is your usual UNIX inode
-struct FsNode {
+struct Node {
 	struct Permissions {
 		int read : 1;
 		int write : 1;
@@ -64,23 +68,22 @@ struct FsNode {
 	// Pointer to the filesystem that manages this node
 	struct Filesystem* fs;
 
-	struct FsNodeFunctions* funcs;
+	struct NodeFunctions* funcs;
 };
 
 /// @brief A directory entry in the virtual filesystem: file, directory, mount point...
-struct FsEntry {
-	struct FsEntry* parent;
+struct Entry {
+	struct Entry* parent;
 	const char* name;
-	struct FsNode* node;
+	struct Node* node;
 };
 
 /// @brief A file opened by a process. There can be several opened files, that all point
-/// to the same FsEntry, that itself points to the FsNode
-struct FsFile {
-	struct FsEntry* entry;
+/// to the same Entry, that itself points to the Node
+struct File {
+	struct Entry* entry;
 	// Mode in which the file was opened (read, write...)
 	struct Mode {
-		int read : 1;
 		int write : 1;
 	} mode;
 	// The read/write position in the file

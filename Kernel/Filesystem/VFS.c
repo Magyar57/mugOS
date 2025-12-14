@@ -10,11 +10,11 @@
 #include "VFS.h"
 #define MODULE "VFS"
 
-static struct FsNode m_rootNode = {
+static struct Node m_rootNode = {
 	.fs = NULL
 };
 
-static struct FsEntry m_rootEntry = {
+static struct Entry m_rootEntry = {
 	.parent = &m_rootEntry,
 	.name = "/",
 	.node = &m_rootNode,
@@ -27,7 +27,7 @@ static list_t m_entries = LIST_STATIC_INIT(m_entries);
 static list_t m_mounts = LIST_STATIC_INIT(m_mounts);
 static list_t m_filesystems = LIST_STATIC_INIT(m_filesystems);
 
-static struct FsEntry* subdir(struct FsEntry* entry, const char* path){
+static struct Entry* subdir(struct Entry* entry, const char* path){
 	if (strchr(path, '/') == NULL)
 		return NULL;
 
@@ -51,9 +51,9 @@ static const char* nextNonSeparator(const char* path){
 
 /// @brief Resolve a path in the VFS
 /// @param path The path to resolve (must be absolute)
-/// @return The FsEntry corresponding to the path, or NULL if it does not resolve
-static struct FsEntry* resolve(const char* path){
-	struct FsEntry *cur, *next;
+/// @return The Entry corresponding to the path, or NULL if it does not resolve
+static struct Entry* resolve(const char* path){
+	struct Entry *cur, *next;
 	const char* entry_name;
 
 	// Handle foward slash
@@ -77,8 +77,8 @@ static struct FsEntry* resolve(const char* path){
 // ================ Public API ================
 
 void VFS_init(){
-	m_entriesCache = Cache_create("fs-entries", sizeof(struct FsEntry), NULL);
-	m_mountsCache = Cache_create("mountpoints", sizeof(struct FsMount), NULL);
+	m_entriesCache = Cache_create("fs-entries", sizeof(struct Entry), NULL);
+	m_mountsCache = Cache_create("mountpoints", sizeof(struct Mount), NULL);
 	if (m_entriesCache == NULL || m_mountsCache == NULL){
 		log(PANIC, MODULE, "Could not initialize caches allocators");
 		panic();
@@ -103,8 +103,8 @@ void VFS_registerFilesystem(struct Filesystem* fs){
 }
 
 int VFS_mount(struct Filesystem* fs, const char* path){
-	struct FsMount* mount;
-	struct FsEntry* mountRoot;
+	struct Mount* mount;
+	struct Entry* mountRoot;
 
 	mountRoot = resolve(path);
 	if (mountRoot == NULL)
