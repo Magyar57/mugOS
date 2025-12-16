@@ -15,6 +15,11 @@ static always_inline void PS2Controller_getStatus(bool *enabled, bool *port1Vali
 	i8042_getStatus(enabled, port1Valid, port2Valid, translation);
 }
 
+/// @brief Enable IRQs for each functioning port
+static always_inline void PS2Controller_enableDevicesIRQs(){
+	return i8042_enableDevicesIRQs();
+}
+
 /// @brief Send a byte to the PS/2 device 1
 /// @return `true` on success, `false` on failure
 static always_inline bool PS2Controller_sendByteToDevice(int device, uint8_t byte){

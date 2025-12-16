@@ -1139,7 +1139,7 @@ void PS2_init(){
 	IRQ_installHandler(IRQ_PS2_MOUSE, initIRQ);
 	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
 	IRQ_enableSpecific(IRQ_PS2_MOUSE);
-	i8042_enableDevicesIRQs();
+	PS2Controller_enableDevicesIRQs();
 
 	bool enabled, port1_enabled, port2_enabled;
 	PS2Controller_getStatus(&enabled, &port1_enabled, &port2_enabled, &m_PS2Keyboard.translated);
