@@ -633,7 +633,12 @@ static inline void handleScancodeSet2(uint8_t scancode){
 		print_screen_sequence_released++;
 		return;
 	case 3:
-		if (scancode != 0xe0) {print_screen_sequence_released = 0; escaped_state = false; breaked_state = false; break;}
+		if (scancode != 0xe0) {
+			print_screen_sequence_released = 0;
+			escaped_state = false;
+			breaked_state = false;
+			break;
+		}
 		print_screen_sequence_released++;
 		return;
 	case 4:
@@ -694,9 +699,12 @@ static inline void handleScancodeSet2(uint8_t scancode){
 			goto reset_state;
 		break;
 	case PS2_KB_SCANCODE2_SYSRQ:
-		if (!breaked_state) Keyboard_notifySysRq();
-		// Note: We don't invert the breaked_state to manipulate the incoming spurious alt presses from the sysrq sequence
-		// This way, we invert 0xf0,0x11,0x11 break alt make alt => make alt release alt, and end up with a released alt key
+		if (!breaked_state)
+			Keyboard_notifySysRq();
+		// Note: We don't invert the breaked_state to manipulate the incoming spurious
+		// alt presses from the sysrq sequence. This way, we invert
+		// 0xf0,0x11,0x11 break alt make alt => make alt release alt,
+		// and end up with a released alt key
 		return;
 	case PS2_KB_SCANCODE_ESCAPE:
 		escaped_state = true;
@@ -792,9 +800,11 @@ static void keyboardIRQ(void*){
 
 #pragma region PS/2 Mouse
 
-static void handleMousePacket(uint8_t flags, uint8_t raw_dx, uint8_t raw_dy, uint8_t wheelAndThumbBtn){
-	// flags bits (8 to 1): Y overflow, X overflow, Y sign bit, X sign bit, Always 1, Middle Btn, Right Btn, Left Btn
-	// wheelAndThumbBtn is optional
+static void handleMousePacket(uint8_t flags, uint8_t raw_dx, uint8_t raw_dy,
+	uint8_t wheelAndThumbBtn){
+	// flags bits (8 to 1):
+	// Y overflow, X overflow, Y sign bit, X sign bit, Always 1, Middle Btn, Right Btn, Left Btn
+	// -> wheelAndThumbBtn is optional
 
 	int dx, dy;
 	bool btn1, btn2, btn3=false, btn4=false, btn5=false;
@@ -823,7 +833,8 @@ static void handleMousePacket(uint8_t flags, uint8_t raw_dx, uint8_t raw_dy, uin
 		btn5 = (wheelAndThumbBtn & 0b00100000);
 	}
 
-	debug("mouse IRQ: btn1=%1d btn2=%1d btn3=%1d btn4=%1d btn5=%1d dx=%- 4d dy=%- 4d wheel=%+.1d", btn1, btn2, btn3, btn4, btn5, dx, dy, wheel);
+	debug("mouse IRQ: btn1=%1d btn2=%1d btn3=%1d btn4=%1d btn5=%1d dx=%- 4d dy=%- 4d wheel=%+.1d",
+		btn1, btn2, btn3, btn4, btn5, dx, dy, wheel);
 }
 
 static void mouseIRQ(void*){
@@ -975,7 +986,7 @@ static const char* getKeyboardName(){
 	return NULL;
 }
 
-// Detect a mouse on port 2 and returns its id (0xff if unrecognized or is a keyboard)
+/// @brief Detect a mouse on port 2 and returns its id (0xff if unrecognized or is a keyboard)
 static enum PS2MouseType getMouseType(){
 	uint8_t buff;
 
@@ -995,14 +1006,22 @@ static inline bool resetDevice(int device){
 
 	// Reset
 	buff = sendByteToDeviceHandleResend(device, PS2_CMD_RESET);
-	if (buff != PS2_RES_ACK) return false;
+	if (buff != PS2_RES_ACK){
+		log(INFO, MODULE, "No PS/2 %s connected", (device == 1) ? "keyboard" : "mouse");
+		return false;
+	}
 
 	// Next byte: self-test passed or failed
 	res = receiveByte(&buff);
-	if (!res || buff != PS2_RES_SELFTEST_PASSED) return false;
+	if (!res || buff != PS2_RES_SELFTEST_PASSED){
+		log(WARNING, MODULE, "PS/2 %s self-test failed, deactivated",
+			(device == 1) ? "keyboard" : "mouse");
+		return false;
+	}
 
 	// If it's a mouse, it sends an additional identification byte. Consume it
-	if (device == 2) receiveByte(&buff);
+	if (device == 2)
+		receiveByte(&buff);
 
 	return true;
 }
@@ -1012,18 +1031,9 @@ void PS2_initKeyboard(struct PS2Keyboard* keyboard){
 	uint8_t buff1, buff2;
 	keyboard->enabled = false;
 
-	// Disable scanning for initialization
-	buff1 = sendByteToDeviceHandleResend(1, PS2_CMD_DISABLE_SCANNING);
-	if (buff1 == PS2_RES_RESEND){
-		log(INFO, MODULE, "No PS/2 keyboard connected");
+	// Reset the device, abort on error
+	if (!resetDevice(1))
 		return;
-	}
-
-	// Reset the device, and check self-test
-	if (!resetDevice(1)){
-		log(WARNING, MODULE, "PS/2 keyboard self-test failed, deactivated");
-		return;
-	}
 
 	// Re-disable scanning (might have been enabled by the reset)
 	sendByteToDeviceHandleResend(1, PS2_CMD_DISABLE_SCANNING);
@@ -1048,32 +1058,24 @@ void PS2_initKeyboard(struct PS2Keyboard* keyboard){
 	// Search x number to send for a wanted rate = -28/31*x + 30
 	// Delay: 0b00=250ms 0b01=500ms 0b10=750ms 0b11=1000ms
 	sendByteToDeviceHandleResend(1, PS2_KB_CMD_SET_DELAY_AND_RATE);
-	sendByteToDeviceHandleResend(1, 0b00000000 | 0b00010110); // Default 10.9 Hz (22) + 500 ms repeat
+	sendByteToDeviceHandleResend(1, 0b00000000 | 0b00010110); // Default 10.9 Hz (22) + 500ms repeat
 
 	// Set LEDs: by default, only NUMLOCK is set
 	m_PS2Keyboard.LEDs = PS2_KB_LED_NUMLOCK;
 	sendByteToDeviceHandleResend(1, PS2_KB_CMD_SET_LED);
 	sendByteToDeviceHandleResend(1, m_PS2Keyboard.LEDs);
 
-	log(INFO, MODULE, "Indentified keyboard as '%s' (using scancode set %d)", keyboard->name, keyboard->scancodeSet);
+	log(INFO, MODULE, "Indentified keyboard as '%s' (using scancode set %d)",
+		keyboard->name, keyboard->scancodeSet);
 }
 
 // Note: check that port 2 is available and populated before calling this method
 void PS2_initMouse(struct PS2Mouse* mouse){
 	mouse->enabled = false;
 
-	// Disable scanning for initialization
-	uint8_t buff = sendByteToDeviceHandleResend(2, PS2_CMD_DISABLE_SCANNING);
-	if (buff == PS2_RES_RESEND){
-		log(INFO, MODULE, "No PS/2 mouse connected");
+	// Reset the device, abort on error
+	if (!resetDevice(1))
 		return;
-	}
-
-	// Reset the device, and check self-test
-	if (!resetDevice(2)){
-		log(WARNING, MODULE, "PS/2 mouse self-test failed, deactivated");
-		return;
-	}
 
 	mouse->type = getMouseType();
 	if (mouse->type == 0xff){
@@ -1132,14 +1134,6 @@ void PS2_initMouse(struct PS2Mouse* mouse){
 
 void PS2_init(){
 	PS2Controller_init();
-	// The controller has configured valid ports to fire IRQs
-
-	// Temporary handler for initialization
-	IRQ_installHandler(IRQ_PS2_KEYBOARD, initIRQ);
-	IRQ_installHandler(IRQ_PS2_MOUSE, initIRQ);
-	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
-	IRQ_enableSpecific(IRQ_PS2_MOUSE);
-	PS2Controller_enableDevicesIRQs();
 
 	bool enabled, port1_enabled, port2_enabled;
 	PS2Controller_getStatus(&enabled, &port1_enabled, &port2_enabled, &m_PS2Keyboard.translated);
@@ -1152,6 +1146,19 @@ void PS2_init(){
 	}
 	m_enabled = true;
 
+	// We do not want to receive scancodes during initialization, as that would result in
+	// race conditions. So we disable scanning, and flush any pending data
+	if (port1_enabled) PS2Controller_sendByteToDevice(1, PS2_CMD_DISABLE_SCANNING);
+	if (port2_enabled) PS2Controller_sendByteToDevice(2, PS2_CMD_DISABLE_SCANNING);
+	PS2Controller_flush();
+
+	// The controller has configured valid ports to fire IRQs ; install initialization IRQ handlers
+	IRQ_installHandler(IRQ_PS2_KEYBOARD, initIRQ);
+	IRQ_installHandler(IRQ_PS2_MOUSE, initIRQ);
+	IRQ_enableSpecific(IRQ_PS2_KEYBOARD);
+	IRQ_enableSpecific(IRQ_PS2_MOUSE);
+	PS2Controller_enableDevicesIRQs();
+
 	// Note: the initialize function print necessary informations already
 	if (port1_enabled) PS2_initKeyboard(&m_PS2Keyboard);
 	if (port2_enabled) PS2_initMouse(&m_PS2Mouse);
@@ -1161,14 +1168,16 @@ void PS2_init(){
 	if (m_PS2Keyboard.enabled){
 		sendByteToDeviceHandleResend(1, PS2_CMD_ENABLE_SCANNING);
 		IRQ_installHandler(IRQ_PS2_KEYBOARD, keyboardIRQ);
-	} else {
+	}
+	else {
 		IRQ_removeHandler(IRQ_PS2_KEYBOARD);
 	}
 
 	if (m_PS2Mouse.enabled){
 		sendByteToDeviceHandleResend(2, PS2_CMD_ENABLE_SCANNING);
 		IRQ_installHandler(IRQ_PS2_MOUSE, mouseIRQ);
-	} else {
+	}
+	else {
 		IRQ_removeHandler(IRQ_PS2_MOUSE);
 	}
 

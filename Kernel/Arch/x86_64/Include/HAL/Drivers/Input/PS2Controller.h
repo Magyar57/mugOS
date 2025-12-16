@@ -33,4 +33,9 @@ static always_inline uint8_t PS2Controller_receiveByte(){
 	return i8042_receiveByte();
 }
 
+/// @brief Flush any pending device data (scancodes & command answers)
+static always_inline void PS2Controller_flush(){
+	return i8042_flush();
+}
+
 #endif
