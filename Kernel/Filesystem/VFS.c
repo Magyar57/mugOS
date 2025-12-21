@@ -52,8 +52,9 @@ static const char* nextNonSeparator(const char* path){
 
 /// @brief Resolve a path in the VFS
 /// @param path The path to resolve (must be absolute)
+/// @param parent Whether to resolve the path's parent directory (instead of the actual path)
 /// @return The Entry corresponding to the path, or NULL if it does not resolve
-static struct Entry* resolve(const char* path){
+static struct Entry* resolve(const char* path, bool parent){
 	struct Entry *cur, *next;
 	const char* entry_name;
 
@@ -69,6 +70,8 @@ static struct Entry* resolve(const char* path){
 		entry_name = nextNonSeparator(entry_name); // skip leading slash(es)
 		cur = next;
 		next = subdir(cur, entry_name);
+		if (next == NULL && parent)
+			return cur;
 		entry_name = strchr(entry_name, '/');
 	}
 
@@ -108,7 +111,7 @@ int VFS_mount(struct Filesystem* fs, const char* path){
 	struct Mount* mount;
 	struct Entry* mountRoot;
 
-	mountRoot = resolve(path);
+	mountRoot = resolve(path, false);
 	if (mountRoot == NULL)
 		return E_NOENT;
 
@@ -129,8 +132,8 @@ int VFS_mount(struct Filesystem* fs, const char* path){
 	return E_SUCCESS;
 }
 
-int VFS_stat(const char* path, struct stat* statbuff);
-struct File* VFS_open(const char* path, int flags);
+int VFS_stat(const char* path, struct Stat* statBuff);
+ssize_t VFS_getDirEntries(struct File* dir, void* entriesBuff, size_t count);
 void VFS_close(struct File* node);
 ssize_t VFS_read(struct File* f, void* buff, size_t count);
 ssize_t VFS_write(struct File* f, void* buff, size_t count);

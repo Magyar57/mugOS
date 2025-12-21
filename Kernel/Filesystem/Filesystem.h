@@ -19,17 +19,20 @@ struct NodeFunctions {
 	void (*create)(struct Node* dir, const char* name);
 	/// @brief Remove/delete a file (in a directory)
 	void (*remove)(struct Node* dir);
+	/// @brief Rename a file
+	void (*rename)(struct Node* dir, const char* name);
 	/// @brief Create a directory (in a directory)
-	void (*createDir)(struct Node* dir);
+	void (*mkdir)(struct Node* dir, const char* name);
 	/// @brief Remove/delete a directory (in a directory)
-	void (*deleteDir)(struct Node* dir);
+	void (*rmdir)(struct Node* dir);
 };
 
 struct FileFunctions {
-	void (*open)();
-	void (*read)();
-	void (*write)();
-	void (*close)();
+	void (*open)(struct File* this, int flags);
+	void (*read)(struct File* this, void* buff, size_t count);
+	void (*write)(struct File* this, void* buff, size_t count);
+	void (*flush)(struct File* this);
+	void (*close)(struct File* this);
 };
 
 // ================ Housekeeping structures ================

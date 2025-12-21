@@ -13,8 +13,13 @@
 #define O_CREAT		0
 #define O_TRUNC		0
 
-struct stat {
+struct Stat {
 	size_t size;
+};
+
+struct DirEntry {
+	unsigned short length; // length of this entry, in bytes
+	char name[];
 };
 
 /// @brief Initialize the virtual filesystem
@@ -29,9 +34,17 @@ int VFS_mount(struct Filesystem* fs, const char* path);
 
 /// @brief Read the stats of a file or directory
 /// @param path of the file to read
-/// @param statbuff output buffer where statistics are written
+/// @param statBuff output buffer where statistics are written
 /// @return 0 on success, -1 on error
-int VFS_stat(const char* path, struct stat* statbuff);
+int VFS_stat(const char* path, struct Stat* statBuff);
+
+/// @brief List entries from a directory
+/// @param dir Where to find the entries to list
+/// @param entriesBuff Ouput buffer to be written to. Here are written `struct DirEntry`, which are
+///                    structs of variable size
+/// @param count Size of the output buffer
+/// @return Number of bytes read or 0 if end of directory was reached, -1 on error
+ssize_t VFS_getDirEntries(struct File* dir, void* entriesBuff, size_t count);
 
 /// @brief Open a file in the VFS
 /// @param path The path to the file to open
@@ -61,7 +74,7 @@ ssize_t VFS_write(struct File* f, void* buff, size_t count);
 /// @brief Rename a file (including moving directory if needed)
 /// @param oldpath Current file path
 /// @param newpath Future file path, where to move the file
-/// @return
+/// @return 0 on success, -1 on error
 int VFS_rename(const char* oldpath, const char* newpath);
 
 /// @brief Make directory
