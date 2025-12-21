@@ -28,19 +28,10 @@ static list_t m_entries = LIST_STATIC_INIT(m_entries);
 static list_t m_mounts = LIST_STATIC_INIT(m_mounts);
 static list_t m_filesystems = LIST_STATIC_INIT(m_filesystems);
 
-static struct Entry* subdir(struct Entry* entry, const char* path){
-	if (strchr(path, '/') == NULL)
-		return NULL;
-
-	if (strlen(path) < 1)
-		return NULL;
-
-	// entry->name = path; // lol, temp. we should search the entry instead (:
-	return entry;
-}
+// ================ Path manipulations as strings ================
 
 static const char* nextNonSeparator(const char* path){
-	while(*path == '/'){
+	while (*path == '/'){
 		path++;
 	}
 
@@ -48,6 +39,50 @@ static const char* nextNonSeparator(const char* path){
 		return NULL;
 
 	return path;
+}
+
+/// @return The first subdirectory of the path, e.g. `/i/love/manatees` => `love/manatees`
+static const char* subdir(const char* path){
+	while (*path == '/'){
+		path++;
+	}
+
+	while (*path != '/' && *path != '\0'){
+		path++;
+	}
+
+	while (*path == '/'){
+		path++;
+	}
+
+	return path;
+}
+
+/// @return The basename of the given path. E.g. `/i/love/manatees` => `manatees`
+static const char* basename(const char* path){
+	const char* cur;
+	const char* next;
+
+	next = path;
+	do {
+		cur = next;
+		next = subdir(cur);
+	} while (*next != '\0');
+
+	return cur;
+}
+
+// ================ Helpers ================
+
+static struct Entry* findSubEntry(struct Entry* entry, const char* name){
+	if (strchr(name, '/') == NULL)
+		return NULL;
+
+	if (strlen(name) < 1)
+		return NULL;
+
+	// entry->name = name; // lol, temp. we should search the entry instead (:
+	return entry;
 }
 
 /// @brief Resolve a path in the VFS
@@ -66,10 +101,10 @@ static struct Entry* resolve(const char* path, bool parent){
 	}
 
 	next = &m_rootEntry;
-	while(next != NULL){
+	while (next != NULL){
 		entry_name = nextNonSeparator(entry_name); // skip leading slash(es)
 		cur = next;
-		next = subdir(cur, entry_name);
+		next = findSubEntry(cur, entry_name);
 		if (next == NULL && parent)
 			return cur;
 		entry_name = strchr(entry_name, '/');
