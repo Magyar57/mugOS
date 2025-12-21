@@ -33,9 +33,9 @@
 //
 // Heap:
 // - A Heap structure stores all needed data structures
-// - A doubly-linked list of Chungus ('chunguses') is kept in Heap information
-// - Doubly-linked lists of (partially-)free Chunks, called smallbuckets, are kept in Heap information
-// - A cache for big chunks allows to reuse mmaped regions, avoiding costly mmap syscalls
+// - Chunguses: A doubly-linked list of Chungus ('chunguses') is kept in Heap information
+// - Smallbuckets: doubly-linked lists of (partially-)free Chunks are kept in Heap information
+// - A cache for big chunks allows to reuse mmap-ed regions, avoiding costly mmap syscalls
 
 // Small buckets store blocks in chunks, managed with bitmaps
 #define MIN_BLOCK_SIZE				64
@@ -49,10 +49,14 @@
 #define BIGBLOCKS_CACHE_MAXSIZE		16*PAGE_SIZE
 
 // Chungus are page-sized structures that store ChunkInfo structs
-#define CHUNGUS_N_CHUNKS			((PAGE_SIZE - sizeof(struct Chungus)) / sizeof(struct ChunkInfo))
 #define CHUNGUS_BITMAP_SIZE			2 // 2*8*sizeof(uint64_t) = 128 ChunkInfo = 5120 B
-#define getChungus(chunkInfoAddr)	(struct Chungus*) getPage(chunkInfoAddr)
-#define getChunkInfoIndex(chunk)	((getOffset(chunk) - sizeof(struct Chungus)) / sizeof(struct ChunkInfo))
+#define CHUNGUS_N_CHUNKS \
+	((PAGE_SIZE - sizeof(struct Chungus)) / sizeof(struct ChunkInfo))
+
+#define getChungus(chunkInfoAddr) \
+	(struct Chungus*) getPage(chunkInfoAddr)
+#define getChunkInfoIndex(chunk) \
+	((getOffset(chunk) - sizeof(struct Chungus)) / sizeof(struct ChunkInfo))
 
 struct ChunkInfo {
 	void* base;				// Base address
@@ -85,10 +89,14 @@ typedef struct Hashmap {
 } hashmap_t;
 
 struct Heap {
-	hashmap_t allocMap;									// Map of allocated blocks -> size
-	list_t partialChunguses;							// Pools of allocatable BlockInfo
-	list_t smallBuckets[N_SMALLBUCKET];					// Buckets of free chunks (doubly-linked lists)
-	struct ChunkInfo freeCache[N_BIGBLOCKS_CACHED];		// Cache for freed large blocks (we reuse some)
+	// Map of allocated blocks -> size
+	hashmap_t allocMap;
+	// Pools of allocatable BlockInfo
+	list_t partialChunguses;
+	// Buckets of free chunks (doubly-linked lists)
+	list_t smallBuckets[N_SMALLBUCKET];
+	// Cache for freed large blocks (we reuse some)
+	struct ChunkInfo freeCache[N_BIGBLOCKS_CACHED];
 };
 
 static struct Heap m_heap = {
@@ -115,13 +123,16 @@ static void freePages(void* pages, long n);
 // Do NOT EVER set it to 0%, algorithms rely on assumption that map is partially empty
 #define hashmapTooFull(map)			(map->freeEntries*4 < map->totalEntries)
 
-static inline uint64_t hash(void* key){
-	// Hashing pointers, maybe test later
+/// @brief Hash a page pointer (non-NULL, and page aligned). The aim is to reduce collisions when
+///        using raw pointers as indexes in the hashmap
+static inline uint64_t hash(void* ptr){
 	uint64_t sum;
 	uintptr_t actual_ptr_value;
 
-	actual_ptr_value = (uintptr_t)key >> PAGE_SHIFT;
+	actual_ptr_value = (uintptr_t)ptr >> PAGE_SHIFT;
 	sum = actual_ptr_value;
+
+	// Hash lower 32 bits
 	sum = (sum << 7) - sum + (actual_ptr_value >> 16);
 
 	// Use these two lines only on 64 bits (we only support 64 bits CPU anyway)
@@ -471,7 +482,7 @@ static inline int countFreeChunkInChungus(struct Chungus* chungus){
 
 static bool shouldFreeChungus(list_t* chunguses, struct Chungus* chungus){
 	// We can free a chungus if we got enough (>=target) free BlockInfo in the chunguses
-	const int target_n_chunks = 3*PAGE_SIZE / (2*CHUNGUS_N_CHUNKS); // threshold: 1.5 fully empty chungus
+	const int threshold = 3*PAGE_SIZE / (2*CHUNGUS_N_CHUNKS); // 1.5 fully empty chungus
 	int n_free_chunks = 0;
 	struct Chungus* cur;
 
@@ -480,7 +491,7 @@ static bool shouldFreeChungus(list_t* chunguses, struct Chungus* chungus){
 		cur = List_getObject(node, struct Chungus, lnode);
 		if (cur != chungus)
 			n_free_chunks += countFreeChunkInChungus(chungus);
-		if (n_free_chunks >= target_n_chunks)
+		if (n_free_chunks >= threshold)
 			return true;
 	}
 
