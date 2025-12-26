@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include "errno.h"
 #include "stdio.h"
 #include "assert.h"
 
@@ -144,4 +145,13 @@ int memcmp(const void* ptr1, const void* ptr2, size_t size){
 	}
 
 	return 0;
+}
+
+const char* strerror(int errnum){
+	if (errnum < 0)
+		errnum = -errnum;
+	if (errnum > (int)(sizeof(ERRORS)/sizeof(*ERRORS)))
+		return "Unknown error";
+
+	return ERRORS[errnum];
 }

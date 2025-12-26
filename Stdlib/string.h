@@ -39,4 +39,12 @@ int memcmp(const void* ptr1, const void* ptr2, size_t size);
 /// @return A pointer to `dest`
 void* memmove(void* dest, const void* src, size_t size);
 
+/// @brief Return a pointer to a string that describes the error code passed in the argument errnum
+/// @param errnum A valid POSIX/mugOS errno value
+/// @return A non-modifiable string describing the error
+/// @note The signature differs from the C standard library specification (which return value
+///       is `char*`), as the returned string is not modifiable for both. We thought it is more
+///       fitting to be const
+const char* strerror(int errnum);
+
 #endif
