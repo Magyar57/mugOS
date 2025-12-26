@@ -41,13 +41,19 @@
 
 - [X] *(Fix)* Replace direct memory-mapped I/O (MMIO) access with safe, ordered and fenced calls
 - [X] *(Refactor)* Remove HHDM, in favour of dynamic memory mapping
-- [X] *(Refactor)* Compile the standard library as static library, to be able to link it to the kernel as well as userspace programs
+- [X] *(Refactor)* Compile the standard library as static library, to be able to link it to the
+       kernel as well as userspace programs
 - [ ] *(Refactor)* Abstract the Serial ports from the Serial driver
 - [ ] *(Refactor)* Change the keyboard callbacks mechanism for something userspace-compatible
-- [X] *(Requires ACPI implemented)* Check whether an i8042 is present on the system before trying to intialize it (step 2 of i8042_init)
-- [ ] *(Requires a timer subsystem)* Set a minimum delay between set LEDs for the PS/2 keyboard, to prevent bricking the device
-- [ ] *(Requires USB implemented)* Initialize and disable USB legacy support BEFORE initializing the PS/2 controller
-- [ ] *(Requires threads)* Implement threaded interrupts (so that we minimize time with masked interrupts) ; see linux request_threaded_irq kernel/irq/manage.c
+- [X] *(Requires ACPI implemented)* Check whether an i8042 is present on the system before trying
+       to intialize it (step 2 of i8042_init)
+- [ ] *(Requires a timer subsystem)* Set a minimum delay between set LEDs for the PS/2 keyboard,
+       to prevent bricking the device
+- [ ] *(Requires USB implemented)* Initialize and disable USB legacy support BEFORE initializing
+       the PS/2 controller
+- [ ] *(Requires threads)* Implement `errno` as a per-thread variable
+- [ ] *(Requires threads)* Implement threaded interrupts (so that we minimize time with masked
+       interrupts) ; see linux request_threaded_irq kernel/irq/manage.c
 
 Notes:
 - PS/2 Driver purposely does NOT support hot-plug (as the specification PS/2 was designed for)
