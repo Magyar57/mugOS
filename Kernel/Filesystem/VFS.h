@@ -29,13 +29,13 @@ void VFS_init();
 void VFS_registerFilesystem(struct Filesystem* fs);
 
 /// @brief Mount a filesystem onto the virtual filesystem
-/// @return A mugOS errno value (0 on success E_* on error)
+/// @return 0 on success, or a negative errno on error
 int VFS_mount(struct Filesystem* fs, const char* path);
 
 /// @brief Read the stats of a file or directory
 /// @param path of the file to read
 /// @param statBuff output buffer where statistics are written
-/// @return 0 on success, -1 on error
+/// @return 0 on success, or a negative errno on error
 int VFS_stat(const char* path, struct Stat* statBuff);
 
 /// @brief List entries from a directory
@@ -60,21 +60,21 @@ void VFS_close(struct File* node);
 /// @param f File to read
 /// @param buff Buffer where to write the data read
 /// @param count How many bytes to read
-/// @return The number of bytes read, or -1 on error. If return value is less than count, it means
-///         no more data is available (e.g. end of file)
+/// @return The number of bytes read, or a negative errno on error. If return value is
+///         less than count, it means no more data is available (e.g. end of file)
 ssize_t VFS_read(struct File* f, void* buff, size_t count);
 
 /// @brief Write to a file
 /// @param f File to write to
 /// @param buff Data to write into the file
 /// @param count Number of bytes from buff to write
-/// @return The number of bytes written, or -1 on error
+/// @return The number of bytes written, or a negative errno on error
 ssize_t VFS_write(struct File* f, void* buff, size_t count);
 
 /// @brief Rename a file (including moving directory if needed)
 /// @param oldpath Current file path
 /// @param newpath Future file path, where to move the file
-/// @return 0 on success, -1 on error
+/// @return 0 on success, or a negative errno on error
 int VFS_rename(const char* oldpath, const char* newpath);
 
 /// @brief Make directory

@@ -148,23 +148,23 @@ int VFS_mount(struct Filesystem* fs, const char* path){
 
 	mountRoot = resolve(path, false);
 	if (mountRoot == NULL)
-		return E_NOENT;
+		return -ENOENT;
 
 	mount = Cache_malloc(m_mountsCache);
 	if (mount == NULL)
-		return E_NOMEM;
+		return -ENOMEM;
 
 	mount->root = Cache_malloc(m_entriesCache);
 	if (mount->root == NULL){
 		Cache_free(m_mountsCache, mount);
-		return E_NOMEM;
+		return -ENOMEM;
 	}
 
 	mount->fs = fs;
 	mount->root = mountRoot;
 	List_pushBack(&m_mounts, &mount->lnode);
 
-	return E_SUCCESS;
+	return 0;
 }
 
 int VFS_stat(const char* path, struct Stat* statBuff);
