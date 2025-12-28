@@ -19,6 +19,8 @@ struct Stat {
 
 struct DirEntry {
 	unsigned short length; // length of this entry, in bytes
+	struct Flags flags;
+	size_t fileSize;
 	char name[];
 };
 
@@ -29,8 +31,12 @@ void VFS_init();
 void VFS_registerFilesystem(struct Filesystem* fs);
 
 /// @brief Mount a filesystem onto the virtual filesystem
+/// @param device The device to mount (UNSUPPORTED YET, pass NULL)
+/// @param path The path where to mount the filesystem
+/// @param fsName The name of the filesystem to mount, e.g. "RamFS". Supported values are all the
+///        filesystem drivers that successfully initialized
 /// @return 0 on success, or a negative errno on error
-int VFS_mount(struct Filesystem* fs, const char* path);
+int VFS_mount(void* device, const char* path, const char* fsName);
 
 /// @brief Read the stats of a file or directory
 /// @param path of the file to read
