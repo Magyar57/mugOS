@@ -3,70 +3,81 @@
 
 #include "mugOS/List.h"
 
-struct Node;
-struct Entry;
-struct File;
-
-// ================ Functional interfaces ================
-
-struct FilesystemFunctions {
-	struct Node* (*allocNode)();
-	void (*freeNode)(struct Node* node);
-};
-
-struct NodeFunctions {
-	/// @brief Create a file (in a directory)
-	void (*create)(struct Node* dir, const char* name);
-	/// @brief Remove/delete a file (in a directory)
-	void (*remove)(struct Node* dir);
-	/// @brief Rename a file
-	void (*rename)(struct Node* dir, const char* name);
-	/// @brief Create a directory (in a directory)
-	void (*mkdir)(struct Node* dir, const char* name);
-	/// @brief Remove/delete a directory (in a directory)
-	void (*rmdir)(struct Node* dir);
-};
-
-struct FileFunctions {
-	void (*open)(struct File* this, int flags);
-	void (*read)(struct File* this, void* buff, size_t count);
-	void (*write)(struct File* this, void* buff, size_t count);
-	void (*flush)(struct File* this);
-	void (*close)(struct File* this);
-};
+// Declared in Interface.h
+struct FsTree;
+struct NodeFunctions;
+struct FileFunctions;
 
 // ================ Housekeeping structures ================
 
-/// @brief The structure representing a filesystem in the VFS
+// Here's an example of how several disks could be mounted serveral times:
+// - Filesystem driver (FAT12)
+//   - FilesystemInstance (disk1)
+//     - Mount on /mnt/disk1
+//     - Mount on /wherever/disk1
+//   - FilesystemInstance (disk2)
+//     - Mount on /mnt/disk2
+//     - Mount on /somewhere_else/disk2
+
+/// @brief The structure representing a filesystem driver registered to the VFS
 struct Filesystem {
 	const char* name;
-	void* private;
+
+	struct Node* (*allocNode)(struct Filesystem* this);
+	void (*freeNode)(struct Filesystem* this, struct Node* node);
+	int (*getTree)(struct Filesystem* this, void* device, struct FsTree* treeOut);
 
 	lnode_t lnode;
-
-	struct FilesystemFunctions* funcs;
+	list_t instances;
 };
 
-/// @brief A mountpoint in the VFS
-struct Mount {
-	// A mount is a filesystem...
+/// @brief A filesystem instance representing a specific [virtual] device on the VFS
+struct FilesystemInstance {
 	struct Filesystem* fs;
-	// ... that has an entry in the VFS
-	struct Entry* root;
+	void* dev;
 
 	lnode_t lnode;
+	list_t mounts;
+};
+
+/// @brief A mountpoint in the VFS. A mount is a filesystem instance (any [virtual] disk) that
+///        is accessible from an entry in its base tree.
+struct Mount {
+	// What device (and file tree) this mount represents
+	struct FilesystemInstance* instance;
+	// The root entry of the device
+	struct Entry* root;
+	// The mount point, aka what entry in the parent tree this mount overrides
+	struct Entry* mountPoint;
+
+	lnode_t lnode;
+};
+
+// ================ Internal structs ================
+
+struct Flags {
+	int isDirectory : 1;
+	// rwx
+	int read : 1;
+	int write : 1;
+	int execute : 1;
+};
+
+/// @brief A string with cached info for accelerated computations
+struct QuickString {
+	const char* str;
+	size_t len;
+	unsigned long hash;
 };
 
 // ================ Filesystem components ================
 
 /// @brief Base node on the VFS. This is your usual UNIX inode
 struct Node {
-	struct Permissions {
-		int read : 1;
-		int write : 1;
-		int execute : 1;
-	} perms;
-	// creation date, last access date, last modification date (unimplemented)
+	struct Flags flags;
+	// File size in bytes
+	size_t size;
+	// Creation date, last access date, last modification date (unimplemented)
 	long creation, access, modification;
 	// Pointer to the filesystem that manages this node
 	struct Filesystem* fs;
@@ -77,7 +88,7 @@ struct Node {
 /// @brief A directory entry in the virtual filesystem: file, directory, mount point...
 struct Entry {
 	struct Entry* parent;
-	const char* name;
+	struct QuickString name;
 	struct Node* node;
 };
 
