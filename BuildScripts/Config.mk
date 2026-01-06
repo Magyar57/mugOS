@@ -1,48 +1,22 @@
 # Config.mk: configurations variables
-# Note: the paths are relative to the root folder (mugOS)
 
 # This is mugOS v0.5
 export MUGOS_MAJOR=0
 export MUGOS_MINOR=5
 
-# Output folders
+# ==== Inputs =================================================================
+
+LIMINE_CONF:=Bootloader/limine.conf
+PARTITION1_OFFSET=2048
+
+# ==== Outputs ================================================================
+
+# Folders
 export BUILD_DIR:=$(abspath build)
 export TOOLCHAIN_PATH:=$(abspath toolchain)
 export PATH:=$(PATH):$(TOOLCHAIN_PATH)/bin
 
-# Architecture to compile mugOS for
-# Can be overriden here, or from the command line: `make -E ARCH=arm64`
-# (Do not edit Arch.mk if you wish to change the architecture!)
-export ARCH?=x86_64
-include BuildScripts/Arch.mk
-
-# Download links
-OVMF_URL:=https://github.com/ilobilo/ovmf-binaries.git
-LIMINE_BRANCH:=v9.x-binary
-# Get the latest versions: https://ftp.gnu.org/gnu/binutils/ and https://gcc.gnu.org/releases.html
-BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.45.tar.xz
-GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-15.1.0/gcc-15.1.0.tar.gz
-
-# Compilation options: assembler, compiler, linker (common)
-export ASM:=nasm
-export CC:=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths
-export LD:=ld.lld
-# Compilation options: Kernel flags
-export K_ASMFLAGS:=-f elf64 -g3 -F dwarf
-export K_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding \
-	-mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined \
-	-DMUGOS_MAJOR=$(MUGOS_MAJOR) -DMUGOS_MINOR=$(MUGOS_MINOR)
-export K_LDFLAGS:=-nostdlib -static -L$(BUILD_DIR)
-export K_LDLIBS:=-lkernel
-# Compilation options: Userspace flags
-export U_ASMFLAGS:=-f elf64 -g3 -F dwarf
-export U_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding
-export U_LDFLAGS:=-nostdlib -L$(BUILD_DIR)
-export U_LDLIBS:=-lc
-# Misc
-export MAKE_FLAGS:=--no-print-directory
-
-# Output files
+# Files
 export KERNEL=$(BUILD_DIR)/kernel.elf
 export STDLIB_KERNEL=$(BUILD_DIR)/libkernel.a
 export STDLIB_USERSPACE_STATIC=$(BUILD_DIR)/libc.a
@@ -51,8 +25,40 @@ RAW_IMAGE:=$(BUILD_DIR)/raw_disk.img
 PARTITION1:=$(BUILD_DIR)/partition1.img
 IMAGE:=$(BUILD_DIR)/disk.img
 
-# Conf files
-LIMINE_CONF:=Bootloader/limine.conf
+# ==== Architecture ===========================================================
 
-# Configuration
-PARTITION1_OFFSET=2048
+# Architecture to compile mugOS for (overridable from the environment)
+export ARCH?=x86_64
+
+include BuildScripts/Arch.mk
+
+# ==== Download links =========================================================
+
+OVMF_URL:=https://github.com/ilobilo/ovmf-binaries.git
+LIMINE_URL:=https://github.com/limine-bootloader/limine.git
+LIMINE_BRANCH:=v9.x-binary
+BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.45.tar.xz
+GCC_URL:=https://ftp.gwdg.de/pub/misc/gcc/releases/gcc-15.1.0/gcc-15.1.0.tar.gz
+
+# ==== Compilation ============================================================
+
+export ASM:=nasm
+export CC:=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths
+export LD:=ld.lld
+
+# Kernel options
+export K_ASMFLAGS:=-f elf64 -g3 -F dwarf
+export K_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding \
+	-mno-red-zone -mcmodel=large -mgeneral-regs-only -fsanitize=undefined \
+	-DMUGOS_MAJOR=$(MUGOS_MAJOR) -DMUGOS_MINOR=$(MUGOS_MINOR)
+export K_LDFLAGS:=-nostdlib -static -L$(BUILD_DIR)
+export K_LDLIBS:=-lkernel
+
+# Userspace options
+export U_ASMFLAGS:=-f elf64 -g3 -F dwarf
+export U_CFLAGS:=-g -Wall -Wextra -std=c2x -O0 -ffreestanding
+export U_LDFLAGS:=-nostdlib -L$(BUILD_DIR)
+export U_LDLIBS:=-lc
+
+# Misc
+export MAKE_FLAGS:=--no-print-directory

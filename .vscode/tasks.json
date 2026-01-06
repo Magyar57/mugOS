@@ -19,7 +19,7 @@
 		{
 			"label": "Start QEMU+gdb",
 			"type": "shell",
-			"command": "make run -e 'QEMU_ARGS=-gdb tcp::1234 -S'",
+			"command": "make run 'QEMU_ARGS=-gdb tcp::1234 -S'",
 			"presentation": { "clear": true, "close": true },
 			"isBackground": true,
 			"problemMatcher": [{

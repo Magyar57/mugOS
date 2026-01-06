@@ -1,13 +1,15 @@
+# Makefile: build mugOS
+# To modify build parameters, see the included makefiles below
+
+all: toolchain image
+
 include BuildScripts/Config.mk
 include BuildScripts/Toolchain.mk
 
-all: image
-
 .PHONY: all image kernel run debug clean kclean iclean
 
-#
-# Bootable disk image
-#
+# ==== Bootable disk image ====================================================
+
 image: $(IMAGE)
 
 # 1. Initial 20 MB disk image, with an empty EFI partition
@@ -33,17 +35,15 @@ $(IMAGE): $(KERNEL) $(PARTITION1) $(RAW_IMAGE)
 	@dd if=$(PARTITION1) of=$@ bs=512 seek=$(PARTITION1_OFFSET) status=none
 	@echo "Formatted $@"
 
-#
-# Kernel
-#
+# ==== Kernel =================================================================
+
 kernel: $(KERNEL)
 
 $(KERNEL): $(shell find . -path "./Kernel/*" -type f) $(STDLIB_KERNEL) | $(BUILD_DIR)
 	@$(MAKE) -C Kernel $(MAKE_FLAGS)
 
-#
-# Standard library (for kernel & userspace)
-#
+# ==== Standard library (for kernel & userspace) ==============================
+
 stdlib: $(STDLIB_KERNEL) $(STDLIB_USERSPACE_STATIC) $(STDLIB_USERSPACE_DYNAMIC)
 
 $(STDLIB_KERNEL):
@@ -55,9 +55,9 @@ $(STDLIB_USERSPACE_STATIC):
 $(STDLIB_USERSPACE_DYNAMIC):
 	@$(MAKE) $@ -C Stdlib $(MAKE_FLAGS)
 
-#
-# Run (if needed, add arguments using `make run -e QEMU_ARGS="arg1 arg2"`)
-#
+
+# ==== Run ====================================================================
+
 run:
 	qemu-system-$(QEMU_ARCH) $(QEMU_ARGS) \
 		-accel tcg \
@@ -69,7 +69,7 @@ run:
 		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
 
 debug:
-	make run -e QEMU_ARGS="-gdb tcp::1234 -S" &
+	make run QEMU_ARGS="-gdb tcp::1234 -S" &
 	gdb \
 		-ex "file $(KERNEL)" \
 		-ex "target remote localhost:1234" \
@@ -77,23 +77,24 @@ debug:
 		-ex "layout src" \
 		-ex "continue"
 
-#
-# Build directory
-#
+# ==== Build directory ========================================================
+
 $(BUILD_DIR):
 	@mkdir -p $@
 
-#
-# Clean (kclean: cleans kernel only, sclean: stdlib only, iclean: images only)
-#
+# ==== Clean ==================================================================
+
 clean:
 	rm -rf $(BUILD_DIR)
+
+iclean:
+	rm $(RAW_IMAGE) $(PARTITION1) $(IMAGE)
 
 kclean:
 	rm -rf $(BUILD_DIR)/kernel $(BUILD_DIR)/kernel.*
 
 sclean:
-	rm -rf $(BUILD_DIR)/stdlib $(STDLIB_KERNEL) $(STDLIB_USERSPACE_STATIC) $(STDLIB_USERSPACE_DYNAMIC)
-
-iclean:
-	rm $(RAW_IMAGE) $(PARTITION1) $(IMAGE)
+	rm -rf $(BUILD_DIR)/stdlib \
+		$(STDLIB_KERNEL) \
+		$(STDLIB_USERSPACE_STATIC) \
+		$(STDLIB_USERSPACE_DYNAMIC)

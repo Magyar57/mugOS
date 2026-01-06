@@ -10,7 +10,7 @@ Note 1: If you wish to use gcc or ld, you will need to recompile the right
         packages (see the corresponding section below)
 
 Note 2: By default, it will build for the x86_64 architecture. If you wish to build for
-        another architecture, (e.g. arm64) add the `make toolchain -E ARCH=arm64` option.
+        another architecture, (e.g. arm64) add the `make toolchain ARCH=arm64` option.
 
 ## Compilers
 

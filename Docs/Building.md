@@ -4,7 +4,7 @@
 
 By default, it will build for the x86_64 architecture.
 If you wish to build for another architecture, (e.g. arm64) compile
-with the `make -e ARCH=arm64` option.
+with the `make ARCH=arm64` option.
 
 ## Native build
 
@@ -12,8 +12,8 @@ There are different dependencies depending on what you want to do:
 
 - *Running* are running dependencies (ikr)
 - *Building* are building dependencies for clang. It is the default, recommended way
-- *Toolchain* are building dependencies for cross-compiling binutils and gcc, if you wish to build with gcc.
-  See [Compilers and Linkers](./CompilersAndLinkers.md) for more informations.
+- *Toolchain* are building dependencies for cross-compiling binutils and gcc, if you wish to build
+  with gcc. See [Compilers and Linkers](./CompilersAndLinkers.md) for more informations.
 
 Note that you will always need `make`, as it is the base entry point for all commands.
 
