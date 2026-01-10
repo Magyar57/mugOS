@@ -14,14 +14,14 @@ Note 2: By default, the OS will be built for the x86_64 architecture. If you wis
 
 ## Compilers
 
-- x86_64 Clang (default): `CC=clang --target=x86_64-none-elf`
+- x86_64 Clang (default): `CC=clang --target=x86_64-none-elf -fdiagnostics-absolute-paths`
 - x86_64 GCC: `CC=x86_64-elf-gcc`
 
 ## Linkers
 
 - x86_64 LLD (default): `LD=ld.lld`
-- x86_64 LD: `LD=x86_64-elf-ld` ; add `-lgcc` to K_LDFLAGS and U_LDFLAGS,
-  add `-L$(TOOLCHAIN_PATH)/lib/gcc/x86_64-elf/[version]` to K_LDLIBS and U_LDLIBS
+- x86_64 LD: `LD=x86_64-elf-ld` ; add `-L$(TOOLCHAIN_PATH)/lib/gcc/x86_64-elf/[version]`
+  to K_LDFLAGS and U_LDFLAGS, and add `-lgcc` to K_LDLIBS and U_LDLIBS
 
 ## Building your toolchain
 
