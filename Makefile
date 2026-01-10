@@ -6,7 +6,10 @@ all: toolchain image
 include BuildScripts/Config.mk
 include BuildScripts/Toolchain.mk
 
-.PHONY: all image kernel run debug clean kclean iclean
+.PHONY: all
+.PHONY: image kernel stdlib
+.PHONY: run debug
+.PHONY: clean iclean kclean sclean
 
 # ==== Bootable disk image ====================================================
 
@@ -66,7 +69,7 @@ run:
 		-smp cpus=1,sockets=1,cores=1,threads=1 \
 		-m 128M \
 		-drive if=pflash,file=$(UEFI_FIRMWARE),format=raw,readonly=on \
-		-drive if=ide,media=disk,file=$(BUILD_DIR)/disk.img,format=raw
+		-drive if=ide,media=disk,file=$(IMAGE),format=raw
 
 debug:
 	make run QEMU_ARGS="-gdb tcp::1234 -S" &

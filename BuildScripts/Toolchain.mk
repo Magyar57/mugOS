@@ -13,7 +13,7 @@ toolchain-limine:	| $(TOOLCHAIN_PATH)/bin/limine
 toolchain-binutils:	| $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld
 toolchain-gcc:		| $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc
 
-.PHONY: all toolchain
+.PHONY: toolchain
 .PHONY: toolchain-firmware toolchain-limine toolchain-binutils toolchain-gcc
 .PHONY: clean-toolchain
 
@@ -25,13 +25,16 @@ $(TOOLCHAIN_PATH)/bin/limine: | $(TOOLCHAIN_PATH)
 	rm -rf $(TOOLCHAIN_PATH)/limine
 
 $(UEFI_FIRMWARE): | $(TOOLCHAIN_PATH)
-	mkdir -p $(dir $@)
-	if [ ! -d "$(TOOLCHAIN_PATH)/uefi-firmware" ]; then \
-		git clone $(OVMF_URL) $(TOOLCHAIN_PATH)/uefi-firmware; \
+	mkdir -p $(TOOLCHAIN_PATH)/share
+	if [ ! -d "$(TOOLCHAIN_PATH)/edk2_ovmf.txz" ]; then \
+		wget $(OVMF_URL) -O $(TOOLCHAIN_PATH)/edk2_ovmf.txz; \
 	fi
-	cp $(TOOLCHAIN_PATH)/uefi-firmware/OVMF_X64.fd $@
-	rm -rf $(TOOLCHAIN_PATH)/uefi-firmware
+	mkdir -p $(TOOLCHAIN_PATH)/edk2_ovmf
+	tar -xf $(TOOLCHAIN_PATH)/edk2_ovmf.txz -C $(TOOLCHAIN_PATH)/edk2_ovmf --strip-component 1
+	mv $(TOOLCHAIN_PATH)/edk2_ovmf/* $(TOOLCHAIN_PATH)/share
+	rm -rf $(TOOLCHAIN_PATH)/edk2_ovmf.txz $(TOOLCHAIN_PATH)/edk2_ovmf
 
+# Build binutils for cross-compilation
 $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld: | $(TOOLCHAIN_PATH)
 	if [ ! -f "$(TOOLCHAIN_PATH)/binutils.tar.xz" ]; then \
 		wget $(BINUTILS_URL) -O $(TOOLCHAIN_PATH)/binutils.tar.xz; \
@@ -50,6 +53,7 @@ $(TOOLCHAIN_PATH)/bin/$(TARGET)-ld: | $(TOOLCHAIN_PATH)
 	$(MAKE) -C $(TOOLCHAIN_PATH)/binutils-build install
 	rm -rf $(TOOLCHAIN_PATH)/binutils*
 
+# Build gcc for cross-compilation
 $(TOOLCHAIN_PATH)/bin/$(TARGET)-gcc: | $(TOOLCHAIN_PATH)
 	if [ ! -f "$(TOOLCHAIN_PATH)/gcc.tar.gz" ]; then \
 		wget $(GCC_URL) -O $(TOOLCHAIN_PATH)/gcc.tar.gz; \

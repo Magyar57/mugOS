@@ -34,7 +34,7 @@ include BuildScripts/Arch.mk
 
 # ==== Download links =========================================================
 
-OVMF_URL:=https://github.com/ilobilo/ovmf-binaries.git
+OVMF_URL:=https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk2-stable202511-r1/edk2-stable202511-r1-bin.tar.xz
 LIMINE_URL:=https://github.com/limine-bootloader/limine.git
 LIMINE_BRANCH:=v9.x-binary
 BINUTILS_URL:=https://ftp.gnu.org/gnu/binutils/binutils-2.45.tar.xz
