@@ -98,6 +98,7 @@ static void parseMADT(struct rawMADT* madt_ptr){
 			break;
 		case MADT_ENTRYTYPE_X2APIC_NMI:
 			g_MADT.nX2APIC_NMI++;
+			break;
 		default:
 			log(ERROR, MODULE, "Unsupported MADT_raw type %d", curHdr->entryType);
 			break;

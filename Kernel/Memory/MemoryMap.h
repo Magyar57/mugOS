@@ -41,10 +41,8 @@ void MMap_init(struct MemoryMap* memmap, void* firmware_mmap);
 
 // ================ Display number in powers of two ================
 
-static const char* SIZE_UNITS[] = {
-	"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB",
-	"ZiB" // not representible on uint64 (max is ~16 EiB)
-};
+/// @brief Size units: ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB"]
+extern const char* SIZE_UNITS[8];
 
 /// @brief Returns a magnitude in order to print sizes
 /// @return n so that `1024^(n+1) >= byte_number > 1024^n`.

@@ -34,8 +34,8 @@ void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom){
 	this->charWidth = zoom * BITMAP_CHAR_WIDTH;
 	this->charHeight = zoom * BITMAP_CHAR_HEIGHT;
 
-	uint64_t maxHorizontalChar = (this->width - 2*this->drawOffsetX*this->zoom) / (BITMAP_CHAR_WIDTH*this->zoom);
-	uint64_t maxVerticalChar = (this->height - 2*this->drawOffsetY*this->zoom) / (BITMAP_CHAR_HEIGHT*this->zoom);
+	long maxHorizontalChar = (this->width - 2*this->drawOffsetX*this->zoom) / (BITMAP_CHAR_WIDTH*this->zoom);
+	long maxVerticalChar = (this->height - 2*this->drawOffsetY*this->zoom) / (BITMAP_CHAR_HEIGHT*this->zoom);
 	this->textWidth = min(maxHorizontalChar, MAX_TERMINAL_WIDTH);
 	this->textHeight = min(maxVerticalChar, MAX_TERMINAL_HEIGHT);
 }

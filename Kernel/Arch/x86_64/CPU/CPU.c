@@ -75,12 +75,14 @@ static void parseCpuid_0x07(struct CPU* cpu){
 		cpu->features.leaves.leaf_0x07_2.ebx = ebx;
 		cpu->features.leaves.leaf_0x07_2.ecx = ecx;
 		cpu->features.leaves.leaf_0x07_2.edx = edx;
+		// Fall through
 	case 1:
 		cpuidWrapperWithSubleaf(0x07, 1, &eax, &ebx, &ecx, &edx);
 		cpu->features.leaves.leaf_0x07_1.eax = eax;
 		cpu->features.leaves.leaf_0x07_1.ebx = ebx;
 		cpu->features.leaves.leaf_0x07_1.ecx = ecx;
 		cpu->features.leaves.leaf_0x07_1.edx = edx;
+		// Fall through
 	case 0:
 		// Done already
 	}
@@ -213,9 +215,11 @@ void CPU_init(struct CPU* cpu){
 	case 0x16:
 		// CPU Frequencies
 		parseCpuid_0x16(cpu);
+		// Fall through
 	case 0x15:
 		// TSC informations
 		parseCpuid_0x15(cpu);
+		// Fall through
 	case 0x14:
 	case 0x13:
 	case 0x12:
@@ -232,6 +236,7 @@ void CPU_init(struct CPU* cpu){
 	case 0x07:
 		// Structured extended feature flags enumeration
 		parseCpuid_0x07(cpu);
+		// Fall through
 	case 0x06:
 		// Thermal and power management
 	case 0x05:
@@ -256,22 +261,27 @@ void CPU_init(struct CPU* cpu){
 	case 0x80000008:
 		// More extended flags
 		parseCpuid_0x80000008(cpu);
+		// Fall through
 	case 0x80000007:
 		// InvariantTSC
 		parseCpuid_0x80000007(cpu);
+		// Fall through
 	case 0x80000006:
 		// Extended cache information
 		parseCpuid_0x80000006(cpu);
+		// Fall through
 	case 0x80000005:
 		// Reserved
 	case 0x80000004:
 		// From 0x80000004 to 0x80000002: processor brand string
 		parseCpuid_0x80000002to0x80000004(cpu);
+		// Fall through
 	case 0x80000003:
 	case 0x80000002:
 	case 0x80000001:
 		// Extended flags
 		parseCpuid_0x80000001(cpu);
+		// Fall through
 	case 0x80000000:
 		// Max extended input value (done already)
 		break;

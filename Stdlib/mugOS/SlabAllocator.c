@@ -116,7 +116,7 @@ static void freePages(void* pages, long n);
 
 // ================ Hashmap ================
 
-#define HASHMAP_DEFAULT_SIZE		PAGE_SIZE/sizeof(entry_t)
+#define HASHMAP_DEFAULT_SIZE		(long) (PAGE_SIZE/sizeof(entry_t))
 // Max size of hashmap, in bytes
 #define HASHMAP_MAX_SIZE			(long) (SIZE_MAX / (2*sizeof(entry_t)))
 // Grow hashmap if we're below 25% of free space (75% full)

@@ -215,6 +215,11 @@ void MMap_init(struct MemoryMap* memmap, void* firmware_mmap){
 
 // ================ Display number in powers of two ================
 
+const char* SIZE_UNITS[8] = {
+	"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB",
+	"ZiB" // not representible on uint64 (max is ~16 EiB)
+};
+
 int getMagnitude(uint64_t byte_number){
     int i = 0;
     while (byte_number >= 1024){

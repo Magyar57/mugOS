@@ -859,6 +859,7 @@ static void mouseIRQ(void*){
 		if (m_PS2Mouse.packetSize > 3) break;
 		// Otherwise we got a full packet, we can handle it
 		data = 0xff; // wheelAndThumbBtn is dummy here
+		// Fall through
 	case 3:
 		// data is now 'wheelAndThumbBtn'
 		handleMousePacket(flags, dx, dy, data);
@@ -973,11 +974,13 @@ static const char* getKeyboardName(){
 				case 0xc1: return "PS/2 MF2 keyboard";
 				default: break;
 			}
+			break;
 		case 0xac:
 			switch (byte2){
 				case 0xa1: return "PS/2 NCD Sun keyboard";
 				default: break;
 			}
+			break;
 		default:
 			break;
 	}
