@@ -4,7 +4,10 @@
 #include <stdint.h>
 
 typedef uint32_t color_t;
-#define COLOR_32BPP(r, g, b)	(r<<16 | g<<8 | b)			// r, g, b: 255 values (bounds not checked!)
+
+/// @brief Convert three 8 bits values to a color_t
+/// @warning Bounts are not checked ! Values must be in [0, 255]
+#define COLOR_32BPP(r, g, b)	(r<<16 | g<<8 | b)
 
 #define COLOR_BLACK				COLOR_32BPP(  0,   0,   0)
 #define COLOR_DARK_GREY			COLOR_32BPP( 24,  24,  24)
@@ -38,8 +41,8 @@ typedef struct s_Framebuffer {
 	uint32_t drawOffsetX;		// Character X offset to the border of the screen
 	uint32_t drawOffsetY;		// Character Y offset to the border of the screen
 	uint32_t zoom;				// Font zoom level (multiplier)
-	uint32_t charWidth;			// The width of a character on screen, in pixels (accounts for zoom)
-	uint32_t charHeight;		// The height of a character on screen, in pixels (accounts for zoom)
+	// Cached width/height of a character on screen, in pixels, accounting for zoom
+	uint32_t charWidth, charHeight;
 
 	// Character array (framebuffer as a terminal)
 	uint32_t cursorX;			// Cursor X position on screen
@@ -50,11 +53,11 @@ typedef struct s_Framebuffer {
 } Framebuffer;
 
 void Framebuffer_clearTerminal(Framebuffer* this);
-void Framebuffer_setClearColor(Framebuffer* this, color_t clearColor);
-void Framebuffer_setFontColor(Framebuffer* this, color_t fontColor);
+void Framebuffer_setClearColor(Framebuffer* this, color_t color);
+void Framebuffer_setFontColor(Framebuffer* this, color_t color);
 void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom);
 void Framebuffer_clearScreen(Framebuffer* this);
-void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, unsigned int offsetX, unsigned int offsetY);
+void Framebuffer_drawChar(Framebuffer* this, char c, uint32_t color, int x, int y);
 void Framebuffer_scrollDown(Framebuffer* this);
 void Framebuffer_putchar(Framebuffer* this, const char c);
 void Framebuffer_puts_noLF(Framebuffer* this, const char* str);
@@ -63,13 +66,13 @@ void Framebuffer_puts(Framebuffer* this, const char* str);
 /// @brief Put a pixel in the framebuffer at the given coordinates
 /// @note This method should be avoided at all cost if drawing lots of pixels in a row !!!
 /// It is very costly, as it will recompute a lof of checks and flags before putting the pixel
-void Framebuffer_putPixel(Framebuffer* this, unsigned int x, unsigned int y, color_t pixel);
+void Framebuffer_putPixel(Framebuffer* this, int x, int y, color_t pixel);
 
 /// @brief Draw a rectangle if size `(sizeX, sizeY)` starting at offset `(x, y)`
-void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int width, unsigned int height, color_t c);
+void Framebuffer_drawRectangle(Framebuffer* this, int x, int y, int width, int height, color_t c);
 
 /// @brief Draw a filled rectangle if size `(sizeX, sizeY)` starting at offset `(x, y)`
-void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int width, unsigned int height, color_t c);
+void Framebuffer_fillRectangle(Framebuffer* this, int x, int y, int width, int height, color_t c);
 
 /// @brief Initialize the Framebuffer driver (from a GOP or Bios obtained memory-mapped framebuffer)
 /// @param this Framebuffer object to initialize. Note: it HAS to be pre-initialized with

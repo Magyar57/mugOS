@@ -34,20 +34,22 @@ void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom){
 	this->charWidth = zoom * BITMAP_CHAR_WIDTH;
 	this->charHeight = zoom * BITMAP_CHAR_HEIGHT;
 
-	long maxHorizontalChar = (this->width - 2*this->drawOffsetX*this->zoom) / (BITMAP_CHAR_WIDTH*this->zoom);
-	long maxVerticalChar = (this->height - 2*this->drawOffsetY*this->zoom) / (BITMAP_CHAR_HEIGHT*this->zoom);
+	long padding_x = 2 * this->drawOffsetX * this->zoom;
+	long padding_y = 2 * this->drawOffsetY * this->zoom;
+	long maxHorizontalChar = (this->width - padding_x) / (BITMAP_CHAR_WIDTH*this->zoom);
+	long maxVerticalChar = (this->height - padding_y) / (BITMAP_CHAR_HEIGHT*this->zoom);
 	this->textWidth = min(maxHorizontalChar, MAX_TERMINAL_WIDTH);
 	this->textHeight = min(maxVerticalChar, MAX_TERMINAL_HEIGHT);
 }
 
-void Framebuffer_setClearColor(Framebuffer* this, color_t clearColor){
+void Framebuffer_setClearColor(Framebuffer* this, color_t color){
 	assert(this);
-	this->clearColor = clearColor;
+	this->clearColor = color;
 }
 
-void Framebuffer_setFontColor(Framebuffer* this, color_t fontColor){
+void Framebuffer_setFontColor(Framebuffer* this, color_t color){
 	assert(this);
-	this->fontColor = fontColor;
+	this->fontColor = color;
 }
 
 void Framebuffer_clearScreen(Framebuffer* this){
@@ -63,30 +65,31 @@ void Framebuffer_clearScreen(Framebuffer* this){
 	writeMemoryBarrier();
 }
 
-void Framebuffer_drawLetter(Framebuffer* this, unsigned char letter, uint32_t fontColor, unsigned int offsetX, unsigned int offsetY){
+void Framebuffer_drawChar(Framebuffer* this, char c, uint32_t color, int x, int y){
 	assert(this);
-	assert((offsetX+this->charWidth) < this->width);
-	assert((offsetY+this->charHeight) < this->height);
+	assert(x >= 0 && (x+this->charWidth) < this->width);
+	assert(y >= 0 && (y+this->charHeight) < this->height);
 
-	const uint8_t* bitmap = DEFAULT_FONT[letter];
+	uint8_t index = (uint8_t) c;
+	const uint8_t* bitmap = DEFAULT_FONT[index];
+
 	int mask; // bit mask, will be shifted right every iteration
 	color_t colorToDraw;
 	uint32_t* pixel;
 
-	// Cache as many things as possible, since this is a critical section (performance-wise)
+	// Cache as many things as possible, since this is a performance-critical section
 	const uint64_t one_line_offet = getLineOffset();
 	const uint64_t zoom = this->zoom;
-	const uint64_t zoomedOffsetX = zoom * offsetX;
+	const uint64_t zoomedOffsetX = zoom * x;
 	uint64_t baseLineOffset;
 
 	// i, j: indexes in the bitmap character
 	for (int j=0 ; j<BITMAP_CHAR_HEIGHT ; j++){
-
-		baseLineOffset = one_line_offet * zoom * (j+offsetY);
+		baseLineOffset = one_line_offet * zoom * (j+y);
 		mask = 0b10000000;
 		for (int i=0 ; i<BITMAP_CHAR_WIDTH ; i++){
 			// Draw pixel if the bit is set in the bitmap
-			colorToDraw = (bitmap[j] & mask) ? fontColor : this->clearColor;
+			colorToDraw = (bitmap[j] & mask) ? color : this->clearColor;
 			// More cache
 			uint64_t horizontalOffset = zoom*i + zoomedOffsetX;
 
@@ -137,7 +140,7 @@ static inline void drawScreen(Framebuffer* this){
 			default:
 				const unsigned int x = this->cursorX*this->charWidth + this->drawOffsetX;
 				const unsigned int y = this->cursorY*this->charHeight + this->drawOffsetY;
-				Framebuffer_drawLetter(this, c, this->fontColor, x, y);
+				Framebuffer_drawChar(this, c, this->fontColor, x, y);
 				this->cursorX = (this->cursorX+1) % this->textWidth;
 				if (this->cursorX == 0) this->cursorY++;
 				break;
@@ -164,7 +167,9 @@ void Framebuffer_scrollDown(Framebuffer* this){
 
 void Framebuffer_putchar(Framebuffer* this, const char c){
 	assert(this);
-	static uint32_t endline_pos = 0; // track where the last character in the line is (for proper '\r' support)
+
+	// Track where the last character in the line is (for proper '\r' support)
+	static uint32_t endline_pos = 0;
 
 	if (c == '\0')
 		return;
@@ -194,7 +199,7 @@ void Framebuffer_putchar(Framebuffer* this, const char c){
 		this->text[this->cursorY*MAX_TERMINAL_WIDTH + this->cursorX] = c;
 		unsigned int x = this->cursorX*this->charWidth + this->drawOffsetX;
 		unsigned int y =this->cursorY*this->charHeight + this->drawOffsetY;
-		Framebuffer_drawLetter(this, c, this->fontColor, x, y);
+		Framebuffer_drawChar(this, c, this->fontColor, x, y);
 
 		this->cursorX = (this->cursorX+1) % this->textWidth;
 		if (this->cursorX == 0){
@@ -228,17 +233,19 @@ void Framebuffer_puts(Framebuffer* this, const char* str){
 	Framebuffer_putchar(this, '\n');
 }
 
-void Framebuffer_putPixel(Framebuffer* this, unsigned int x, unsigned int y, color_t pixel){
+void Framebuffer_putPixel(Framebuffer* this, int x, int y, color_t pixel){
 	assert(this);
-	assert(x < this->width);
-	assert(y < this->height);
+	assert(x >= 0 && (uint64_t) x < this->width);
+	assert(y >= 0 && (uint64_t) y < this->height);
 
 	const int offset = getLineOffset();
 	write32(this->address + offset*y + x, pixel);
 }
 
-void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int width, unsigned int height, color_t c){
+void Framebuffer_drawRectangle(Framebuffer* this, int x, int y, int width, int height, color_t c){
 	assert(this);
+	assert(x >= 0 && width >= 0);
+	assert(y >= 0 && height >= 0);
 	const unsigned int final_x = x+width;
 	const unsigned int final_y = y+height;
 	assert(final_x < this->width);
@@ -250,28 +257,30 @@ void Framebuffer_drawRectangle(Framebuffer* this, unsigned int x, unsigned int y
 	// Top line
 	line_cache = y*offset;
 	for (unsigned int i=line_cache+x ; i<line_cache+final_x ; i++)
-		write32(this->address + i, c);
+		writeRelaxed32(this->address + i, c);
 
 	// Left line
 	// line_cache = y*offset; // but line_cache is the same, no need to recompute it
 	for (unsigned int j=line_cache+x ; j<offset*final_y ; j+=offset)
-		write32(this->address + j, c);
+		writeRelaxed32(this->address + j, c);
 
 	// Right line
 	// line_cache is still the same
 	for (unsigned int j=line_cache+final_x-1 ; j<offset*final_y ; j+=offset)
-		write32(this->address + j, c);
+		writeRelaxed32(this->address + j, c);
 
 	// Bottom line
 	line_cache = (final_y-1)*offset;
 	for (unsigned int i=line_cache+x ; i<line_cache+final_x ; i++)
-		write32(this->address + i, c);
+		writeRelaxed32(this->address + i, c);
 
 	writeMemoryBarrier();
 }
 
-void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y, unsigned int width, unsigned int height, color_t c){
+void Framebuffer_fillRectangle(Framebuffer* this, int x, int y, int width, int height, color_t c){
 	assert(this);
+	assert(x >= 0 && width >= 0);
+	assert(y >= 0 && height >= 0);
 	const unsigned int final_x = x+width;
 	const unsigned int final_y = y+height;
 	assert(final_x < this->width);
@@ -283,18 +292,22 @@ void Framebuffer_fillRectangle(Framebuffer* this, unsigned int x, unsigned int y
 	for (unsigned int j=y ; j<final_y ; j++){
 		line_cache = offset*j;
 		for (unsigned int i=x ; i<final_x ; i++){
-			write32(this->address + line_cache + i, c);
+			writeRelaxed32(this->address + line_cache + i, c);
 		}
 	}
+
+	writeMemoryBarrier();
 }
 
 bool Framebuffer_init(Framebuffer* this){
 	// Sanitize check the needed variables were initialized correctly beforehand
-	if (this->address == NULL || this->width==0 || this->height==0 || this->pitch==0 || this->bpp==0)
+	if (this->address == NULL)
+		return false;
+	if (this->width==0 || this->height==0 || this->pitch==0 || this->bpp==0)
 		return false;
 
 	if (this->bpp != 32){
-		log(ERROR, MODULE, "A value of %d for bpp (Bits per pixel) is unsupported (only 32 is supported)", this->bpp);
+		log(ERROR, MODULE, "A BPP value of %d is unsupported (only 32 BPP is)", this->bpp);
 		return false;
 	}
 
@@ -302,7 +315,7 @@ bool Framebuffer_init(Framebuffer* this){
 	this->drawOffsetY = 4;
 	Framebuffer_setClearColor(this, COLOR_32BPP(31, 31, 31));
 	Framebuffer_setFontColor(this, COLOR_WHITE);
-	Framebuffer_setZoom(this, 1); // setZoom recomputes some internal variables, so we don't need to set those
+	Framebuffer_setZoom(this, 1); // setZoom includes the necessary computations
 
 	Framebuffer_clearTerminal(this);
 	Framebuffer_clearScreen(this);

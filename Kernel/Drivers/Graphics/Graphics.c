@@ -47,7 +47,8 @@ void Graphics_init(enum GraphicsSource graphics, void* pointer){
 }
 
 void Graphics_clearScreen(){
-	if (!m_initialized) return;
+	if (!m_initialized)
+		return;
 
 	switch (m_driverType){
 	case GRAPHICS_NONE:
