@@ -7,7 +7,7 @@
 void panic();
 
 /// @brief Panic helper to handle an errno
-/// @param errorStr Error string to print. The `strerror` result will be appended at its end
+/// @param errorStr Error string to print. Result of `strerror(errno)` will be appended at its end
 /// @param errno The error number (0 for success)
 /// @return Never returns if `errno != 0`
 void panicOnError(const char* errorStr, int errno);

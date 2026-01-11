@@ -55,14 +55,6 @@ struct Mount {
 
 // ================ Internal structs ================
 
-struct Flags {
-	int isDirectory : 1;
-	// rwx
-	int read : 1;
-	int write : 1;
-	int execute : 1;
-};
-
 /// @brief A string with cached info for accelerated computations
 struct QuickString {
 	const char* str;
@@ -72,9 +64,21 @@ struct QuickString {
 
 // ================ Filesystem components ================
 
+struct NodeFlags {
+	int isDirectory : 1;
+	// rwx
+	int read : 1;
+	int write : 1;
+	int execute : 1;
+};
+
+struct EntryFlags {
+	int isMounted : 1;
+};
+
 /// @brief Base node on the VFS. This is your usual UNIX inode
 struct Node {
-	struct Flags flags;
+	struct NodeFlags flags;
 	// File size in bytes
 	size_t size;
 	// Creation date, last access date, last modification date (unimplemented)
@@ -87,9 +91,13 @@ struct Node {
 
 /// @brief A directory entry in the virtual filesystem: file, directory, mount point...
 struct Entry {
-	struct Entry* parent;
 	struct QuickString name;
+	struct EntryFlags flags;
+
 	struct Node* node;
+	struct Entry* parent;
+	list_t children;
+	lnode_t sibling;
 };
 
 /// @brief A file opened by a process. There can be several opened files, that all point

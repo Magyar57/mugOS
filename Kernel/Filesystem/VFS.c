@@ -28,13 +28,18 @@ static struct Node m_rootNode = {
 };
 
 static struct Entry m_rootEntry = {
-	.parent = &m_rootEntry,
 	.name = {
 		.str = "/",
 		.len = sizeof("/"),
 		.hash = 0x0 // Computed at runtime
 	},
+	.flags = {
+		.isMounted = false
+	},
+
 	.node = &m_rootNode,
+	.parent = &m_rootEntry,
+	.children = LIST_STATIC_INIT(m_rootEntry.children)
 };
 
 static cache_t* m_instancesCache;
@@ -218,6 +223,9 @@ void VFS_deleteFsInstance(struct FilesystemInstance* instance){
 // ================ Public API ================
 
 void VFS_init(){
+	int err;
+
+	// Init caches
 	m_instancesCache = Cache_create("fs-instances", sizeof(struct FilesystemInstance), NULL);
 	m_entriesCache = Cache_create("fs-entries", sizeof(struct Entry), NULL);
 	m_mountsCache = Cache_create("fs-mounts", sizeof(struct Mount), NULL);
@@ -234,9 +242,9 @@ void VFS_init(){
 	// Initialize "/" node
 	m_rootEntry.name.hash = hashString(m_rootEntry.name.str);
 
-	// Mount everything
-	VFS_mount(NULL, "/", "RamFS");
-	// VFS_mount(NULL, "/boot", "FAT12"); // EFI partition
+	// Early mount setup
+	err = VFS_mount(NULL, "/", "RamFS");
+	panicOnError("Early root mounting failed", err);
 
 	log(SUCCESS, MODULE, "Virtual filesystem initialized");
 }
@@ -260,6 +268,12 @@ int VFS_mount(void* device, const char* path, const char* fsName){
 	if (mount_point == NULL)
 		return -ENOENT;
 
+	// Mount point should be an empty directory
+	if (!mount_point->node->flags.isDirectory)
+		return -ENOTDIR;
+	if (!List_isEmpty(&mount_point->children))
+		return -ENOTEMPTY;
+
 	// Search the filesystem in the list
 	fs = resolveFilesystem(fsName);
 	if (fs == NULL)
@@ -278,14 +292,14 @@ int VFS_mount(void* device, const char* path, const char* fsName){
 	}
 
 	// TODO to be thread-safe: lock the mount & verify that the mount point is still valid
-	// TODO add the Mount to the parent's list of children
-	// TODO mark the mount point's Entry as mounted-upon
 
 	// Finally, initialize everything
+	mount_point->flags.isMounted = true;
 	mnt->instance = tree.instance;
 	mnt->mountPoint = mount_point;
 	List_pushBack(&tree.instance->mounts, &mnt->lnode);
 
+	log(INFO, MODULE, "Mounted %s on %s", fsName, path);
 	return 0;
 }
 

@@ -19,7 +19,7 @@ struct Stat {
 
 struct DirEntry {
 	unsigned short length; // length of this entry, in bytes
-	struct Flags flags;
+	struct NodeFlags flags;
 	size_t fileSize;
 	char name[];
 };
@@ -46,8 +46,8 @@ int VFS_stat(const char* path, struct Stat* statBuff);
 
 /// @brief List entries from a directory
 /// @param dir Where to find the entries to list
-/// @param entriesBuff Ouput buffer to be written to. Here are written `struct DirEntry`, which are
-///                    structs of variable size
+/// @param entriesBuff Ouput buffer to be written to. Here are written `struct DirEntry`,
+///        which are structs of variable size
 /// @param count Size of the output buffer
 /// @return Number of bytes read or 0 if end of directory was reached, -1 on error
 ssize_t VFS_getDirEntries(struct File* dir, void* entriesBuff, size_t count);

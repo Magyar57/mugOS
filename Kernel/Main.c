@@ -8,6 +8,7 @@
 #include "IRQ/IRQ.h"
 #include "Time/Time.h"
 #include "SMP/SMP.h"
+#include "Filesystem/VFS.h"
 #include "Drivers/Graphics/Graphics.h"
 #include "Drivers/ACPI/ACPI.h"
 #include "Drivers/Output/Serial.h"
@@ -33,7 +34,7 @@ void kmain(){
 	// Hardware-specific initialization
 	HAL_init();
 
-	// Memory management initialization
+	// Memory management
 	MMap_init(&g_memoryMap, g_memmapReq.response);
 	VMM_setHHDM(g_hhdmReq.response->offset);
 	PMM_init();
@@ -46,14 +47,17 @@ void kmain(){
 	IRQ_init();
 	IRQ_enable();
 
-	// Time subsystem initialization
+	// Time subsystem
 	Time_init();
 
-	// CPUs initializations
+	// CPUs and multiprocessing
 	SMP_init();
 	SMP_startCPUs();
 
-	// Misc drivers initializations
+	// Virtual filesystem and filesystem drivers
+	VFS_init();
+
+	// Misc drivers
 	Serial_init();
 	PS2_init();
 	Keyboard_init();
