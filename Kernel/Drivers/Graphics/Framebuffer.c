@@ -20,6 +20,9 @@
 void Framebuffer_clearTerminal(Framebuffer* this){
 	assert(this);
 	memset(this->text, '\0', TERMINAL_SIZE);
+
+	this->cursorX = 0;
+	this->cursorY = 0;
 }
 
 void Framebuffer_setZoom(Framebuffer* this, uint32_t zoom){
@@ -108,59 +111,67 @@ void Framebuffer_drawChar(Framebuffer* this, char c, uint32_t color, int x, int 
 	writeMemoryBarrier();
 }
 
-// (Re)draws the entire screen. IRQ UNSAFE !
-static inline void drawScreen(Framebuffer* this){
-	assert(this);
-
-	this->cursorX = 0;
-	this->cursorY = 0;
-
-	for (uint32_t j=0 ; j<this->textHeight ; j++){
-		for (uint32_t i=0 ; i<this->textWidth ; i++){
-			char c = this->text[j*MAX_TERMINAL_WIDTH + i];
-
-			if (c == '\n'){
-				this->cursorX = 0;
-				this->cursorY++;
-				break;
-			}
-
-			switch (c){
-			case '\0':
-				break;
-			case '\n':
-				assert(false); // handled already
-				break;
-			case '\r':
-				assert(false); // should not happen, '\r' is never written in text
-				break;
-			case '\t':
-				assert(false);
-				break;
-			default:
-				const unsigned int x = this->cursorX*this->charWidth + this->drawOffsetX;
-				const unsigned int y = this->cursorY*this->charHeight + this->drawOffsetY;
-				Framebuffer_drawChar(this, c, this->fontColor, x, y);
-				this->cursorX = (this->cursorX+1) % this->textWidth;
-				if (this->cursorX == 0) this->cursorY++;
-				break;
-			}
-		}
-	}
-}
-
 void Framebuffer_scrollDown(Framebuffer* this){
 	assert(this);
 	unsigned long flags;
 	IRQ_disableSave(flags);
 
-	// Move the terminal text one line up
-	memmove(this->text, this->text+MAX_TERMINAL_WIDTH, TERMINAL_SIZE-MAX_TERMINAL_WIDTH);
-	memset(this->text + TERMINAL_SIZE-MAX_TERMINAL_WIDTH, 0, MAX_TERMINAL_WIDTH); // reset last line
+	// Move every line up
+	// This method has been optimized to only redraw characters that changed
 
-	// Redraw everything (cursor is updated by drawScreen)
-	Framebuffer_clearScreen(this);
-	drawScreen(this);
+	this->cursorX = 0;
+	this->cursorY = 0;
+
+	for (uint32_t j=0 ; j<this->textHeight-1 ; j++){
+		for (uint32_t i=0 ; i<this->textWidth ; i++){
+			int cur_index = j*MAX_TERMINAL_WIDTH + i;
+			int next_index = (j+1)*MAX_TERMINAL_WIDTH + i;
+			char prev = this->text[cur_index];
+			char next = this->text[next_index];
+			this->text[cur_index] = this->text[next_index];
+
+			switch (next){
+			case '\t':
+				assert(false); // should not happen, tabs are never written to text
+				break;
+			case '\r':
+				assert(false); // should not happen, carriage returns are never written to text
+				break;
+			case '\n':
+				next = ' ';
+				// Fall through
+			default:
+				// If it changed, draw the new character over the previous one
+				if (prev == next)
+					break;
+				if ((prev == '\0' && next == ' ') || (prev == ' ' && next == '\0'))
+					break;
+				const int x = this->cursorX*this->charWidth + this->drawOffsetX;
+				const int y = this->cursorY*this->charHeight + this->drawOffsetY;
+				Framebuffer_drawChar(this, next, this->fontColor, x, y);
+				break;
+			}
+
+			this->cursorX = (this->cursorX+1) % this->textWidth;
+			if (this->cursorX == 0)
+				this->cursorY++;
+		}
+	}
+
+	// Clear the last line
+	const int j = this->textHeight - 1;
+	for (uint32_t i=0 ; i<this->textWidth ; i++){
+		int index = j*MAX_TERMINAL_WIDTH + i;
+		char c = this->text[index];
+		this->text[index] = '\0';
+
+		if (c == '\0' || c == ' ')
+			continue;
+
+		const int x = i*this->charWidth + this->drawOffsetX;
+		const int y = j*this->charHeight + this->drawOffsetY;
+		Framebuffer_drawChar(this, ' ', this->fontColor, x, y);
+	}
 
 	IRQ_restore(flags);
 }
@@ -197,8 +208,8 @@ void Framebuffer_putchar(Framebuffer* this, const char c){
 
 	default:
 		this->text[this->cursorY*MAX_TERMINAL_WIDTH + this->cursorX] = c;
-		unsigned int x = this->cursorX*this->charWidth + this->drawOffsetX;
-		unsigned int y =this->cursorY*this->charHeight + this->drawOffsetY;
+		int x = this->cursorX*this->charWidth + this->drawOffsetX;
+		int y =this->cursorY*this->charHeight + this->drawOffsetY;
 		Framebuffer_drawChar(this, c, this->fontColor, x, y);
 
 		this->cursorX = (this->cursorX+1) % this->textWidth;

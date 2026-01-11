@@ -49,7 +49,7 @@ typedef struct s_Framebuffer {
 	uint32_t cursorY;			// Cursor Y position on screen
 	uint32_t textWidth;			// Terminal width (number of characters in a line)
 	uint32_t textHeight;		// Terminal height (number of lines)
-	unsigned char text[TERMINAL_SIZE]; // Contains the printed letters
+	char text[TERMINAL_SIZE];	// Contains the printed letters
 } Framebuffer;
 
 void Framebuffer_clearTerminal(Framebuffer* this);
